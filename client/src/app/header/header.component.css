@@ -1,58 +1,63 @@
-
 .header-panel {
-    z-index: 99 !important;
     position: fixed;
+    z-index: 99 !important;
     top: 0px;
-    left: 0px;
-    background-color: var(--headerBackground);
-    color: var(--headerColor);
+    left: 200px;
     height: 36px;
-    width: 200px;
+
+    background: var(--Surface-background, #121212);
+
+    color: var(--headerColor);
 }
 
 .header-right {
-    z-index: 99 !important;
     position: fixed;
+    z-index: 99 !important;
     top: 0px;
     right: 0px;
-    background-color: var(--headerBackground);
-    color: var(--headerColor);
     height: 36px;
-    width: 120px;
+
+    background: var(--Surface-background, #121212);
+
+    color: var(--headerColor);
+    text-align: right;
 }
 
 .header-help {
-    float: right;
-    height: 36px;
     width: 36px;
+    height: 36px;
     margin-right: 20px;
+    float: right;
 }
 
 .header-theme {
-    float: right;
-    height: 36px;
     width: 36px;
+    height: 36px;
     margin-right: 5px;
+    float: right;
 }
 
 .main-btn {
-    height: 34px;
     width: 34px;
     min-width: unset !important;
-    padding:unset !important;
-    line-height: 34px;
-    margin-left: 5px;
+    height: 34px;
     margin-right: 5px;
-  }
-  
-  .main-btn mat-icon {
-    font-size: 24px;
-    height: unset;
+    margin-left: 5px;
+    padding: unset !important;
+
+    line-height: 34px;
+}
+
+.main-btn mat-icon {
     width: unset;
-  }
+    height: unset;
+
+    font-size: 24px;
+}
 
 .header-menu {
-    box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.2); 
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+        0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
 .header-icon {
@@ -60,11 +65,25 @@
 }
 
 .menu-separator {
-    border-top-color: rgba(0,0,0,0.2);
+    border-top-color: rgba(0, 0, 0, 0.2);
 }
 
 ::ng-deep .mat-menu-item {
-    font-size: 11px;
     height: 30px !important;
+
+    font-size: 11px;
     line-height: unset !important;
-  }
+}
+
+.save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    padding: var(--spacing-md-10, 10px) var(--spacing-md, 16px) !important;
+
+    border-radius: var(--radius-md-10, 10px);
+
+    background: var(--Link-filled, #158ba5);
+    gap: var(--spacing-sm-6, 6px);
+}

@@ -2,56 +2,63 @@
     /* z-index: 9999 !important; */
     top: 0px;
     left: 0px;
-    background-color: var(--headerBackground);
-    color: var(--headerColor);
-    height: 36px;
     width: 100%;
-    text-align: center;
-    line-height: 36px;
+    height: 36px;
+
     border-bottom: 1px solid var(--headerBorder);
+
+    background: var(--Surface-background, #121212);
+
+    color: var(--headerColor);
+    line-height: 36px;
+    text-align: center;
 }
 
 .device-btn {
-    height: 34px;
     width: 34px;
     min-width: unset !important;
-    padding:unset !important;
-    line-height: 34px;
-    margin-left: 5px;
+    height: 34px;
     margin-right: 5px;
+    margin-left: 5px;
+    padding: unset !important;
     float: right;
+
+    line-height: 34px;
 }
-  
+
 .device-btn mat-icon {
-    font-size: 24px;
-    height: unset;
     width: unset;
+    height: unset;
+
+    font-size: 24px;
 }
 
 .work-panel {
     position: absolute;
     top: 37px;
-    left: 0px;
     right: 0px;
     bottom: 0px;
+    left: 0px;
     overflow: auto;
+
     background-color: var(--workPanelBackground);
 }
 
 .mat-table {
-    overflow: auto;
     /* min-width: 1500px; */
     height: 100%;
+    overflow: auto;
 }
-  
+
 .mat-header-cell.mat-sort-header-sorted {
     /* color: black; */
 }
 
 .mat-row {
-    min-height: 34px;
     height: 34px;
-    border-bottom-color: rgba(0,0,0,0.06);
+    min-height: 34px;
+
+    border-bottom-color: rgba(0, 0, 0, 0.06);
 }
 
 .mat-cell {
@@ -59,15 +66,15 @@
 }
 
 .mat-cell ::ng-deep .mat-checkbox-inner-container {
-    height: 16px;
     width: 16px;
+    height: 16px;
     margin-left: 2px;
 }
 
 .mat-header-row {
-    top: 0;
     position: sticky;
     z-index: 1;
+    top: 0;
     /* background-color: rgba(0,0,0,0.7); */
     /* background-color: rgb(30, 30, 30); */
     /* color: white; */
@@ -78,8 +85,8 @@
 }
 
 .mat-column-toogle {
-    overflow: visible;
     flex: 0 0 40px;
+    overflow: visible;
 }
 
 .mat-column-name {
@@ -87,7 +94,7 @@
 }
 
 .mat-column-address {
-    flex: 0 0 380px;
+    flex: 0 0 300px;
 }
 
 .mat-column-device {
@@ -100,18 +107,19 @@
 
 .my-header-filter ::ng-deep .mat-sort-header-content {
     display: unset;
+
     text-align: left;
 }
 
 .my-header-filter ::ng-deep .mat-sort-header-button {
     display: block;
-    text-align: left;
     margin-top: 5px;
+
+    text-align: left;
 }
 
 .my-header-filter span {
     padding-left: 5px;
-
 }
 
 .my-header-filter ::ng-deep .mat-sort-header-arrow {
@@ -121,28 +129,34 @@
 }
 
 .my-header-filter-input {
-    display: block; 
+    display: block;
     margin-top: 4px;
     margin-bottom: 6px;
     /* color: white; */
     padding: 3px 1px 3px 2px;
-    border-radius: 2px;
+
     border: 1px solid var(--formInputBackground);
+    border-radius: 2px;
+
     background-color: var(--formInputBackground);
+
     color: var(--formInputColor);
 }
 
 .my-header-filter-input:focus {
     padding: 3px 1px 3px 2px;
+
     border: 1px solid var(--formInputBorderFocus);
+
     background-color: var(--formInputBackgroundFocus);
 }
 
 .fab-reload {
     position: fixed !important;
-    right: 10px !important;
-    top: 40px !important;
     z-index: 9999 !important;
+    top: 40px !important;
+    right: 10px !important;
+
     color: var(--headerColor);
 }
 

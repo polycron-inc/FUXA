@@ -9,22 +9,31 @@
 
 .svg-property {
     color: rgba(255, 255, 255, 0.75);
-
 }
 
 .svg-property span {
     display: block;
-    font-size: 10px;
     margin: 0px 5px 0px 10px;
+
+    font-size: 10px;
 }
 
 .svg-property input {
     display: block;
     margin: 0px 10px 12px 10px;
+
     border: unset;
-    background-color: inherit;
-    color: var(--toolboxFlyColor);
     border-bottom: 1px solid var(--toolboxFlyColor);
+
+    background-color: inherit;
+
+    color: var(--toolboxFlyColor);
+}
+
+.svg-property button {
+    border-radius: var(--radius-md-10, 10px);
+
+    background: var(--Link-filled, #158ba5) !important;
 }
 
 .mat-button {

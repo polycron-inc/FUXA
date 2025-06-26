@@ -2,9 +2,10 @@
     display: block;
     /* min-height: 100px; */
     width: 100%;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    padding: 0px 0px 5px 0px;
     margin-bottom: 3px;
+    padding: 0px 0px 5px 0px;
+
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .item-head {
@@ -26,13 +27,12 @@
 .action-content {
     display: block;
     padding-top: 2px;
-    margin-left: 30px;
 }
 
 .item-range {
     display: inline-block;
-    min-width: 240px;
     width: 240px;
+    min-width: 240px;
 }
 
 .action-params {

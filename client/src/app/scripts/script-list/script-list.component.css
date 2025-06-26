@@ -1,48 +1,52 @@
 .header-panel {
-    background-color: var(--headerBackground);
-    color: var(--headerColor);
     position: absolute;
     top: 0px;
     left: 0px;
-    height: 36px;
     width: 100%;
-    text-align: center;
-    line-height: 36px;
+    height: 36px;
+
     border-bottom: 1px solid var(--headerBorder);
+
+    background: var(--Surface-background, #121212);
+
+    color: var(--headerColor);
+    line-height: 36px;
+    text-align: center;
 }
 
 .header-panel mat-icon {
     display: inline-block;
+
     vertical-align: text-top;
 }
 
 .work-panel {
     position: absolute;
     top: 37px;
-    left: 0px;
     right: 0px;
     bottom: 0px;
+    left: 0px;
 }
 
 .container {
     display: flex;
+    position: absolute;
+    top: 0px;
+    right:0px;
+    bottom: 0px;
+    left:0px;
     flex-direction: column;
     min-width: 300px;
-    position: absolute;
-    bottom: 0px;
-    top: 0px;
-    left:0px;
-    right:0px;
 }
 
 .mat-table {
-    overflow: auto;
     height: 100%;
+    overflow: auto;
 }
 
 .mat-row {
-    min-height: 40px;
     height: 43px;
+    min-height: 40px;
 }
 
 .mat-cell {
@@ -50,9 +54,9 @@
 }
 
 .mat-header-row {
-    top: 0;
     position: sticky;
     z-index: 1;
+    top: 0;
 }
 
 .mat-header-cell {
@@ -60,8 +64,8 @@
 }
 
 .mat-column-select {
-    overflow: visible;
     flex: 0 0 80px;
+    overflow: visible;
 }
 
 .mat-column-name {
@@ -88,8 +92,9 @@
 
 .my-header-filter ::ng-deep .mat-sort-header-button {
     display: block;
-    text-align: left;
     margin-top: 5px;
+
+    text-align: left;
 }
 
 .my-header-filter ::ng-deep .mat-sort-header-arrow {
@@ -102,5 +107,6 @@
     margin-top: 4px;
     margin-bottom: 6px;
     padding: 3px 1px 3px 2px;
+
     border-radius: 2px;
 }
