@@ -1,40 +1,44 @@
 .header-panel {
+    width: 100%;
+    height: 36px;
+    /* border-top: 1px solid var(--headerBorder); */
+    border-bottom: 1px solid var(--headerBorder);
     /* z-index: 9999 !important; */
     /* position: fixed; */
     /* top: 0px; */
     /* left: 0px; */
-    background-color: var(--headerBackground);
+    background: var(--Surface-background, #121212);
+
     color: var(--headerColor);
-    height: 36px;
-    width: 100%;
-    text-align: center;
     line-height: 32px;
-    /* border-top: 1px solid var(--headerBorder); */
-    border-bottom: 1px solid var(--headerBorder);
+    text-align: center;
 }
 
 .work-panel {
     position: absolute;
     top: 37px;
-    left: 0px;
     right: 0px;
     bottom: 0px;
-    background-color: var(--workPanelBackground);
+    left: 0px;
     min-width: 930px;
+
+    background-color: var(--workPanelBackground);
 }
 
 .text-content {
-    overflow-y: auto;
-    overflow-x: auto;
     padding-left: 10px;
+    overflow-x: auto;
+    overflow-y: auto;
+
     color: rgb(172, 172, 172);
     font-family: "Segoe UI Symbol", "Roboto-Regular", "Helvetica Neue", sans-serif;
     font-size: 12px;
 }
 
 .mat-row {
-    min-height: 34px;
     height: 34px;
+    min-height: 34px;
+
     border-bottom-color: rgba(0, 0, 0, 0.06);
 }
 
@@ -43,9 +47,9 @@
 }
 
 .mat-header-row {
-    top: 0;
     position: sticky;
     z-index: 1;
+    top: 0;
 }
 .mat-header-cell {
     font-size: 13px;
@@ -53,8 +57,9 @@
 
 .my-header-filter ::ng-deep .mat-sort-header-button {
     display: block;
-    text-align: left;
     margin-top: 5px;
+
+    text-align: left;
 }
 
 .my-header-filter ::ng-deep .mat-sort-header-arrow {
@@ -69,21 +74,26 @@
     margin-bottom: 6px;
     /* color: white; */
     padding: 3px 1px 3px 2px;
-    border-radius: 2px;
+
     border: 1px solid var(--formInputBackground);
+    border-radius: 2px;
+
     background-color: var(--formInputBackground);
+
     color: var(--formInputColor);
 }
 
 .my-header-filter-input:focus {
     padding: 3px 1px 3px 2px;
+
     border: 1px solid var(--formInputBorderFocus);
+
     background-color: var(--formInputBackgroundFocus);
 }
 
 .mat-column-ontime {
-    overflow: visible;
     flex: 0 0 160px;
+    overflow: visible;
 }
 
 .mat-column-type {
@@ -100,11 +110,13 @@
 
 .logs-selector {
     position: absolute;
+    z-index: 999;
     top: 50px;
     right: 40px;
-    z-index: 999;
     padding: 5px 7px;
-    background-color: var(--toolboxBackground);
-    color: var(--toolboxColor);
+
+    background: var(--Surface-background, #121212);;
     box-shadow: 0px 1px 3px 0px #000;
+
+    color: var(--toolboxColor);
 }

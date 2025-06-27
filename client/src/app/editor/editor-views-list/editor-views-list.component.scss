@@ -1,11 +1,12 @@
 :host {
     .leftbar-item {
-        padding: 3px 0px 1px 0px;
         display: flow-root;
+        padding: 3px 0px 1px 0px;
     }
 
     .leftbar-item-active {
-        background-color: var(--toolboxItemActiveBackgroung);
+        background: var(--Link-standard-hover, rgba(226, 232, 240, 0.1));
+
         color: var(--toolboxItemActiveColor);
     }
 
@@ -14,33 +15,36 @@
     }
 
     .leftbar-item .leftbar-item-type {
-        float: left;
         padding-left: 4px;
+        float: left;
+
         font-size: 16px;
         line-height: 20px;
     }
 
     .leftbar-item mat-icon {
         float: right;
+
         font-size: 18px;
     }
 
     .view-item-text {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         max-width: calc(100% - 54px);
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .item-icon-view {
-        color: #7CACF8;
+        color: var(--Link-filled, #158ba5);
     }
 
     .item-icon-cards {
-        color: #F8A57C;
+        color: #f8a57c;
     }
 
     .item-icon-maps {
-        color: #37BE5F;
+        color: #37be5f;
     }
 }

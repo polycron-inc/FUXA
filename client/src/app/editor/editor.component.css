@@ -1,17 +1,17 @@
 .editor-sidenav {
     position: fixed;
-    margin-top: 36px;
-    height: calc(100% - 74px);
-    padding: 7px;
     width: 350px;
+    height: calc(100% - 74px);
+    margin-top: 36px;
+    padding: 7px;
 }
 
 .sidepanel-selector {
     position: fixed;
-    margin-top: 36px;
-    height: calc(100% - 74px);
-    padding: 7px;
     width: 370px;
+    height: calc(100% - 74px);
+    margin-top: 36px;
+    padding: 7px;
 }
 
 @media (min-width: 1601px) {
@@ -21,40 +21,47 @@
 }
 
 #svg_editor_container {
-    background: #aaa;
-    height: 100%;
-    width: 100%;
     display: flex;
-    flex-direction: column;
     position: absolute;
     top: 0px;
     left: 0px;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+
+    background: #aaa;
 }
 
 .svg-workarea-toolbar {
-    min-height: 46px;
     height: 46px;
+    min-height: 46px;
 }
+
 .svg-workarea-leftbar-p {
+    background: var(--Surface-background, #121212);
     box-shadow: none !important;
-    background-color: var(--toolboxBackground);
+
     color: var(--toolboxColor);
 }
 
 .svg-workarea-leftbar-h {
     max-height: 23px;
+    margin-bottom: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+
+    border-top: 1px solid var(--toolboxBorder);
+
+    box-shadow: 0px 1px 3px 0px #000;
+
     text-align: center;
     vertical-align: middle;
-    padding-left: 0px;
-    padding-right: 0px;
-    border-top: 1px solid var(--toolboxBorder);
-    margin-bottom: 0px;
-    box-shadow: 0px 1px 3px 0px #000;
 }
 
 .svg-workarea-leftbar-h span {
     padding-top: 5px !important;
     padding-left: 3px;
+
     font-size: 11px;
 }
 
@@ -64,34 +71,40 @@
 
 .svg-workarea-flybar-h {
     max-height: 23px;
+    padding-right: 0px;
+    padding-left: 0px;
+
+    border-top: 1px solid var(--toolboxBorder);
+
+    box-shadow: 0px 1px 3px 0px #000;
+
     text-align: center;
     vertical-align: middle;
-    padding-left: 0px;
-    padding-right: 0px;
-    border-top: 1px solid var(--toolboxBorder);
-    box-shadow: 0px 1px 3px 0px #000;
- }
+}
 
- .svg-workarea-flybar-h span {
-     padding-top: 5px !important;
-     padding-left: 3px;
-     font-size: 11px;
- }
+.svg-workarea-flybar-h span {
+    padding-top: 5px !important;
+    padding-left: 3px;
 
- /* .svg-workarea-flybar-h:hover {
+    font-size: 11px;
+}
+
+/* .svg-workarea-flybar-h:hover {
  } */
 
- .svg-workarea-flybar-h:enabled .svg-workarea-flybar-h::selection{
-     color: rgba(255,255,255,1);
- }
+.svg-workarea-flybar-h:enabled .svg-workarea-flybar-h::selection {
+    color: rgba(255, 255, 255, 1);
+}
 
 .svg-workarea-fly-p {
-    box-shadow: none !important;
-    background-color: var(--toolboxBackground);
-    color: var(--toolboxColor);
-    width: 200px;
-    padding-left: 0px;
+    width: 300px;
     padding-right: 0px;
+    padding-left: 0px;
+
+    background: var(--Surface-background, #121212);
+    box-shadow: none !important;
+
+    color: var(--toolboxColor);
 }
 
 .svg-property-split3:after {
@@ -123,8 +136,9 @@
 .svg-property span {
     /* float: left; */
     display: block;
-    font-size: 10px;
     margin: 0px 5px 0px 10px;
+
+    font-size: 10px;
 }
 
 .svg-property input {
@@ -134,27 +148,42 @@
     /* right: 0px; */
     display: block;
     margin: 0px 10px 12px 10px;
-    border: unset;
+    padding: var(--spacing-md-10, 10px) var(--spacing-sm, 8px)
+        var(--spacing-md-10, 10px) var(--spacing-md-12, 12px);
+
+    border: 0.5px solid var(--Border-border-primary, #64748b);
+    border-radius: var(--radius-sm-6, 6px);
+
     background-color: inherit;
+
     color: inherit;
-    border-bottom: 1px solid var(--toolboxFlyColor);
+}
+.svg-property input[type="checkbox"] {
+    border: 1.2px solid var(--Border-border-primary, #64748b);
+    border-radius: var(--radius-xs, 4px);
+
+    accent-color: var(--Link-filled, #158ba5) !important;
 }
 
 .svg-workarea-container {
     display: block;
     height: 100%;
+
+    background: var(--Surface-background, #121212);
 }
 
 .svg-preview {
-    background-color: #3058af36;
-    height: 0px;
-    width: 0px;
-    z-index: 1;
     position: absolute;
+    z-index: 1;
+    width: 0px;
+    height: 0px;
+
+    background-color: #3058af36;
 }
 
 #rulers > div {
     background-color: var(--svgEditRulersBackground) !important;
+
     color: var(--svgEditRulersColor) !important;
 }
 
@@ -176,30 +205,35 @@
 
 .contextMenu LI.separator {
     margin-top: 0px !important;
+
     border-color: var(--svgEditWorkareaContextBorder) !important;
 }
 
 .svg-tools-fly {
-    z-index: 9999;
     position: absolute;
-    right: 15px;
+    z-index: 9999;
     top: 55px;
+    right: 15px;
     /* overflow-y: auto; */
     max-height: calc(100% - 75px);
-    background-color: var(--toolboxBackground);
+
+    background: var(--Surface-background, #121212);
     box-shadow: 0px 1px 4px 0px #000;
 }
 
 .svg-tool-button {
-    vertical-align: middle;
     display: inline-table;
+    width: 30px;
+    height: 30px;
+    margin: 2px 2px 2px 2px;
+
+    border-radius: 50%;
+
+    background-color: var(--toolboxButton);
+
+    vertical-align: middle;
     /* display: inline-block; */
     cursor: pointer;
-    height: 30px;
-    width: 30px;
-    border-radius: 50%;
-    margin: 2px 2px 2px 2px;
-    background-color: var(--toolboxButton);
     /* padding-top: 5px; */
 }
 
@@ -212,8 +246,15 @@
     background: rgba(0, 0, 0, 0.1);
 }
 
-.svg-tool-active, .svg-tool-active:active, .svg-tool-active:hover {
-    background-color: rgba(48,89,175,1);
+.svg-tool-active,
+.svg-tool-active:active,
+.svg-tool-active:hover {
+    border-radius: var(--radius-md-10, 10px);
+
+    background: var(--Link-filled-pressed, #1c5b6e);
+
+    /* button-pressed */
+    box-shadow: 2px 4px 0px 0px var(--Shadow-heavy, rgba(0, 0, 0, 0.25)) inset;
 }
 
 .leave-header-area {
@@ -221,74 +262,87 @@
 }
 
 .svg-sidenav {
+    width: 200px;
     min-width: 160px;
     max-width: 200px;
-    width: 200px;
-    background: var(--sidenavBackgroung);
+
+    background: var(--Surface-background, #121212);
 }
 
 /* tool bar top */
 .tools_panel {
-    background-color: var(--headerBackground);
+    display: flex;
+
+    right: 64px !important;
+
+    background: var(--Surface-background, #121212);
+
     color: var(--headerColor);
 }
+
 .main-btn {
-    height: 34px;
     width: 34px;
     min-width: unset !important;
-    padding: unset !important;
-    line-height: 34px;
-    margin-left: 5px;
+    height: 34px;
     margin-right: 5px;
+    margin-left: 5px;
+    padding: unset !important;
+
+    line-height: 34px;
 }
 
 .main-btn mat-icon {
-    font-size: 24px;
-    height: unset;
     width: unset;
+    height: unset;
+
+    font-size: 24px;
 }
 
 .main-btn .to-top {
-    display: inline-block;    ;
+    display: inline-block;
+    width: 34px;
     height: 34px;
-    width: 34px;    
 }
 
-.main-btn .to-bottom  {
+.main-btn .to-bottom {
     display: inline-block;
-    height: 34px;
     width: 34px;
+    height: 34px;
 }
 
 .main-btn .to-path {
     display: inline-block;
-    height: 34px;
     width: 34px;
+    height: 34px;
 }
 
 .main-btn .group {
+    display: inline-block;
+    width: 34px;
+    height: 34px;
+
     background: url("/assets/images/group.svg") no-repeat center center;
     background-size: contain;
-    display: inline-block;
-    height: 34px;
-    width: 34px;
 }
 
 .main-btn .ungroup {
+    display: inline-block;
+    width: 34px;
+    height: 34px;
+
     background: url("/assets/images/ungroup.svg") no-repeat center center;
     background-size: contain;
-    display: inline-block;
-    height: 34px;
-    width: 34px;
 }
 
 .main-btn-sep {
     width: 1px;
-    background: #888;
-    border-left: 1px outset #888;
+    height: 24px;
     margin: 5px 3px;
     padding: 0;
-    height: 24px;
+
+    border-left: 1px outset #888;
+
+    background: #888;
 }
 
 .svg-element-selected {
@@ -300,23 +354,28 @@
 /* --------------- */
 .view-panel {
     overflow: auto;
+
     cursor: s-resize;
 }
+
 .leftbar-edit-btn {
-    margin-top: 2px;
-    font-size: 18px;
-    height: 18px;
     width: 18px;
+    height: 18px;
+    margin-top: 2px;
     padding-right: 15px;
+
+    font-size: 18px;
 }
 
 .leftbar-panel {
     margin-top: 4px;
     padding: 0px 0px 0px 0px;
-    font-size: 11px;
-    background-color: var(--toolboxPanelBackgroung);
-    color: var(--toolboxColor);
     overflow: auto;
+
+    background: #000;
+
+    color: var(--toolboxColor);
+    font-size: 11px;
 }
 
 .leftbar-panel.h200 {
@@ -324,12 +383,13 @@
 }
 
 .leftbar-item {
-    padding: 3px 0px 1px 0px;
     display: flow-root;
+    padding: 3px 0px 1px 0px;
 }
 
 .leftbar-item-active {
     background-color: var(--toolboxItemActiveBackgroung);
+
     color: var(--toolboxItemActiveColor);
 }
 
@@ -338,41 +398,44 @@
 }
 
 .leftbar-item .leftbar-item-type {
-    float: left;
     padding-left: 4px;
+    float: left;
+
+    opacity: 0.5;
+
     font-size: 16px;
     line-height: 20px;
-    opacity:0.5;
 }
 
 .leftbar-item mat-icon {
     float: right;
+
     font-size: 18px;
 }
-
 ::ng-deep .svg-workarea-leftbar-p .mat-expansion-panel-body {
-    margin: 0px 0px 0px 0px !important;
-    padding: 0px 0px 0px 0px !important;
     /* padding-left: 10px !important; */
     flex-wrap: wrap !important;
+    margin: 0px 0px 0px 0px !important;
+    padding: 0px 0px 0px 0px !important;
 }
-
 ::ng-deep .svg-workarea-fly-p .mat-expansion-panel-body {
-    margin: 0px 0px 0px 0px !important;
-    padding: 0px 0px 0px 0px !important;
     /* padding-left: 10px !important; */
     flex-wrap: wrap !important;
+    margin: 0px 0px 0px 0px !important;
+    padding: 0px 0px 0px 0px !important;
 }
-
 ::ng-deep .mat-menu-item {
-    font-size: 11px;
     height: 30px !important;
+
+    font-size: 11px;
     line-height: unset !important;
 }
 
 .rightbar-panel {
     margin-top: 4px;
-    background-color: var(--toolboxPanelBackgroung);
+
+    background: var(--Surface-background, #121212);
+
     color: var(--toolboxColor);
 }
 
@@ -383,34 +446,37 @@
 .mat-expansion-panel-header-title span {
     padding-top: 3px;
 }
+
 .mat-expansion-panel-spacing {
     margin: 0px 0px 0px 0px !important;
 }
 
 .bottom-bar {
     position: absolute;
-    left: 0px;
     right: 0;
     bottom: 0;
+    left: 0px;
     height: 30px;
     overflow: visible;
 }
 
 .zoom-menu {
-    float: left;
-    padding-left: 5px;
     width: 90px;
+    padding-left: 5px;
+    float: left;
 }
 
 .zoom-value {
-    border: unset;
     display: inline-block;
+
+    border: unset;
 }
 
 .zoom-label {
     display: inline-block;
     height: 25px;
 }
+
 .zoom-value span {
     display: inline-block;
 }
@@ -419,20 +485,25 @@
 button {
     display: inline-block;
 }
+
 .zoom-value button {
     /* width: unset; */
     z-index: 9999;
-    background-color: var(--footZoomBackground);
-    color: var(--footZoomColor);
+
     border: unset;
+
+    background-color: var(--footZoomBackground);
+
+    color: var(--footZoomColor);
 }
 
 .zoom-value ul,
 li {
+    border: unset;
     /* width: unset; */
     background-color: var(--footZoomBackground);
+
     color: var(--footZoomColor);
-    border: unset;
 }
 
 .zoom-value ul {
@@ -445,83 +516,102 @@ li {
 
 .colors {
     position: absolute;
-    left: 25px;
     top: 0px;
+    left: 25px;
 }
 
 .colors-palette {
     position: absolute;
-    left: 165px;
     top: 0px;
     right: 0px;
     bottom: 0px;
+    left: 165px;
 }
 
 .color-fill {
     position: relative;
     top: 4px;
     left: 12px;
-    cursor: pointer;
     width: 13px;
     height: 13px;
+
     border: 1px solid rgba(71, 71, 71, 1);
+
+    cursor: pointer;
 }
 
 .color-stroke {
     position: absolute;
     top: 4px;
     left: 30px;
-    cursor: pointer;
     width: 13px;
     height: 13px;
+
     border: 1px solid rgba(71, 71, 71, 1);
+
+    cursor: pointer;
 }
 
 .style-stroke {
     display: block !important;
     margin: 0px 10px 12px 10px;
-    background-color: inherit;
+    padding: var(--spacing-md-10, 10px) var(--spacing-sm, 8px)
+        var(--spacing-md-10, 10px) var(--spacing-md-12, 12px);
+
+    border: 0.5px solid var(--Border-border-primary, #64748b);
+    border-radius: var(--radius-sm-6, 6px);
+
+    background: var(--Surface-background, #121212);
+
     color: inherit;
-    background-color: var(--toolboxPanelBackgroung);
+
     color: var(--toolboxColor);
 }
 
 .style-stroke option {
-    background-color: var(--toolboxPanelBackgroung);
+    background: var(--Surface-background, #121212);
+
     color: var(--toolboxColor);
 }
 
 .font-family {
     display: block;
-    margin: 0px 10px 12px 10px;
-    background-color: inherit;
-    color: inherit;
     width: 174px;
+    margin: 0px 10px 12px 10px;
+
+    background-color: inherit;
+
+    color: inherit;
 }
 
 .font-family option {
-    background-color: var(--toolboxPanelBackgroung);
+    background: var(--Surface-background, #121212);
+
     color: var(--toolboxColor);
 }
 
 .text-align {
     display: block;
-    margin: 0px 10px 12px 10px;
-    background-color: inherit;
-    color: inherit;
     width: 75px;
+    margin: 0px 10px 12px 10px;
+
+    background-color: inherit;
+
+    color: inherit;
 }
 
 .text-align option {
-    background-color: var(--toolboxPanelBackgroung);
+    background: var(--Surface-background, #121212);
+
     color: var(--toolboxColor);
 }
 
 .view-item-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     max-width: calc(100% - 54px);
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 select#start_marker option[value="A"] {
@@ -538,220 +628,262 @@ select#start_marker option[value="D"] {
 }
 
 .icon-select {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/select-pointer.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-pencil {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/pencil.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-line {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/line.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-rect {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/rect.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-circle {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/circle.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-ellipse {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/ellipse.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-path {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/path.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-text {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/text.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-image {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/image.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-left {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-left.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-center {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-center.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-right {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-right.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-top {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-top.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-middle {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-middle.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-align-bottom {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/align-bottom.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-flip-orizontal {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/flip-orizontal.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-flip-vertical {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/flip-vertical.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linejoin-miter {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linejoin-miter.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linejoin-round {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linejoin-round.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linejoin-bevel {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linejoin-bevel.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linecap-butt {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linecap-butt.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linecap-square {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linecap-square.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-linecap-round {
+    width: 30px;
+    height: 30px;
+
     background: url("/assets/images/linecap-round.svg") no-repeat center center;
     background-size: contain;
-    height: 30px;
-    width: 30px;
 }
 
 .icon-tool {
-    background-size: auto;
-    height: 30px;
     width: 30px;
-    color: rgba(255, 255, 255, 1);
-    background-position: center; /* Center the image */
+    height: 30px;
+
     background-repeat: no-repeat; /* Do not repeat the image */
+    background-position: center; /* Center the image */
+    background-size: auto;
+
+    color: rgba(255, 255, 255, 1);
 }
 
 .material-icon-tool {
-    text-align: center;
-    line-height: 30px;
     font-size: 22px;
+    line-height: 30px;
+    text-align: center;
 }
 
 .icon-switch {
     background: url("/assets/images/switch.svg") no-repeat center center;
 }
+
 .icon-value {
     background: url("/assets/images/value.svg") no-repeat center center;
 }
+
 .icon-editvalue {
     background: url("/assets/images/editvalue.svg") no-repeat center center;
 }
+
 .icon-selectvalue {
     background: url("/assets/images/selectvalue.svg") no-repeat center center;
 }
+
 .icon-progress-v {
     background: url("/assets/images/progress-v.svg") no-repeat center center;
 }
+
 .icon-semaphore {
     background: url("/assets/images/semaphore.svg") no-repeat center center;
 }
+
 .icon-button {
     background: url("/assets/images/button.svg") no-repeat center center;
 }
+
 .icon-chart {
     background: url("/assets/images/chart.svg") no-repeat center center;
 }
+
 .icon-bag {
     background: url("/assets/images/bag.svg") no-repeat center center;
 }
+
 .icon-pipe {
     background: url("/assets/images/pipe.svg") no-repeat center center;
 }
+
 .icon-slider {
     background: url("/assets/images/slider.svg") no-repeat center center;
 }
+
 .icon-graphbar {
     background: url("/assets/images/graphbar.svg") no-repeat center center;
 }
+
 .icon-table {
     background: url("/assets/images/table.svg") no-repeat center center;
 }
+
 .icon-iframe {
     background: url("/assets/images/iframe.svg") no-repeat center center;
+}
+
+.play-btn {
+    margin-left: auto;
 }

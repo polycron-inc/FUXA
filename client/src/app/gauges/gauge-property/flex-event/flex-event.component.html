@@ -13,7 +13,7 @@
                 </mat-option>
             </mat-select>
         </div>
-        <div class="my-form-field ml15" style="width: 140px;">
+        <div class="my-form-field ml30" style="width: 140px;">
             <span>{{'gauges.property-event-action' | translate}}</span>
             <mat-select [(value)]="item.action" (change)="item.actparam = '';">
                 <ng-container *ngIf="!isEnterOrSelect(item.type); else enterOrSelectAction">
@@ -29,7 +29,7 @@
             </mat-select>
         </div>
     </div>
-    <div class="my-form-field" style="width: 280px;padding-left: 20px" *ngIf="withDestination(item.action)">
+    <div class="my-form-field" style="width: 280px;padding-left: 30px" *ngIf="withDestination(item.action)">
         <ng-container *ngIf="isWithPanel(item.action); else destination" class="inbk" style="vertical-align: top;">
             <div class="my-form-field block" style="width: 200px;">
                 <span>{{'gauges.property-event-destination-panel' | translate}}</span>
@@ -90,7 +90,7 @@
             </mat-select>
         </div>
     </div>
-    <div class="inbk ml15" *ngIf="withSetValue(item.action)">
+    <div class="inbk ml30" *ngIf="withSetValue(item.action)">
         <div class="my-form-field">
             <span>{{'gauges.property-event-value' | translate}}</span>
             <input [(ngModel)]="item.actparam" type="text" style="width: 180px">
@@ -118,7 +118,7 @@
                        [withStaticValue]="false">
         </flex-variable>
     </div>
-    <div class="inbk ml15" *ngIf="withAddress(item.action)">
+    <div class="inbk ml30" *ngIf="withAddress(item.action)">
         <div class="my-form-field">
             <span>{{'gauges.property-event-address' | translate}}</span>
             <input [(ngModel)]="item.actparam" type="text" style="width: 240px">
@@ -127,7 +127,7 @@
             <span>{{'gauges.property-event-newtab' | translate}}</span>
             <mat-slide-toggle color="primary" [(ngModel)]="item.actoptions.newTab"></mat-slide-toggle>
         </div>
-        <div *ngIf="withAddress(item.action)" style="display: table; padding-left: 20px; padding-top: 5px;">
+        <div *ngIf="withAddress(item.action)" style="display: table; padding-left: 30px; padding-top: 5px;">
             <ng-container *ngIf="withSize(item.action)">
                 <div class="my-form-field">
                     <span>{{'gauges.property-event-width' | translate}}</span>
@@ -155,7 +155,7 @@
         </div>
     </div>
     <ng-container *ngIf="withRunScript(item.action)">
-        <div class="my-form-field inbk" style="width: 260px;padding-left: 20px;">
+        <div class="my-form-field inbk" style="width: 260px;padding-left: 30px;">
             <span>{{'gauges.property-event-script' | translate}}</span>
             <mat-select [(value)]="item.actparam" (selectionChange)="onScriptChanged($event.value, item)">
                 <mat-option *ngFor="let script of scripts; index as i" [value]="script.id">{{script.name}}</mat-option>
