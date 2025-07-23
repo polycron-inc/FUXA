@@ -21,6 +21,7 @@ export class IframeComponent implements OnInit, OnDestroy {
         public sanitizer: DomSanitizer) { }
 
     ngOnInit() {
+        console.log('iframe ngOnInit');
         if (this._link) {
             // input
             this.urlSafe = this.sanitizer.bypassSecurityTrustResourceUrl(this._link);

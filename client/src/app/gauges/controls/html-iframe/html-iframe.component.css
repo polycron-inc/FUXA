@@ -1,0 +1,13 @@
+.control-iframe-title {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: var(--Text-text-tertiary, #94A3B8);
+    /* Body/small */
+    font-family: var(--Font, "Noto Sans TC");
+    font-size: var(--size-BodyS, 12px);
+    font-style: normal;
+    font-weight: var(--weight-BodyS, 400);
+    line-height: var(--height-BodyS, 16px); /* 133.333% */
+    letter-spacing: var(--spacing-BodyS, 0.4px);
+}

@@ -8,7 +8,17 @@ import { ChartType, ChartDataset } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { DaqQuery, DaqValue } from '../../../../_models/hmi';
 import DataLabelsPlugin from 'chartjs-plugin-datalabels';
-
+const roundedLegendPlugin = {
+    id: 'roundedLegend',
+    beforeDraw(chart) {
+      const { ctx, legend } = chart;
+      if (!legend || !legend.legendItems) return;
+  
+      legend.legendItems.forEach((item, i) => {
+        item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
+      });
+    }
+};
 @Component({
     selector: 'graph-bar',
     templateUrl: './graph-bar.component.html',
@@ -28,7 +38,8 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     public barChartLabels = ['2006', '2007', '2008', '2009', '2010', '2011', '2012'];
     public barChartType: ChartType = 'bar';
     public barChartPlugins = [
-        DataLabelsPlugin
+        DataLabelsPlugin,
+        roundedLegendPlugin
     ];
 
     public barChartData: ChartDataset[] = [
@@ -64,7 +75,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
         if (!this.barChartOptions) {
             this.barChartOptions = GraphBarComponent.DefaultOptions();
         }
-
+        console.log('on init this.isEditor', this.isEditor, GraphBarComponent.demoValues);
         if (this.isEditor && !GraphBarComponent.demoValues.length) {
             for (let i = 0; i < 300; i++) {
                 GraphBarComponent.demoValues[i] = Utils.rand(10, 100);
@@ -86,6 +97,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     }
 
     init(title: string, property: GraphBarProperty, sources?: GraphSource[]) {
+        console.log('init(')
         this.title = title;
         this.property = property;
         if (sources) {
@@ -102,6 +114,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
             this.sourceMap[sources[i].id] = dataset;
             this.barChartData.push(dataset);
         }
+        console.log('setSources');
         this.sourceCount = sources.length;
     }
 
@@ -146,6 +159,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     this.onRefresh();
                 }, 500);
             }
+            console.log('this.setDemo();')
             this.setDemo();
         }
     }
@@ -222,6 +236,8 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
         if (!this.isEditor) {
             return false;
         }
+        // 設定 this.sourceMap
+        
         this.barChartData = [];
         for (let key in this.sourceMap) {
             let dataset = this.sourceMap[key];
@@ -237,6 +253,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
             }
             this.barChartData.push(dataset);
         }
+        console.info('setdemo this.barChartData', this.barChartData, this.sourceMap)
     }
 
     private fullDataSetAttribute(dataset: ChartDataset) {
@@ -361,9 +378,14 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     align: 'center',
                     labels: {
                         font: {
-                            size: 12
+                            size: 12,
+                            family: "Noto Sans TC",
+                            style: "normal",
+                            weight: 'normal',
                         },
-                        color: ''
+                        color: '#475569',
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
                     }
                 },
                 datalabels: {
