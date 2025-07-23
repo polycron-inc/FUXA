@@ -15,20 +15,21 @@
     }
 
     .slider-field span {
-        padding-left: 2px;
-        text-overflow: clip;
         max-width: 125px;
-        white-space: nowrap;
+        padding-left: 2px;
         overflow: hidden;
+
+        text-overflow: clip;
+        white-space: nowrap;
     }
 
     .slider-field mat-slider {
-        background-color: var(--formSliderBackground);
         height: 30px;
     }
 
     .toolbox {
         float: right;
+
         line-height: 44px;
     }
 
@@ -42,10 +43,10 @@
     }
 
     .mat-tab-container {
-        min-height:300px;
         height: 60vmin;
-        overflow-y: auto;
-        overflow-x: hidden;
+        min-height:300px;
         padding-top: 15px;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 }

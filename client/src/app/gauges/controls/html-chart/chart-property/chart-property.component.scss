@@ -3,9 +3,9 @@
         position: absolute;
         top: 35px;
         bottom: 0px;
-        overflow: auto;
-        width:calc(100% - 10px);
+        width:calc(100% - 25px);
         padding-top: 5px;
+        overflow: auto;
     }
 
     .section-item {
@@ -15,7 +15,7 @@
     .field-block {
         width: 100%;
         mat-select, input, span {
-            width:calc(100% - 15px);
+            width:calc(100% - 50px);
         }
     }
 
@@ -29,11 +29,13 @@
 
     .field-number input {
         width: inherit;
+
         text-align: center;
     }
 
     .field-number span {
         width: 65px;
+
         text-align: left;
     }
 
@@ -49,6 +51,7 @@
 
     .section-inline-color input {
         width: 60px !important;
+
         text-align: center;
     }
 
@@ -66,21 +69,35 @@
         width: 16px;
     }
 
+    .section-inline-margin3 {
+        display: inline-block;
+        width: 20px;
+    }
+
+    .section-inline-margin4 {
+        display: inline-block;
+        width: 24px;
+    }
+
+    .section-inline-margin5 {
+        display: inline-block;
+        width: 28px;
+    }
+
     .section-newline {
-        height: 8px;
         display: block;
+        height: 8px;
     }
 
     ::ng-deep .slider-field mat-slider {
-        background-color: var(--formSliderBackground);
-        height: 30px;
         width: 100px;
+        height: 30px;
     }
 
     ::ng-deep .mat-tab-label {
-        height: 34px !important;
-        min-width: 110px !important;
         width: 110px !important;
+        min-width: 110px !important;
+        height: 34px !important;
     }
 
     .events-section {
@@ -100,12 +117,13 @@
         }
         .event-action-ext {
             padding-bottom: 10px;
+
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         }
         .event-script {
             padding-left: 10px;
             .script-selection {
-                width: calc(100% - 15px);
+                width: calc(100% - 35px);
             }
             .event-script-param {
                 width: 120px;
@@ -128,6 +146,6 @@
     }
 
     .section-item-block mat-select, input {
-        width:calc(100% - 15px);
+        width:calc(100% - 35px);
     }
 }
