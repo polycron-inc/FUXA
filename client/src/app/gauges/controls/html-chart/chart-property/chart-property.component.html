@@ -33,7 +33,7 @@
                             </mat-option>
                         </mat-select>
                     </div>
-                    <div class="section-inline-margin"></div>
+                    <div class="section-inline-margin5"></div>
                     <ng-container *ngIf="chartViewValue !== chartViewType.realtime1">
                         <ng-container *ngIf="chartViewValue === chartViewType.history">
                             <div class="my-form-field section-item inbk" style="width: 110px">
@@ -92,12 +92,12 @@
                             </mat-option>
                         </mat-select>
                     </div>
-                    <div class="section-inline-margin"></div>
+                    <div class="section-inline-margin5"></div>
                     <div class="my-form-field field-number lbk section-toogle">
                         <span>{{'chart.property-font.titlesize' | translate}}</span>
                         <input numberOnly [(ngModel)]="options.titleHeight" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number" min="0" max="36">
                     </div>
-                    <div class="section-inline-margin"></div>
+                    <div class="section-inline-margin5"></div>
                     <div class="my-form-field field-number lbk section-toogle">
                         <span>{{'chart.property-font.axissize' | translate}}</span>
                         <input numberOnly [(ngModel)]="options.axisLabelFontSize" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number" min="0" max="24">
@@ -111,7 +111,7 @@
                             </mat-option>
                         </mat-select>
                     </div>
-                    <div class="section-inline-margin"></div>
+                    <div class="section-inline-margin5"></div>
                     <div class="my-form-field section-item" style="display: inline-block; width: 120px">
                         <span>{{'chart.property-time.format' | translate}}</span>
                         <mat-select [(value)]="options.timeFormat" (selectionChange)="onChartChanged()">
@@ -141,7 +141,7 @@
                             <span>{{'chart.property-axis-y1-min' | translate}}</span>
                             <input [(ngModel)]="options.scaleY1min" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
-                        <div class="my-form-field field-number ml12">
+                        <div class="my-form-field field-number ml28">
                             <span>{{'chart.property-axis-y1-max' | translate}}</span>
                             <input [(ngModel)]="options.scaleY1max" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
@@ -155,7 +155,7 @@
                             <span>{{'chart.property-axis-y2-min' | translate}}</span>
                             <input [(ngModel)]="options.scaleY2min" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
-                        <div class="my-form-field field-number ml12">
+                        <div class="my-form-field field-number ml28">
                             <span>{{'chart.property-axis-y2-max' | translate}}</span>
                             <input [(ngModel)]="options.scaleY2max" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
@@ -169,7 +169,7 @@
                             <span>{{'chart.property-axis-y3-min' | translate}}</span>
                             <input [(ngModel)]="options.scaleY3min" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
-                        <div class="my-form-field field-number ml12">
+                        <div class="my-form-field field-number ml28">
                             <span>{{'chart.property-axis-y3-max' | translate}}</span>
                             <input [(ngModel)]="options.scaleY3max" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
@@ -183,7 +183,7 @@
                             <span>{{'chart.property-axis-y4-min' | translate}}</span>
                             <input [(ngModel)]="options.scaleY4min" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
-                        <div class="my-form-field field-number ml12">
+                        <div class="my-form-field field-number ml28">
                             <span>{{'chart.property-axis-y4-max' | translate}}</span>
                             <input [(ngModel)]="options.scaleY4max" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number">
                         </div>
@@ -217,7 +217,7 @@
                             [cpCancelButtonText]="'Cancel'" [cpOKButtonText]="'OK'" [cpOKButtonClass]="'cpOKButtonClass'" [cpPosition]="'auto'"
                             (colorPickerChange)="onChartChanged()" />
                     </div>
-                    <div class="section-inline-margin2"></div>
+                    <div class="section-inline-margin5"></div>
                     <div class="my-form-field section-inline-color color-field">
                         <span>{{'chart.property-color.background' | translate}}</span>
                         <input [(colorPicker)]="options.colorBackground" [cpAlphaChannel]="'always'" class="input-color" [style.background]="options.colorBackground"
@@ -225,7 +225,7 @@
                             [cpCancelButtonText]="'Cancel'" [cpOKButtonText]="'OK'" [cpOKButtonClass]="'cpOKButtonClass'" [cpPosition]="'auto'"
                             (colorPickerChange)="onChartChanged()" />
                     </div>
-                    <div class="section-inline-margin2"></div>
+                    <div class="section-inline-margin5"></div>
                     <div class="my-form-field section-inline-color color-field">
                         <span>{{'chart.property-color.grid' | translate}}</span>
                         <input [(colorPicker)]="options.gridLineColor" [cpAlphaChannel]="'always'" class="input-color" [style.background]="options.gridLineColor"
@@ -253,7 +253,7 @@
                                     </mat-option>
                                 </mat-select>
                             </div>
-                            <div class="my-form-field inbk ml10 event-action">
+                            <div class="my-form-field inbk ml20 event-action">
                                 <span>{{'gauges.property-event-action' | translate}}</span>
                                 <mat-select [(value)]="item.action" (change)="item.actparam = '';" (selectionChange)="item.actparam = ''; onChartChanged()">
                                     <mat-option *ngFor="let type of selectActionType | enumToArray" [value]="type.key">
