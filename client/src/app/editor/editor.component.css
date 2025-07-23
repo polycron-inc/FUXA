@@ -3,7 +3,8 @@
     width: 350px;
     height: calc(100% - 74px);
     margin-top: 36px;
-    padding: 7px;
+    padding: 10px 10px 10px 15px;
+    background: var(--Surface-background, #121212);
 }
 
 .sidepanel-selector {
@@ -62,7 +63,9 @@
     padding-top: 5px !important;
     padding-left: 3px;
 
-    font-size: 11px;
+    font-size: 14px;
+    color: var(--Text-text-tertiary, #94A3B8);
+    
 }
 
 /* .mat-expansion-panel-content {
@@ -136,9 +139,10 @@
 .svg-property span {
     /* float: left; */
     display: block;
-    margin: 0px 5px 0px 10px;
+    margin: 0px 5px 4px 10px;
 
-    font-size: 10px;
+    font-size: 14px;
+    color: var(--Text-text-tertiary, #94A3B8);
 }
 
 .svg-property input {

@@ -13,9 +13,10 @@
 
 .svg-property span {
     display: block;
-    margin: 0px 5px 0px 10px;
+    margin: 0px 5px 4px 10px;
 
-    font-size: 10px;
+    font-size: 14px;
+    color: var(--Text-text-tertiary, #94A3B8);
 }
 
 .svg-property input {

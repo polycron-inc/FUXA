@@ -1269,3 +1269,20 @@ mat-toolbar-row {
     background: var(--Neutral-50, #f8fafc) !important;
     box-shadow: 2px 0px 12px 2px var(--color-black-10, rgba(0, 0, 0, 0.1));
 }
+.my-form-field span{
+    margin-bottom:5px;
+}
+.my-form-field .section-item{
+    padding-top: 10px;
+}
+
+.my-form-field.left-item{
+    width: 40% !important;
+}
+.my-form-field.left-item input{
+    width: 100% !important;
+}
+.my-form-field .mat-slide-toggle{
+    position: relative;
+    top: 10px;
+}
