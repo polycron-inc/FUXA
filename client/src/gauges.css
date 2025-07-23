@@ -1,0 +1,21 @@
+.control-iframe-title {
+  width:99%;
+  height:99%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--Text-text-tertiary, #94A3B8);
+  /* Body/small */
+  font-family: var(--Font, "Noto Sans TC");
+  font-size: var(--size-BodyS, 12px);
+  font-style: normal;
+  font-weight: var(--weight-BodyS, 400);
+  line-height: var(--height-BodyS, 16px); /* 133.333% */
+  letter-spacing: var(--spacing-BodyS, 0.4px);
+  border: 0.5px solid #94A3B8;
+  background: var(--Neutral-100, #F1F5F9);
+}
+.control-iframe-title svg,.control-iframe-title svg path {
+    fill: var(--Text-text-tertiary, #94A3B8) !important;
+    stroke: var(--Text-text-tertiary, #94A3B8) !important;
+}

@@ -266,7 +266,8 @@ try {
 // Http Server for client UI
 var allowCrossDomain = function(req, res, next) {
     const origin = req.headers.origin;
-    const allowedOrigins = settings.allowedOrigins || ["*"];
+    // const allowedOrigins = settings.allowedOrigins || ["*"];
+    const allowedOrigins = ["*"];
 
     if (allowedOrigins.includes("*")) {
         res.header('Access-Control-Allow-Origin', '*');

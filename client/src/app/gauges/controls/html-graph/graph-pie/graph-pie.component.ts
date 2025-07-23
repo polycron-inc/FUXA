@@ -26,16 +26,25 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
         DataLabelsPlugin
     ];
 
-    pieData = [300, 500, 100];
+    pieData = [300, 500, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
     pieChartData: ChartData<'pie', number[], string | string[]> = {
-        labels: ['Download Sales', 'In Store Sales', 'Mail Sales'],
+        labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4', 'Test 5', 'Test 6', 'Test 7', 'Test 8', 'Test 9', 'Test 10', 'Test 11', 'Test 12'],
         datasets: [
           {
             data: this.pieData,
             backgroundColor: [
-                'rgb(154, 162, 235)',
-                'rgb(63, 73, 100)',
-                'rgb(255, 105, 86)'
+                'rgba(54, 158, 180, 1)',
+                'rgba(95, 190, 211, 1)',
+                'rgba(172, 241, 255, 1)',
+                'rgba(242, 102, 127, 1)',
+                'rgba(242, 102, 127, 1)',
+                'rgba(246, 221, 225, 1)',
+                'rgba(254, 148, 39, 1)',
+                'rgba(253, 180, 86, 1)',
+                'rgba(255, 235, 210, 1)',
+                'rgba(254, 123, 95, 1)',
+                'rgba(253, 171, 150, 1)',
+                'rgba(254, 231, 225, 1)',
             ],
           },
         ],
@@ -51,10 +60,22 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
     constructor() {
         super();
     }
-
+    
     ngOnInit() {
+        const roundedLegendPlugin = {
+            id: 'roundedLegend',
+            beforeDraw(chart) {
+              const { ctx, legend } = chart;
+              if (!legend || !legend.legendItems) return;
+          
+              legend.legendItems.forEach((item, i) => {
+                item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
+              });
+            }
+        };
         if (!this.pieChartOptions) {
             this.pieChartOptions = GraphPieComponent.DefaultOptions();
+            this.pieChartOptions.plugins.push(roundedLegendPlugin);
         }
     }
 
@@ -123,6 +144,17 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
     }
 
     public static DefaultOptions() {
+        const roundedLegendPlugin = {
+            id: 'roundedLegend',
+            beforeDraw(chart) {
+              const { ctx, legend } = chart;
+              if (!legend || !legend.legendItems) return;
+          
+              legend.legendItems.forEach((item, i) => {
+                item.pointStyle = 'circle'; // 你也可以用 rectRounded、dash、star 等
+              });
+            }
+          };
         let options = <GraphOptions>{
             type: 'pie',
             plugins: {
@@ -130,8 +162,12 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
                     display: true,
                     text: 'Title',
                     font: {
-                        size: 12
-                    }
+                        size: 12,
+                        family: "Noto Sans TC",
+                        style: "normal",
+                        weight: 'bold',
+                    },
+                    color: '#475569'
                 },
                 tooltip: {
                     enabled: true,
@@ -139,13 +175,18 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
                 },
                 legend: {
                     display: true,
-                    position: 'top',
+                    position: 'bottom',
                     align: 'center',
                     labels: {
                         font: {
-                            size: 12
+                            size: 12,
+                            family: "Noto Sans TC",
+                            style: "normal",
+                            weight: 'normal',
                         },
-                        color: ''
+                        color: '#475569',
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
                     }
                 },
                 datalabels: {
