@@ -1094,6 +1094,11 @@ mat-toolbar-row {
     margin-top: 10px;
 
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom:10px;
+    border-bottom: 1px solid var(--Border-border-primary, #64748b);
 }
 .light-dialog-container .mat-dialog-container {
     padding: 5px 0px !important;
@@ -1292,18 +1297,36 @@ mat-toolbar-row {
 .my-form-field .section-item {
     padding-top: 10px;
 }
+.mat-tab-body-wrapper .my-form-field input {
+    width: 85% !important;
+    max-width: 63% !important;
+}
+.my-form-field.left-item,.my-form-field.right-item,.my-form-field.half-item {
+    width: 47% !important;
+}
+.mat-tab-body-wrapper .my-form-field.left-item input,.mat-tab-body-wrapper .my-form-field.right-item input,.mat-tab-body-wrapper .my-form-field.half-item input,
+.mat-tab-body-wrapper .my-form-field.half-item .mat-select {
+    width: 85% !important;
+    max-width: 85% !important;
+}
 
-.my-form-field.left-item {
-    width: 40% !important;
-}
-.my-form-field.left-item input {
-    width: 100% !important;
-}
 .my-form-field .mat-slide-toggle {
     position: relative;
     top: 10px;
 }
-
+.my-form-field.line-item {
+    width: 90% !important;
+}
+.my-form-field.line-item input {
+    width: 100% !important;
+}
+.mat-tab-body-wrapper .my-form-field.line-item input {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.cell-item.column-item .my-form-field.half-item {
+    width: 45% !important;
+}
 .noUi-horizontal .noUi-handle {
     top: -8px !important;
     width: 30px !important;
