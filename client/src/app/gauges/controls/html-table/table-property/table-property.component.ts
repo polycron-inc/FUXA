@@ -38,7 +38,7 @@ export class TablePropertyComponent implements OnInit, OnDestroy {
     alignType = TableCellAlignType;
     lastRangeType = TableRangeType;
     defaultColor = Utils.defaultColor;
-
+    collapseStates: boolean[] = [];
     private destroy$ = new Subject<void>();
     property: GaugeTableProperty;
     eventType = [Utils.getEnumKey(GaugeEventType, GaugeEventType.select)];
@@ -60,6 +60,8 @@ export class TablePropertyComponent implements OnInit, OnDestroy {
         });
         this._reload();
         this.scripts$ = of(this.projectService.getScripts()).pipe(takeUntil(this.destroy$));
+        // 初始化每個 section 展開狀態（預設全部展開）
+        this.collapseStates = new Array(document.querySelectorAll('.element-property-header').length).fill(true);
     }
 
     ngOnDestroy() {
