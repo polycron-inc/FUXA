@@ -36,6 +36,10 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     };
 
     public barChartLabels = ['2006', '2007', '2008', '2009', '2010', '2011', '2012'];
+    public labelColors = [
+        '#369EB4',
+        '#F2667F'
+    ];
     public barChartType: ChartType = 'bar';
     public barChartPlugins = [
         DataLabelsPlugin,
@@ -72,10 +76,41 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     }
 
     ngOnInit() {
+        const labelColors = this.labelColors;  // 用閉包保留變數
+        const perLabelColorPlugin = {
+            id: 'perLabelColor',
+            afterDraw(chart) {
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+                const y = chart.chartArea.bottom + 10;
+
+                const ticks = xAxis.ticks;
+                if (!ticks) return;
+
+                ticks.forEach((tick, index) => {
+                    const label = tick.label;
+                    const x = xAxis.getPixelForTick(index);
+                    ctx.save();
+                    ctx.font = `${xAxis.options.ticks.font.size}px ${xAxis.options.ticks.font.family}`;
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = labelColors[index] || '#000'; // 使用閉包變數
+                    ctx.fillText(label, x, y);
+                    ctx.restore();
+                });
+
+                xAxis.options.ticks.display = false;
+            }
+        };
+
         if (!this.barChartOptions) {
             this.barChartOptions = GraphBarComponent.DefaultOptions();
         }
-        console.log('on init this.isEditor', this.isEditor, GraphBarComponent.demoValues);
+
+        this.barChartOptions.plugins = {
+            ...this.barChartOptions.plugins,
+            perLabelColor: perLabelColorPlugin
+        };
+
         if (this.isEditor && !GraphBarComponent.demoValues.length) {
             for (let i = 0; i < 300; i++) {
                 GraphBarComponent.demoValues[i] = Utils.rand(10, 100);
@@ -338,8 +373,9 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                         stepSize: 20,
                         font: {
                             size: 12
-                        }
+                        },
                         // suggestedMin: 0
+                        color: '#334155',
                      },
                      grid: {
                         color: 'rgba(0, 0, 0, 0.2)',
@@ -352,7 +388,8 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     ticks: {
                         font: {
                             size: 12
-                        }
+                        },
+                        color: '#334155',
                     },
                     grid: {
                         color: 'rgba(0, 0, 0, 0.2)',
@@ -374,7 +411,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                 },
                 legend: {
                     display: true,
-                    position: 'top',
+                    position: 'bottom',
                     align: 'center',
                     labels: {
                         font: {

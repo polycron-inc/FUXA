@@ -1347,3 +1347,12 @@ mat-toolbar-row {
 .noUi-handle::after {
     display: none;
 }
+.dark-theme .mat-table{
+    background-color: var(--Surface-background, #121212) !important;
+    border-radius: var(--radius-sm, 8px);
+    border: 0.5px solid var(--Border-border-tertiary, rgba(255, 255, 255, 0.20));
+    padding: var(--spacing-md, 16px) 20px;
+}
+.dark-theme mat-header-row{
+    background-color: var(--Surface-tableHeader, rgba(51, 65, 85, 0.20)) !important;
+}

@@ -1,0 +1,820 @@
+{
+  "info": {
+    "name": "FUXA WebAPI Collection",
+    "description": "Complete collection of FUXA WebAPI endpoints for SCADA/HMI/Dashboard operations",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:1881",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.collectionVariables.set('token', response.token);",
+                  "        console.log('Token saved:', response.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signin"]
+            },
+            "description": "Login and get authentication token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get Application Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings?c=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"],
+              "query": [
+                {
+                  "key": "c",
+                  "value": "",
+                  "description": "Optional parameter"
+                }
+              ]
+            },
+            "description": "Get current application settings"
+          }
+        },
+        {
+          "name": "Set Application Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"language\": \"en\",\n  \"uiPort\": 1881,\n  \"secureEnabled\": false,\n  \"tokenExpiresIn\": \"1h\",\n  \"smtp\": {\n    \"host\": \"smtp.example.com\",\n    \"port\": 587,\n    \"username\": \"user@example.com\",\n    \"password\": \"password\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"]
+            },
+            "description": "Update application settings"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Project Management",
+      "item": [
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/project",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "project"]
+            },
+            "description": "Get project properties including server, devices, layout, views, charts, alarms settings, scripts"
+          }
+        },
+        {
+          "name": "Set Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.00\",\n  \"server\": {},\n  \"hmi\": {\n    \"layout\": {},\n    \"views\": [\n      {\n        \"MainView\": {}\n      }\n    ]\n  },\n  \"devices\": {},\n  \"charts\": [],\n  \"graphs\": [],\n  \"alarms\": [],\n  \"notifications\": [],\n  \"scripts\": [],\n  \"texts\": [],\n  \"plugin\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/project",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "project"]
+            },
+            "description": "Create new project - clears all and sets a new void project"
+          }
+        },
+        {
+          "name": "Set Project Data - Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cmd\": \"set-device\",\n  \"data\": {\n    \"id\": \"device_id\",\n    \"name\": \"Device Name\",\n    \"type\": \"modbus\",\n    \"property\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projectData",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projectData"]
+            },
+            "description": "Set specific project property - device example"
+          }
+        },
+        {
+          "name": "Set Project Data - View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cmd\": \"set-view\",\n  \"data\": {\n    \"id\": \"view_id\",\n    \"name\": \"View Name\",\n    \"svgcontent\": \"\",\n    \"profile\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projectData",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projectData"]
+            },
+            "description": "Set specific project property - view example"
+          }
+        },
+        {
+          "name": "Upload Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload"]
+            },
+            "description": "Upload project JSON file"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Device Management",
+      "item": [
+        {
+          "name": "Get Device Security",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"security\",\n  \"name\": \"My OPCUA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/device",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "device"]
+            },
+            "description": "Get device security properties"
+          }
+        },
+        {
+          "name": "Set Device Security",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"security\",\n  \"name\": \"My OPCUA\",\n  \"value\": {\n    \"mode\": \"\",\n    \"uid\": \"username\",\n    \"pwd\": \"password\",\n    \"clientId\": \"123456\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/device",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "device"]
+            },
+            "description": "Set device security properties"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tag Operations",
+      "item": [
+        {
+          "name": "Get Tag Value",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/getTagValue?ids=[\"t_2f47264f-b9e4451d\"]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "getTagValue"],
+              "query": [
+                {
+                  "key": "ids",
+                  "value": "[\"t_2f47264f-b9e4451d\"]",
+                  "description": "Array of tag IDs in JSON format"
+                }
+              ]
+            },
+            "description": "Get current values of specified tags"
+          }
+        },
+        {
+          "name": "Get Multiple Tag Values",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/getTagValue?ids=[\"t_2f47264f-b9e4451d\",\"t_ea53ed8d-60c5401c\"]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "getTagValue"],
+              "query": [
+                {
+                  "key": "ids",
+                  "value": "[\"t_2f47264f-b9e4451d\",\"t_ea53ed8d-60c5401c\"]",
+                  "description": "Multiple tag IDs"
+                }
+              ]
+            },
+            "description": "Get current values of multiple tags"
+          }
+        },
+        {
+          "name": "Set Tag Value",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tags\": [\n    {\n      \"id\": \"t_2f47264f-b9e4451d\",\n      \"value\": \"22\"\n    },\n    {\n      \"id\": \"t_ea53ed8d-60c5401c\",\n      \"value\": \"1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/setTagValue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "setTagValue"]
+            },
+            "description": "Set values for one or more tags"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alarm Management",
+      "item": [
+        {
+          "name": "Get Active Alarms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alarms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alarms"]
+            },
+            "description": "Get list of active alarms"
+          }
+        },
+        {
+          "name": "Acknowledge Alarm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"params\": \"alarm_id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alarmack",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alarmack"]
+            },
+            "description": "Acknowledge an active alarm"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Get list of users"
+          }
+        },
+        {
+          "name": "Create/Update User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"fullname\": \"New User\",\n  \"password\": \"password123\",\n  \"groups\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Create or update user properties"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"param\": \"username\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Remove a user"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plugin Management",
+      "item": [
+        {
+          "name": "Get Installed Plugins",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/plugins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plugins"]
+            },
+            "description": "Get list of installed plugins"
+          }
+        },
+        {
+          "name": "Install Plugin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"modbus-serial\",\n  \"type\": \"Modbus\",\n  \"version\": \"8.0.1\",\n  \"current\": \"8.0.1\",\n  \"status\": \"\",\n  \"pkg\": true,\n  \"dinamic\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plugins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plugins"]
+            },
+            "description": "Install a new plugin"
+          }
+        },
+        {
+          "name": "Remove Plugin",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"param\": \"modbus-serial\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plugins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plugins"]
+            },
+            "description": "Remove an installed plugin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Data Query (DAQ)",
+      "item": [
+        {
+          "name": "Get DAQ Data - Current",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"gid\": \"gauge_id\",\n    \"from\": \"1640995200000\",\n    \"to\": \"1640998800000\",\n    \"event\": \"B\",\n    \"sids\": [\"tag_id_1\", \"tag_id_2\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/daq",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "daq"]
+            },
+            "description": "Get current or historical tag values (DAQ data)"
+          }
+        },
+        {
+          "name": "Get DAQ Data - Historical",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"gid\": \"trend_chart_01\",\n    \"from\": \"1640995200000\",\n    \"to\": \"1640998800000\",\n    \"event\": \"F\",\n    \"sids\": [\"t_2f47264f-b9e4451d\", \"t_ea53ed8d-60c5401c\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/daq",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "daq"]
+            },
+            "description": "Get historical data for trend analysis"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Log Management",
+      "item": [
+        {
+          "name": "Get Log Files List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logsdir",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logsdir"]
+            },
+            "description": "Get list of available log files"
+          }
+        },
+        {
+          "name": "Get Log File Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"file\": \"fuxa1.log\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs"]
+            },
+            "description": "Download specific log file content"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Email & Scripts",
+      "item": [
+        {
+          "name": "Send Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"msg\": {\n    \"from\": \"sender@example.com\",\n    \"to\": \"recipient@example.com\",\n    \"subject\": \"Test Subject\",\n    \"text\": \"Text content\",\n    \"html\": \"<p>HTML content</p>\"\n  },\n  \"smtp\": {\n    \"host\": \"smtp.example.com\",\n    \"port\": 587,\n    \"mailsender\": \"sender@example.com\",\n    \"username\": \"username\",\n    \"password\": \"password\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sendmail",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sendmail"]
+            },
+            "description": "Send email from frontend"
+          }
+        },
+        {
+          "name": "Run Script",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"script\": {\n    \"id\": \"script_001\",\n    \"name\": \"Test Script\",\n    \"code\": \"console.log('Hello from FUXA script!');\",\n    \"parameters\": [\n      {\n        \"name\": \"temperature\",\n        \"type\": \"value\",\n        \"value\": \"25.5\"\n      },\n      {\n        \"name\": \"pressure\",\n        \"type\": \"value\",\n        \"value\": \"1013.25\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/runscript",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "runscript"]
+            },
+            "description": "Execute script from frontend"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Request to:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test('Status code is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ]
+}
