@@ -8,8 +8,8 @@
     .toolbox-column {
         z-index: 1000;
         position: absolute;
-        right: 10px;
-        top: 40px;
+        right: 27px;
+        top: 96px;
     }
 
     .toolbox-column button {
@@ -21,7 +21,7 @@
         z-index: 1000;
         position: absolute;
         left: 0px;
-        bottom: -50px;
+        bottom: 0px;
     }
 
     .toolbox-row button {
@@ -50,8 +50,18 @@
 
     .data-table-cell {
         white-space: nowrap;
-        max-width: 60px;
+        max-width: 100px;
         overflow: hidden;
+        color: var(--Text-text-secondary, #E2E8F0);
+        text-overflow: ellipsis;
+
+        /* Label/large */
+        font-family: var(--Font, "Noto Sans TC");
+        font-size: var(--size-LabelL, 14px);
+        font-style: normal;
+        font-weight: var(--weight-LabelL, 500);
+        line-height: var(--height-LabelL, 20px); /* 142.857% */
+        letter-spacing: var(--spacing-LabelL, 0.1px);
     }
 
     .variable-input {

@@ -7,11 +7,11 @@
             <span>{{'graph.property-data' | translate}}</span>
         </div>
         <div class="mt10">
-            <div class="my-form-field section-item section-item-block" style="width: 90%">
+            <div class="my-form-field section-item section-item-block line-item">
                 <span>{{'graph.property-name' | translate}}</span>
                 <input [(ngModel)]="data.settings.name" (change)="onGraphChanged()" (keyup.enter)="onGraphChanged()" type="text">
             </div>
-            <div class="my-form-field section-item section-item-block mt10" style="width: 90%">
+            <div class="my-form-field section-item section-item-block mt10 line-item">
                 <span>{{'graph.property-graph' | translate}}</span>
                 <mat-select [formControl]="graphCtrl" (selectionChange)="onGraphChanged()">
                     <mat-select-search [formControl]="graphFilterCtrl"></mat-select-search>
