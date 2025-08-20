@@ -1,5 +1,4 @@
 FROM node:18-bookworm
-
 ARG NODE_SNAP=false
 
 RUN apt-get update && apt-get install -y dos2unix
@@ -25,6 +24,12 @@ WORKDIR /usr/src/app
 # Copy odbcinst.ini to /etc
 RUN cp FUXA/odbc/odbcinst.ini /etc/odbcinst.ini
 
+# === 添加前端構建步驟 ===
+# Install and build client (前端)
+WORKDIR /usr/src/app/FUXA/client
+RUN npm install
+RUN npm run build
+
 # Install Fuxa server
 WORKDIR /usr/src/app/FUXA/server
 RUN npm install
@@ -34,21 +39,21 @@ RUN if [ "$NODE_SNAP" = "true" ]; then \
     npm install node-snap7; \
     fi
 
-# Workaround for sqlite3 https://stackoverflow.com/questions/71894884/sqlite3-err-dlopen-failed-version-glibc-2-29-not-found
+# Workaround for sqlite3
 RUN apt-get update && apt-get install -y sqlite3 libsqlite3-dev && \
     apt-get autoremove -yqq --purge && \
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*  && \
     npm install --build-from-source --sqlite=/usr/bin sqlite3
 
-# Add project files
-# COPY . .
-
 # Set working directory
 WORKDIR /usr/src/app/FUXA/server
 
 # Expose port
 EXPOSE 1881
+
+# 設置生產環境變量
+ENV NODE_ENV=production
 
 # Start the server
 CMD [ "npm", "start" ]
