@@ -1,16 +1,18 @@
-<div style="position: relative;">
-    <h1 mat-dialog-title class="dialog-title" mat-dialog-draggable>{{'table.customize-title' | translate}}</h1>
-    <mat-icon (click)="onNoClick()" class="dialog-close-btn">clear</mat-icon>
-    <div mat-dialog-content>
+<div style="position: relative;padding-top: 80px;">
+    <div style="position: absolute; top: -10px; left: 0px;display: flex; align-items: center;gap: 10px">
+        <mat-icon (click)="onNoClick()" class="dialog-close-btn" style="margin:0;">clear</mat-icon>
+        <h1 style="margin:0 !important;padding:0;width:fit-content;" mat-dialog-title class="dialog-title" mat-dialog-draggable>{{'table.customize-title' | translate}}</h1>
+    </div>
+    <div  mat-dialog-content>
         <mat-table #table [dataSource]="dataSource" matSort class="customer-table" style="min-width: 900px; height: 500px; display: block;">
             <ng-container *ngFor="let column of displayedColumns; index as i" [matColumnDef]="column">
                 <mat-header-cell *matHeaderCellDef >
                     <div class="data-table-cell">
                         <span style="display: block; font-size: 12px;">{{getColumnType(i)}} </span>
-                        <span style="display: block;">{{getColumnSetting(i)}} </span>
+                        <span style="display: block;font-size:10px;">{{getColumnSetting(i)}} </span>
                     </div>
                     <button mat-icon-button [matMenuTriggerFor]="optionsgMenu" class="column-options">
-                        <mat-icon>more_vert</mat-icon>
+                        <mat-icon>edit</mat-icon>
                     </button>
                     <mat-menu #optionsgMenu [overlapTrigger]="false">
                         <button mat-menu-item (click)="onEditColumn(column)" class="table-menu-item">
@@ -66,17 +68,17 @@
         </mat-table>
         <div class="toolbox-column">
             <button mat-icon-button (click)="onAddColumn()" matTooltip="{{'table.customize-column-add' | translate}}">
-                <mat-icon>add_circle_outline</mat-icon>
+                <mat-icon >add</mat-icon>
             </button>
         </div>
         <div *ngIf="data.type === tableType.data" class="toolbox-row">
             <button mat-icon-button (click)="onAddRow()" matTooltip="{{'table.customize-row-add' | translate}}">
-                <mat-icon>add_circle_outline</mat-icon>
+                <mat-icon >add</mat-icon> 新增軸
             </button>
         </div>
     </div>
-    <div mat-dialog-actions class="dialog-action">
-        <button mat-raised-button (click)="onNoClick()" cdkFocusInitial>{{'dlg.cancel' | translate}}</button>
-        <button mat-raised-button color="primary" (click)="onOkClick()">{{'dlg.ok' | translate}}</button>
+    <div mat-dialog-actions class="dialog-action" style="position: absolute; top: -10px; right: 0px;min-height: auto;">
+        <button style="height:40px;" mat-raised-button (click)="onNoClick()" cdkFocusInitial>{{'dlg.cancel' | translate}}</button>
+        <button style="height:40px;" mat-raised-button color="primary" (click)="onOkClick()">{{'dlg.ok' | translate}}</button>
     </div>
 </div>
