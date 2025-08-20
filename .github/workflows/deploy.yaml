@@ -1,0 +1,21 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ['develop']
+  pull_request:
+    branches: ['develop']
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Docker image
+        run: |
+          DOCKER_BUILDKIT=1 docker build -t fms/fuxa:latest .
+      - name: Push the Docker image
+        run: |
+          cd /home/linuxuser/workspace/fms
+          docker compose down fuxa
+          docker compose up -d fuxa
