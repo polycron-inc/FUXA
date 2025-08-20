@@ -28,7 +28,7 @@ RUN cp FUXA/odbc/odbcinst.ini /etc/odbcinst.ini
 # Install and build client (前端)
 WORKDIR /usr/src/app/FUXA/client
 RUN npm install
-RUN npm run build
+RUN npm run build -- --configuration=production
 
 # Install Fuxa server
 WORKDIR /usr/src/app/FUXA/server
