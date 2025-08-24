@@ -1019,19 +1019,27 @@ export class ProjectService {
     }
 
     verifyView(view: View): boolean {
+        console.log(view)
+        const importErrArray = [];
         let result = true;
         if (Utils.isNullOrUndefined(view.svgcontent)) {
+            importErrArray.push('msg.view-svgcontent-error');
             result = false;
         } else if (Utils.isNullOrUndefined(view.id)) {
+            importErrArray.push('msg.view-id-error');
             result = false;
         } else if (Utils.isNullOrUndefined(view.profile)) {
+            importErrArray.push('msg.view-profile-error');
             result = false;
         } else if (Utils.isNullOrUndefined(view.type)) {
+            importErrArray.push('msg.view-type-error');
             result = false;
         } else if (Utils.isNullOrUndefined(view.items)) {
+            importErrArray.push('msg.view-items-error');
             result = false;
         }
         if (!result) {
+            console.log('importErrArray',importErrArray)
             this.notifyError('msg.view-format-error');
         }
         return result;

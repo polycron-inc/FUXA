@@ -657,6 +657,7 @@ app-root {
     position: relative;
     top: 0px;
     left: 3px;
+    margin-bottom: 4px;
     overflow: hidden;
 
     opacity: 0.5;
@@ -679,6 +680,17 @@ textarea {
 
     font-size: 13px;
 }
+
+.my-form-field input[type="number"]::-webkit-inner-spin-button,
+.my-form-field input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+
+    margin: 0;
+}
+.my-form-field input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 mat-ink-bar {
     background: var(--Link-CTA, #32c9de) !important;
 }
@@ -743,8 +755,10 @@ textarea {
 }
 .my-form-field-bitmask mat-icon {
     position: absolute;
-    top: 18px;
-    left: 30px;
+    top: 0px;
+    right: 0%;
+
+    transform: translate(-50%, 100%);
 
     line-height: 28px;
 }
@@ -1211,6 +1225,11 @@ mat-toolbar-row {
     margin-top: 10px;
 
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom:10px;
+    border-bottom: 1px solid var(--Border-border-primary, #64748b);
 }
 .light-dialog-container .mat-dialog-container {
     padding: 5px 0px !important;
@@ -1304,6 +1323,9 @@ mat-toolbar-row {
 }
 .ml20 {
     margin-left: 20px;
+}
+.ml28 {
+    margin-left: 28px;
 }
 .ml30 {
     margin-left: 30px;
@@ -1400,7 +1422,95 @@ mat-toolbar-row {
     background: var(--Neutral-50, #f8fafc) !important;
     box-shadow: 2px 0px 12px 2px var(--color-black-10, rgba(0, 0, 0, 0.1));
 }
+.my-form-field span {
+    margin-bottom: 5px;
+}
+.my-form-field .section-item {
+    padding-top: 10px;
+}
+.mat-tab-body-wrapper .my-form-field input {
+    width: 85% !important;
+    max-width: 63% !important;
+}
+.my-form-field.left-item,.my-form-field.right-item,.my-form-field.half-item {
+    width: 47% !important;
+}
+.mat-tab-body-wrapper .my-form-field.left-item input,.mat-tab-body-wrapper .my-form-field.right-item input,.mat-tab-body-wrapper .my-form-field.half-item input,
+.mat-tab-body-wrapper .my-form-field.half-item .mat-select {
+    width: 85% !important;
+    max-width: 85% !important;
+}
 
+.my-form-field .mat-slide-toggle {
+    position: relative;
+    top: 10px;
+}
+.my-form-field.line-item {
+    width: 90% !important;
+}
+.my-form-field.line-item input {
+    width: 100% !important;
+}
+.mat-tab-body-wrapper .my-form-field.line-item input {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.cell-item.column-item .my-form-field.half-item {
+    width: 45% !important;
+}
+.noUi-horizontal .noUi-handle {
+    top: -8px !important;
+    width: 30px !important;
+    height: 30px !important;
+
+    border-radius: 100%;
+}
+
+.noUi-vertical .noUi-handle {
+    right: -8px !important;
+    width: 30px !important;
+    height: 30px !important;
+
+    border-radius: 100%;
+}
+
+.noUi-handle::before,
+.noUi-handle::after {
+    display: none;
+}
+.dark-theme .mat-table{
+    background-color: var(--Surface-background, #121212) !important;
+    border-radius: var(--radius-sm, 8px);
+    border: 0.5px solid var(--Border-border-tertiary, rgba(255, 255, 255, 0.20));
+    padding: var(--spacing-md, 16px) 20px;
+}
+.dark-theme mat-header-row{
+    background-color: var(--Surface-tableHeader, rgba(51, 65, 85, 0.20)) !important;
+}
+/*!**********************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[5].rules[0].oneOf[0].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[5].rules[0].oneOf[0].use[2]!./src/gauges.css?ngGlobalStyle ***!
+  \**********************************************************************************************************************************************************************************************************************/
+.control-iframe-title {
+  width:99%;
+  height:99%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--Text-text-tertiary, #94A3B8);
+  /* Body/small */
+  font-family: var(--Font, "Noto Sans TC");
+  font-size: var(--size-BodyS, 12px);
+  font-style: normal;
+  font-weight: var(--weight-BodyS, 400);
+  line-height: var(--height-BodyS, 16px); /* 133.333% */
+  letter-spacing: var(--spacing-BodyS, 0.4px);
+  border: 0.5px solid #94A3B8;
+  background: var(--Neutral-100, #F1F5F9);
+}
+.control-iframe-title svg,.control-iframe-title svg path {
+    fill: var(--Text-text-tertiary, #94A3B8) !important;
+    stroke: var(--Text-text-tertiary, #94A3B8) !important;
+}
 /*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].rules[0].oneOf[0].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].rules[0].oneOf[0].use[2]!./node_modules/resolve-url-loader/index.js??ruleSet[1].rules[6].rules[1].use[0]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[6].rules[1].use[1]!./src/theme.scss?ngGlobalStyle ***!
   \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
