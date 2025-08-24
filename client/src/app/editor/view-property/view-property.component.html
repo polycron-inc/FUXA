@@ -1,4 +1,4 @@
-<form [formGroup]="formGroup" class="container">
+<form [formGroup]="formGroup" class="container setting-view-property">
     <h1 mat-dialog-title class="dialog-title" mat-dialog-draggable>{{'dlg.docproperty-title' | translate}}</h1>
     <mat-icon (click)="onNoClick()" class="dialog-close-btn">clear</mat-icon>
     <mat-tab-group style="width: 100%;">
@@ -17,14 +17,14 @@
                     </mat-select>
                 </div>
                 <div *ngIf="formGroup.controls.type?.value === viewType.svg">
-                    <div class="block mt5">
-                        <div class="my-form-field inbk">
+                    <div class="mt5 flex">
+                        <div class="my-form-field flex-item">
                             <span>{{'dlg.docproperty-width' | translate}}</span>
-                            <input numberOnly formControlName="width" style="width: 120px" type="number">
+                            <input numberOnly formControlName="width" type="number">
                         </div>
-                        <div class="my-form-field" style="float: right">
+                        <div class="my-form-field flex-item">
                             <span>{{'dlg.docproperty-height' | translate}}</span>
-                            <input numberOnly formControlName="height" style="width: 120px" type="number">
+                            <input numberOnly formControlName="height" type="number">
                         </div>
                     </div>
                     <div class="my-form-field item-block mt5">

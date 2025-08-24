@@ -121,7 +121,9 @@
     /* width: 49%; */
     display: inline-block;
 }
-
+.svg-property-split2{
+    margin-top: 10px;
+}
 .svg-property-split2:after {
     display: table;
     clear: both;
@@ -129,7 +131,7 @@
 
 .svg-property-split2 div {
     /* float: left; */
-    /* width: 49%; */
+    width: 48%;
     display: inline-block;
 }
 
@@ -502,7 +504,10 @@
 }
 
 .rightbar-input {
-    width: 70px;
+    width: 75%;
+}
+.svg-property-split2 .svg-property select{
+    width:90%;
 }
 
 .mat-expansion-panel-header-title span {

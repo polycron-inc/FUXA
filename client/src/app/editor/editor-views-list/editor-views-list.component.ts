@@ -136,7 +136,10 @@ export class EditorViewsListComponent {
 
     onExportView(view: View) {
         let filename = `${view.name}.json`;
-        let content = JSON.stringify(view);
+        let content = JSON.stringify({
+            ...view,
+            type: view.type || ViewType.svg,
+        });
         let blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         FileSaver.saveAs(blob, filename);
     }
