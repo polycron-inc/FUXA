@@ -3,7 +3,7 @@
 }
 
 .range-type {
-    display: inline-block;
+    display: flex;
 }
 
 .range-type-switch {
