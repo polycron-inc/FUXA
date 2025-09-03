@@ -75,7 +75,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     gaugeDialog = { type: null, data: null };
     reloadGaugeDialog: boolean;
 
-    readonly colorDefault = { fill: '#FFFFFF', stroke: '#000000' };
+    readonly colorDefault = { fill: 'transparent', stroke: '#000000' };
     fonts = Define.fonts;
     isLoading = true;
     editorModeType = EditorModeType;
@@ -780,11 +780,18 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private setFillColor(event) {
         let color = event;
-        if (color.charAt(0) === '#')
-            {color = color.slice(1);}
-        let alfa = 100;
-        if (this.winRef.nativeWindow.svgEditor) {
-            this.winRef.nativeWindow.svgEditor.setColor(color, alfa, 'fill');
+        if (color === 'transparent') {
+            // Handle transparent color specially
+            if (this.winRef.nativeWindow.svgEditor) {
+                this.winRef.nativeWindow.svgEditor.setColor('none', 0, 'fill');
+            }
+        } else {
+            if (color.charAt(0) === '#')
+                {color = color.slice(1);}
+            let alfa = 100;
+            if (this.winRef.nativeWindow.svgEditor) {
+                this.winRef.nativeWindow.svgEditor.setColor(color, alfa, 'fill');
+            }
         }
         // this.fillcolor;
     }
