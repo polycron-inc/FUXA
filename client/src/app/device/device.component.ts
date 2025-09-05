@@ -2,14 +2,16 @@
 import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Subscription} from 'rxjs';
 import {Router} from '@angular/router';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 
 import {DeviceListComponent} from './device-list/device-list.component';
 import {DeviceMapComponent} from './device-map/device-map.component';
-import {Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX} from './../_models/device';
+import {Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX, DeviceNetProperty} from './../_models/device';
 import {ProjectService} from '../_services/project.service';
 import {HmiService} from '../_services/hmi.service';
 import {DEVICE_READONLY} from '../_models/hmi';
 import {Utils} from '../_helpers/utils';
+import {EndPointApi} from '../_helpers/endpointapi';
 
 @Component({
     selector: 'app-device',
@@ -36,10 +38,13 @@ export class DeviceComponent implements OnInit, OnDestroy {
     showMode = <string>this.devicesViewMap;
     readonly = false;
     reloadActive = false;
+    mqttDevices: Device[] = [];
+    selectedMqttDevice: Device | null = null;
 
     constructor(private router: Router,
         private projectService: ProjectService,
-        private hmiService: HmiService) {
+        private hmiService: HmiService,
+        private http: HttpClient) {
         if (this.router.url.indexOf(DEVICE_READONLY) >= 0) {
             this.readonly = true;
         }
@@ -61,6 +66,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             this.hmiService.askDeviceStatus();
         }, 10000);
         this.hmiService.askDeviceStatus();
+        this.loadMqttDevices();
     }
 
     ngOnDestroy() {
@@ -210,5 +216,65 @@ export class DeviceComponent implements OnInit, OnDestroy {
         };
         reader.readAsText(input.files[0]);
         this.tplFileImportInput.nativeElement.value = null;
+    }
+
+    loadMqttDevices() {
+        const devices = this.projectService.getDeviceList();
+        this.mqttDevices = devices.filter(device => device.type === DeviceType.MQTTclient);
+    }
+
+    onMqttDeviceSelected(device: Device) {
+        this.selectedMqttDevice = device;
+        // First API call to update device tree
+        this.updateDeviceTree().then(() => {
+            // Second API call to add MQTT device
+            this.addMqttDevice(device);
+        }).catch(error => {
+            console.error('Error updating device tree:', error);
+        });
+    }
+
+    private updateDeviceTree(): Promise<any> {
+        const endPointConfig = EndPointApi.getURL();
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+        
+        return this.http.post(`${endPointConfig}/api/projectData`, {
+            cmd: 'refresh-devices'
+        }, { headers }).toPromise();
+    }
+
+    private addMqttDevice(device: Device): Promise<any> {
+        const endPointConfig = EndPointApi.getURL();
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+        
+        const mqttDeviceData = {
+            cmd: 'set-device',
+            data: {
+                id: Utils.getGUID(DEVICE_PREFIX),
+                name: device.name + '_copy',
+                enabled: true,
+                property: {
+                    address: device.property?.address || 'mqtt://test.mosquitto.org:1883',
+                    port: device.property?.port || null,
+                    slot: null,
+                    rack: null,
+                    baudrate: 9600,
+                    databits: 8,
+                    stopbits: 1,
+                    parity: 'None',
+                    delay: 10,
+                    socketReuse: null
+                },
+                type: 'MQTTclient',
+                polling: 350,
+                tags: {}
+            }
+        };
+
+        return this.http.post(`${endPointConfig}/api/projectData`, mqttDeviceData, { headers }).toPromise().then(() => {
+            // Refresh the project to show the new device
+            this.projectService.onRefreshProject();
+            this.onReload();
+        });
     }
 }

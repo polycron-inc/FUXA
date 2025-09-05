@@ -7,6 +7,14 @@
         <app-device-map [hidden]="!showMode.startsWith(devicesViewMode)" #devicemap [mode]="showMode" (goto)="gotoList($event)" [readonly]="readonly"></app-device-map>
     </div>
 </div>
+<mat-form-field appearance="outline" style="position: absolute; top: 10px; right: 120px; width: 200px;">
+    <mat-label>Select MQTT</mat-label>
+    <mat-select [(value)]="selectedMqttDevice" (selectionChange)="onMqttDeviceSelected($event.value)">
+        <mat-option *ngFor="let device of mqttDevices" [value]="device">
+            {{device.name}}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
 <button mat-icon-button [matMenuTriggerFor]="optionsgMenu" class="fab-reload" style="right: 50px !important">
     <mat-icon>more_vert</mat-icon>
 </button>
