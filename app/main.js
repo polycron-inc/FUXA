@@ -138,7 +138,7 @@ function createProjectSelectionWindow(parentWin) {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>FUXA Project Selection</title>
+            <title>Polycron Project Selection</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -199,7 +199,7 @@ function createProjectSelectionWindow(parentWin) {
             </style>
         </head>
         <body>
-            <h2>Select a FUXA Project</h2>
+            <h2>Select a Polycron Project</h2>
             <table id="projectsTable">
                 <thead>
                     <tr>
