@@ -5,7 +5,7 @@ import {Router} from '@angular/router';
 
 import {DeviceListComponent} from './device-list/device-list.component';
 import {DeviceMapComponent} from './device-map/device-map.component';
-import {Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX} from './../_models/device';
+import {Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX, DeviceNetProperty, Tag} from './../_models/device';
 import {ProjectService} from '../_services/project.service';
 import {HmiService} from '../_services/hmi.service';
 import {DEVICE_READONLY} from '../_models/hmi';
@@ -36,6 +36,46 @@ export class DeviceComponent implements OnInit, OnDestroy {
     showMode = <string>this.devicesViewMap;
     readonly = false;
     reloadActive = false;
+    mqttDevices: Device[] = [];
+    selectedMqttDevice: Device | null = null;
+    mqttTemplates = [
+        { 
+            name: 'Eclipse Mosquitto', 
+            address: 'mqtt://test.mosquitto.org:1883',
+            topics: [
+                { name: 'Temperature', address: 'sensors/temperature', type: 'Real', subs: true },
+                { name: 'Humidity', address: 'sensors/humidity', type: 'Real', subs: true },
+                { name: 'Status', address: 'device/status', type: 'Bool', subs: true }
+            ]
+        },
+        { 
+            name: 'Local MQTT Broker', 
+            address: 'mqtt://localhost:1883',
+            topics: [
+                { name: 'LocalTemp', address: 'local/temperature', type: 'Real', subs: true },
+                { name: 'LocalPressure', address: 'local/pressure', type: 'Real', subs: true },
+                { name: 'LocalAlarm', address: 'local/alarm', type: 'Bool', subs: true }
+            ]
+        },
+        { 
+            name: 'HiveMQ Public', 
+            address: 'mqtt://broker.hivemq.com:1883',
+            topics: [
+                { name: 'PublicData1', address: 'public/data1', type: 'Real', subs: true },
+                { name: 'PublicData2', address: 'public/data2', type: 'Real', subs: true },
+                { name: 'PublicSwitch', address: 'public/switch', type: 'Bool', subs: true }
+            ]
+        },
+        { 
+            name: 'EMQX Public', 
+            address: 'mqtt://broker.emqx.io:1883',
+            topics: [
+                { name: 'EMQXSensor1', address: 'emqx/sensor1', type: 'Real', subs: true },
+                { name: 'EMQXSensor2', address: 'emqx/sensor2', type: 'Real', subs: true },
+                { name: 'EMQXControl', address: 'emqx/control', type: 'Bool', subs: true }
+            ]
+        }
+    ];
 
     constructor(private router: Router,
         private projectService: ProjectService,
@@ -50,6 +90,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
         this.subscriptionLoad = this.projectService.onLoadHmi.subscribe(res => {
             this.deviceMap.loadCurrentProject();
             this.deviceList.mapTags();
+            this.loadMqttDevices(); // 重新載入MQTT設備列表
         });
         this.subscriptionDeviceChange = this.hmiService.onDeviceChanged.subscribe(event => {
             this.deviceMap.setDeviceStatus(event);
@@ -61,6 +102,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             this.hmiService.askDeviceStatus();
         }, 10000);
         this.hmiService.askDeviceStatus();
+        this.loadMqttDevices();
     }
 
     ngOnDestroy() {
@@ -210,5 +252,89 @@ export class DeviceComponent implements OnInit, OnDestroy {
         };
         reader.readAsText(input.files[0]);
         this.tplFileImportInput.nativeElement.value = null;
+    }
+
+    loadMqttDevices() {
+        const devices = this.projectService.getDeviceList();
+        const mqttDevices = devices.filter(device => device.type === DeviceType.MQTTclient);
+        
+        // 過濾重複名稱的設備，只保留每個名稱的第一個設備
+        const uniqueMqttDevices: Device[] = [];
+        const seenNames = new Set<string>();
+        
+        for (const device of mqttDevices) {
+            if (!seenNames.has(device.name)) {
+                seenNames.add(device.name);
+                uniqueMqttDevices.push(device);
+            }
+        }
+        
+        this.mqttDevices = uniqueMqttDevices;
+    }
+
+    getAvailableTemplates() {
+        // 取得所有現有設備名稱
+        const devices = this.projectService.getDeviceList();
+        const existingNames = new Set(devices.map(device => device.name));
+        
+        // 只返回名稱不重複的模板
+        return this.mqttTemplates.filter(template => !existingNames.has(template.name));
+    }
+
+    onMqttDeviceSelected(device: Device) {
+        // 複製現有MQTT設備的設定，並觸發原本的新增流程
+        const existingTopics = Object.values(device.tags).map((tag: Tag) => ({
+            name: tag.name,
+            address: tag.address,
+            type: tag.type,
+            subs: tag.options?.subs ? true : false
+        }));
+        
+        this.addMqttDeviceWithTemplate({
+            name: device.name + '_copy',
+            address: device.property?.address || 'mqtt://test.mosquitto.org:1883',
+            topics: existingTopics
+        });
+    }
+
+    onMqttTemplateSelected(template: any) {
+        // 觸發原本的新增設備流程，並預設MQTT模板資料
+        this.addMqttDeviceWithTemplate(template);
+    }
+
+    addMqttDeviceWithTemplate(template: any) {
+        // 創建新的MQTT設備，並預設模板資料
+        let device = new Device(Utils.getGUID(DEVICE_PREFIX));
+        device.property = new DeviceNetProperty();
+        device.enabled = false;
+        device.tags = {};
+        device.type = DeviceType.MQTTclient;
+        device.name = template.name;
+        device.property.address = template.address;
+        device.polling = 350;
+        
+        // 根據模板添加預設的 topics/tags
+        if (template.topics && template.topics.length > 0) {
+            template.topics.forEach((topic: any) => {
+                const tagId = Utils.getGUID(TAG_PREFIX);
+                const tag = new Tag(tagId);
+                tag.name = topic.name;
+                tag.address = topic.address;
+                tag.type = topic.type;
+                
+                // 設定 MQTT subscription options
+                if (topic.subs) {
+                    tag.options = {
+                        subs: topic.address  // 訂閱的 topic 路徑
+                    };
+                }
+                
+                // 添加到設備的 tags 中
+                device.tags[tagId] = tag;
+            });
+        }
+        
+        // 呼叫device-map的原生新增流程
+        this.deviceMap.editDevice(device, false);
     }
 }

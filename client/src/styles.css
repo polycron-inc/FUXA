@@ -288,14 +288,14 @@ app-root {
   } */
 
 .logo {
-    display: block;
-    width: 30px;
-    height: 30px;
+    display: none;
+}
 
-    background: url(assets/images/logo.svg);
-    background-size: 30px 30px;
-
-    text-indent: -9999px;
+/* Hide all loading indicators */
+mat-spinner,
+mat-progress-bar,
+mat-progress-spinner {
+    display: none !important;
 }
 
 /* Menu */

@@ -1,5 +1,5 @@
 {
-    "name": "fuxa",
+    "name": "polycron",
     "version": "0.0.1",
     "description": "FUXA is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With FUXA you can create modern process visualizations with individual designs for your machines and real-time data display.",
     "main": "main.js",

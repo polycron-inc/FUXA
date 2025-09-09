@@ -96,7 +96,7 @@ export class ProjectService {
                 // this.notifySaveError(msg);
             }
         }, err => {
-            console.error('FUXA onRefreshProject error', err);
+            console.error('Polycron onRefreshProject error', err);
         });
         return true;
     }
@@ -127,7 +127,7 @@ export class ProjectService {
                 this.notifyToLoadHmi();
             }
         }, err => {
-            console.error('FUXA load error', err);
+            console.error('Polycron load error', err);
         });
     }
 
@@ -158,7 +158,7 @@ export class ProjectService {
     }
 
     saveAs() {
-        let filename = 'fuxa-project.json';
+        let filename = 'polycron-project.json';
         if (this.getProjectName()) {
             filename = `${this.getProjectName()}.json`;
         }
@@ -925,7 +925,7 @@ export class ProjectService {
     }
 
     private notifySaveError(err: any) {
-        console.error('FUXA notifySaveError error', err);
+        console.error('Polycron notifySaveError error', err);
         let msg = null;
         this.translateService.get('msg.project-save-error').subscribe((txt: string) => { msg = txt; });
         if (err.status === 401) {
@@ -941,7 +941,7 @@ export class ProjectService {
     }
 
     private notifyServerError() {
-        console.error('FUXA notifyServerError error');
+        console.error('Polycron notifyServerError error');
         let msg = null;
         this.translateService.get('msg.server-connection-error').subscribe((txt: string) => { msg = txt; });
         if (msg) {
@@ -956,7 +956,7 @@ export class ProjectService {
     private notifyError(msgCode: string) {
         const msg = this.translateService.instant(msgCode);
         if (msgCode) {
-            console.error(`FUXA Error: ${msg}`);
+            console.error(`Polycron Error: ${msg}`);
             this.toastr.error(msg, '', {
                 timeOut: 3000,
                 closeButton: true,
