@@ -2,7 +2,7 @@ import { Utils } from '../_helpers/utils';
 
 export const FuxaServer = {
     id: '0',
-    name: 'FUXA'
+    name: 'Polycron'
 };
 
 export const PlaceholderDevice = {

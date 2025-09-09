@@ -7,13 +7,28 @@
         <app-device-map [hidden]="!showMode.startsWith(devicesViewMode)" #devicemap [mode]="showMode" (goto)="gotoList($event)" [readonly]="readonly"></app-device-map>
     </div>
 </div>
-<mat-form-field appearance="outline" style="position: absolute; top: 10px; right: 120px; width: 200px;">
-    <mat-label>Select MQTT</mat-label>
-    <mat-select [(value)]="selectedMqttDevice" (selectionChange)="onMqttDeviceSelected($event.value)">
-        <mat-option *ngFor="let device of mqttDevices" [value]="device">
-            {{device.name}}
-        </mat-option>
+<!-- <div style="position: absolute; top: 40px; right: 250px; width: 220px;color:var(--formInputColor)">
+    新增MQTT
+</div> -->
+<mat-form-field 
+    appearance="outline"
+    class="mqtt-select-field"
+    style="position: absolute; top: 10px; right: 150px; width: 220px;"
+>
+    
+    <mat-select class="mt10">
+        <mat-optgroup label="Templates" *ngIf="getAvailableTemplates().length > 0">
+            <mat-option *ngFor="let template of getAvailableTemplates()" [value]="template" (click)="onMqttTemplateSelected(template)">
+                {{template.name}}
+            </mat-option>
+        </mat-optgroup>
+        <mat-optgroup label="Existing Devices" *ngIf="mqttDevices.length > 0">
+            <mat-option *ngFor="let device of mqttDevices" [value]="device" (click)="onMqttDeviceSelected(device)">
+                {{device.name}} (Copy)
+            </mat-option>
+        </mat-optgroup>
     </mat-select>
+    <mat-label style="position: relative; top: 2px;">Add MQTT Device</mat-label>
 </mat-form-field>
 <button mat-icon-button [matMenuTriggerFor]="optionsgMenu" class="fab-reload" style="right: 50px !important">
     <mat-icon>more_vert</mat-icon>

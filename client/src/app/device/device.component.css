@@ -167,3 +167,19 @@
     -o-transition: all 0.5s ease-in-out;
     transition: all 0.5s ease-in-out;
 }
+
+/* 隱藏 MQTT 下拉選單的 outline */
+.mqtt-select-field ::ng-deep .mat-form-field-outline {
+    display: none !important;
+}
+
+/* 也隱藏整個 outline 容器 */
+.mqtt-select-field ::ng-deep .mat-form-field-outline-start,
+.mqtt-select-field ::ng-deep .mat-form-field-outline-gap,
+.mqtt-select-field ::ng-deep .mat-form-field-outline-end {
+    display: none !important;
+}
+.mqtt-select-field ::ng-deep .mat-form-field-label-wrapper{
+    top: 10px !important;
+    left: 10px !important;
+}
