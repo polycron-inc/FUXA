@@ -184,12 +184,14 @@ function getUserCache(username) {
 
 function _loadUsers() {
     getUsers().then(users => {
-        for (var id = 0; id < users.length; id++) {
-            try {
-                const info = JSON.parse(users[id].info);
-                usersMap.set(users[id].username, { info: info, groups: users[id].groups });
-            } catch (e) {
-                logger.error(`users.usrstorage-loadUsers failed! ${e}`);
+        if (users && users.length) {
+            for (var id = 0; id < users.length; id++) {
+                try {
+                    const info = JSON.parse(users[id].info);
+                    usersMap.set(users[id].username, { info: info, groups: users[id].groups });
+                } catch (e) {
+                    logger.error(`users.usrstorage-loadUsers failed! ${e}`);
+                }
             }
         }
     }).catch(function (err) {

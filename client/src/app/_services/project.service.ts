@@ -1080,8 +1080,9 @@ export class ProjectService {
     getDevices(): any {
         let result = {};
         if (this.projectData) {
-            result = this.projectData.devices;
-            if (!result[this.projectData.server.id]) {
+            result = this.projectData.devices || {};
+            // Only add server device if not in client app mode and server exists
+            if (this.projectData.server && !this.appService.isClientApp && !result[this.projectData.server.id]) {
                 // add server as device to use in script and logic
                 let server: Device = JSON.parse(JSON.stringify(this.projectData.server));
                 server.enabled = true;
