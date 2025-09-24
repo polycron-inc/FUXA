@@ -10,6 +10,7 @@ import {ProjectService} from '../_services/project.service';
 import {HmiService} from '../_services/hmi.service';
 import {DEVICE_READONLY} from '../_models/hmi';
 import {Utils} from '../_helpers/utils';
+import { getProtocolList, ProtocolItem } from '../api/protocol';
 
 @Component({
     selector: 'app-device',
@@ -38,44 +39,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
     reloadActive = false;
     mqttDevices: Device[] = [];
     selectedMqttDevice: Device | null = null;
-    mqttTemplates = [
-        { 
-            name: 'Eclipse Mosquitto', 
-            address: 'mqtt://test.mosquitto.org:1883',
-            topics: [
-                { name: 'Temperature', address: 'sensors/temperature', type: 'Real', subs: true },
-                { name: 'Humidity', address: 'sensors/humidity', type: 'Real', subs: true },
-                { name: 'Status', address: 'device/status', type: 'Bool', subs: true }
-            ]
-        },
-        { 
-            name: 'Local MQTT Broker', 
-            address: 'mqtt://localhost:1883',
-            topics: [
-                { name: 'LocalTemp', address: 'local/temperature', type: 'Real', subs: true },
-                { name: 'LocalPressure', address: 'local/pressure', type: 'Real', subs: true },
-                { name: 'LocalAlarm', address: 'local/alarm', type: 'Bool', subs: true }
-            ]
-        },
-        { 
-            name: 'HiveMQ Public', 
-            address: 'mqtt://broker.hivemq.com:1883',
-            topics: [
-                { name: 'PublicData1', address: 'public/data1', type: 'Real', subs: true },
-                { name: 'PublicData2', address: 'public/data2', type: 'Real', subs: true },
-                { name: 'PublicSwitch', address: 'public/switch', type: 'Bool', subs: true }
-            ]
-        },
-        { 
-            name: 'EMQX Public', 
-            address: 'mqtt://broker.emqx.io:1883',
-            topics: [
-                { name: 'EMQXSensor1', address: 'emqx/sensor1', type: 'Real', subs: true },
-                { name: 'EMQXSensor2', address: 'emqx/sensor2', type: 'Real', subs: true },
-                { name: 'EMQXControl', address: 'emqx/control', type: 'Bool', subs: true }
-            ]
-        }
-    ];
+    mqttTemplates: any[] = [];
 
     constructor(private router: Router,
         private projectService: ProjectService,
@@ -91,6 +55,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             this.deviceMap.loadCurrentProject();
             this.deviceList.mapTags();
             this.loadMqttDevices(); // 重新載入MQTT設備列表
+            this.loadMqttTemplates(); // 重新載入MQTT模板
         });
         this.subscriptionDeviceChange = this.hmiService.onDeviceChanged.subscribe(event => {
             this.deviceMap.setDeviceStatus(event);
@@ -103,6 +68,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
         }, 10000);
         this.hmiService.askDeviceStatus();
         this.loadMqttDevices();
+        this.loadMqttTemplates();
     }
 
     ngOnDestroy() {
@@ -270,6 +236,67 @@ export class DeviceComponent implements OnInit, OnDestroy {
         }
         
         this.mqttDevices = uniqueMqttDevices;
+    }
+
+    async loadMqttTemplates() {
+        try {
+            const response = await getProtocolList({ type: 'MQTT' });
+            if (response.data && response.data.pageInfo && response.data.pageInfo.list) {
+                // 將 API 回應的 ProtocolItem 轉換為模板格式
+                this.mqttTemplates = response.data.pageInfo.list.map((protocol: ProtocolItem) => {
+                    const template: any = {
+                        name: protocol.name,
+                        address: protocol.mqttServerAddr ? `mqtt://${protocol.mqttServerAddr}` : 'mqtt://localhost:1883',
+                        topics: []
+                    };
+
+                    // 如果有 topicList，將其轉換為 topics 格式
+                    if (protocol.topicList && protocol.topicList.length > 0) {
+                        template.topics = protocol.topicList.map((topicPath: string, index: number) => ({
+                            name: `Topic${index + 1}`,
+                            address: topicPath,
+                            type: 'Real',
+                            subs: true
+                        }));
+                    } else {
+                        // 如果沒有 topicList，使用基本的 topic 結構
+                        if (protocol.pushTopic) {
+                            template.topics.push({
+                                name: 'Push',
+                                address: protocol.pushTopic,
+                                type: 'Real',
+                                subs: true
+                            });
+                        }
+                        if (protocol.receiveTopic) {
+                            template.topics.push({
+                                name: 'Receive',
+                                address: protocol.receiveTopic,
+                                type: 'Real',
+                                subs: true
+                            });
+                        }
+                        if (protocol.alarmTopic) {
+                            template.topics.push({
+                                name: 'Alarm',
+                                address: protocol.alarmTopic,
+                                type: 'Bool',
+                                subs: true
+                            });
+                        }
+                    }
+
+                    return template;
+                });
+            } else {
+                console.warn('No MQTT protocols found from API, using empty templates');
+                this.mqttTemplates = [];
+            }
+        } catch (error) {
+            console.error('Failed to load MQTT templates from API:', error);
+            // 如果 API 呼叫失敗，可以使用空陣列或預設值
+            this.mqttTemplates = [];
+        }
     }
 
     getAvailableTemplates() {
