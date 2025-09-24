@@ -4,7 +4,7 @@ import { environment } from '../../environments/environment';
 const secretKey = 'da6e6728-b51c-11ea-ac59-00ff7ae2c9c8'
 export const requester = 'admin'
 let userToken = environment.dmsToken;
-export const baseUrl = environment.apiEndpoint;
+export const baseUrl = environment.dmsApiEndpoint;
 
 export const provider = axios.create({
   baseURL: baseUrl,
