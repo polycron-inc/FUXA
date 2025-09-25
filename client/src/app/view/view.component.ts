@@ -90,7 +90,33 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private setBackground() {
 		if (this.startView && this.startView.profile) {
-			document.getElementById('main-container').style.backgroundColor = this.startView.profile.bkcolor;
+			const mainContainer = document.getElementById('main-container');
+			if (mainContainer) {
+				if (this.startView.profile.bkimage) {
+					// 設定背景圖片
+					mainContainer.style.backgroundImage = `url(${this.startView.profile.bkimage})`;
+
+					// Set background size
+					if (this.startView.profile.bkimageSize === 'stretch') {
+						mainContainer.style.backgroundSize = '100% 100%';
+					} else {
+						mainContainer.style.backgroundSize = this.startView.profile.bkimageSize || 'cover';
+					}
+
+					// Set background repeat
+					mainContainer.style.backgroundRepeat = this.startView.profile.bkimageRepeat || 'no-repeat';
+
+					// Set background position
+					mainContainer.style.backgroundPosition = this.startView.profile.bkimagePosition || 'center';
+
+					// Ensure background attachment is fixed for better display
+					mainContainer.style.backgroundAttachment = 'scroll';
+				}
+				if (this.startView.profile.bkcolor) {
+					// 設定背景色（可與背景圖片同時存在）
+					mainContainer.style.backgroundColor = this.startView.profile.bkcolor;
+				}
+			}
 		}
 	}
 }

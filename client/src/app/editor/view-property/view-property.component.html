@@ -72,6 +72,55 @@
                         [cpCancelButtonText]="'Cancel'" [cpOKButton]="true" [cpOKButtonText]="'OK'"
                         [cpOKButtonClass]="'cpOKButtonClass'" />
                 </div>
+                <div *ngIf="formGroup.controls.type?.value !== viewType.maps" class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-background-image' | translate}}</span>
+                    <div class="flex" style="align-items: center; gap: 10px;">
+                        <input #backgroundImageFile type="file" style="display: none;" (change)="onBackgroundImageSelected($event)"
+                            accept="image/png,image/jpg,image/jpeg,image/gif,image/webp" />
+                        <button mat-stroked-button (click)="backgroundImageFile.click()" style="min-width: 100px;">
+                            {{'dlg.docproperty-upload-image' | translate}}
+                        </button>
+                        <span *ngIf="data.profile.bkimage" class="image-name">
+                            {{getImageFileName(data.profile.bkimage)}}
+                        </span>
+                        <button *ngIf="data.profile.bkimage" mat-icon-button (click)="removeBackgroundImage()"
+                            matTooltip="{{'dlg.docproperty-remove-image' | translate}}" color="warn">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </div>
+                <div *ngIf="data.profile.bkimage && formGroup.controls.type?.value !== viewType.maps" class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-image-size' | translate}}</span>
+                    <mat-select [(value)]="data.profile.bkimageSize" placeholder="{{'dlg.docproperty-image-size-placeholder' | translate}}">
+                        <mat-option value="cover">{{'dlg.docproperty-image-size-cover' | translate}}</mat-option>
+                        <mat-option value="contain">{{'dlg.docproperty-image-size-contain' | translate}}</mat-option>
+                        <mat-option value="stretch">{{'dlg.docproperty-image-size-stretch' | translate}}</mat-option>
+                        <mat-option value="auto">{{'dlg.docproperty-image-size-auto' | translate}}</mat-option>
+                    </mat-select>
+                </div>
+                <div *ngIf="data.profile.bkimage && formGroup.controls.type?.value !== viewType.maps" class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-image-repeat' | translate}}</span>
+                    <mat-select [(value)]="data.profile.bkimageRepeat" placeholder="{{'dlg.docproperty-image-repeat-placeholder' | translate}}">
+                        <mat-option value="no-repeat">{{'dlg.docproperty-image-repeat-none' | translate}}</mat-option>
+                        <mat-option value="repeat">{{'dlg.docproperty-image-repeat-both' | translate}}</mat-option>
+                        <mat-option value="repeat-x">{{'dlg.docproperty-image-repeat-horizontal' | translate}}</mat-option>
+                        <mat-option value="repeat-y">{{'dlg.docproperty-image-repeat-vertical' | translate}}</mat-option>
+                    </mat-select>
+                </div>
+                <div *ngIf="data.profile.bkimage && formGroup.controls.type?.value !== viewType.maps" class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-image-position' | translate}}</span>
+                    <mat-select [(value)]="data.profile.bkimagePosition" placeholder="{{'dlg.docproperty-image-position-placeholder' | translate}}">
+                        <mat-option value="center">{{'dlg.docproperty-image-position-center' | translate}}</mat-option>
+                        <mat-option value="top left">{{'dlg.docproperty-image-position-topleft' | translate}}</mat-option>
+                        <mat-option value="top center">{{'dlg.docproperty-image-position-topcenter' | translate}}</mat-option>
+                        <mat-option value="top right">{{'dlg.docproperty-image-position-topright' | translate}}</mat-option>
+                        <mat-option value="center left">{{'dlg.docproperty-image-position-centerleft' | translate}}</mat-option>
+                        <mat-option value="center right">{{'dlg.docproperty-image-position-centerright' | translate}}</mat-option>
+                        <mat-option value="bottom left">{{'dlg.docproperty-image-position-bottomleft' | translate}}</mat-option>
+                        <mat-option value="bottom center">{{'dlg.docproperty-image-position-bottomcenter' | translate}}</mat-option>
+                        <mat-option value="bottom right">{{'dlg.docproperty-image-position-bottomright' | translate}}</mat-option>
+                    </mat-select>
+                </div>
             </div>
         </mat-tab>
 

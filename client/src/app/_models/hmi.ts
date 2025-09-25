@@ -184,6 +184,10 @@ export class DocProfile {
     width = 1024;
     height = 768;
     bkcolor = '#ffffffff';
+    bkimage?: string;
+    bkimageSize?: 'cover' | 'contain' | 'auto' | 'stretch' = 'cover';
+    bkimageRepeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y' = 'no-repeat';
+    bkimagePosition?: string = 'center';
     margin = 10;
     align = DocAlignType.topCenter;
     gridType: GridType = GridType.Fixed;

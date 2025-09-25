@@ -28,6 +28,42 @@ export class FuxaViewDialogComponent implements OnInit {
     onCloseDialog() {
         this.dialogRef.close();
     }
+
+    getBackgroundStyle() {
+        const profile = this.data?.view?.profile;
+        if (!profile) {
+            return {};
+        }
+
+        const style: any = {};
+
+        if (profile.bkimage) {
+            // 設定背景圖片
+            style.backgroundImage = `url(${profile.bkimage})`;
+
+            // Set background size
+            if (profile.bkimageSize === 'stretch') {
+                style.backgroundSize = '100% 100%';
+            } else {
+                style.backgroundSize = profile.bkimageSize || 'cover';
+            }
+
+            // Set background repeat
+            style.backgroundRepeat = profile.bkimageRepeat || 'no-repeat';
+
+            // Set background position
+            style.backgroundPosition = profile.bkimagePosition || 'center';
+
+            // Ensure background attachment is fixed for better display
+            style.backgroundAttachment = 'scroll';
+        }
+        if (profile.bkcolor) {
+            // 設定背景色（可與背景圖片同時存在）
+            style.backgroundColor = profile.bkcolor;
+        }
+
+        return style;
+    }
 }
 
 export interface FuxaViewDialogData {

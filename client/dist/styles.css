@@ -860,6 +860,9 @@ mat-toolbar-row {
 .mat-tooltip {
     font-size: 14px !important;
     white-space: pre-line;
+    /* Fix tooltip interference with control selection */
+    pointer-events: none !important;
+    z-index: 10000 !important;
 }
 .mat-button-sm {
     width: 30px !important;
