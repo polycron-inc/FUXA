@@ -23443,11 +23443,20 @@ let EditorComponent = class EditorComponent {
           } else {
             let copyGaugeSettings = this.searchGaugeSettings(copiedIdsAndTypes[i]);
 
-            if (copyGaugeSettings.property?.type === _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_25__.HtmlImageComponent.propertyWidgetType) {
+            if (copyGaugeSettings) {
               let gaugeSettingsDest = this.gaugesManager.createSettings(pastedIdsAndTypes[i].id, pastedIdsAndTypes[i].type);
               gaugeSettingsDest.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_9__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_7__.GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names);
-              const svgGuid = _helpers_utils__WEBPACK_IMPORTED_MODULE_9__.Utils.getShortGUID('', '_');
-              gaugeSettingsDest.property = _helpers_utils__WEBPACK_IMPORTED_MODULE_9__.Utils.replaceStringInObject(copyGaugeSettings.property, copyGaugeSettings.property.svgGuid, svgGuid);
+
+              if (copyGaugeSettings.property?.type === _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_25__.HtmlImageComponent.propertyWidgetType) {
+                // Handle widget type images with special GUID replacement
+                const svgGuid = _helpers_utils__WEBPACK_IMPORTED_MODULE_9__.Utils.getShortGUID('', '_');
+                gaugeSettingsDest.property = _helpers_utils__WEBPACK_IMPORTED_MODULE_9__.Utils.replaceStringInObject(copyGaugeSettings.property, copyGaugeSettings.property.svgGuid, svgGuid);
+              } else {
+                // Handle regular images and other control types - copy all properties including actions and events
+                gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
+              }
+
+              gaugeSettingsDest.hide = copyGaugeSettings.hide;
               this.setGaugeSettings(gaugeSettingsDest);
               this.checkGaugeAdded(gaugeSettingsDest);
             } else {

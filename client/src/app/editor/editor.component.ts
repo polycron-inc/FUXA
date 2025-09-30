@@ -248,9 +248,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 (eleadded) => {
                     let ga: GaugeSettings = this.getGaugeSettings(eleadded, this.ctrlInitParams);
                     this.checkGaugeAdded(ga);
-                    setTimeout(() => {
-                        this.setMode('select', false);
-                    }, 700);
+                    // Don't auto-switch to select mode for text elements
+                    if (eleadded?.tagName?.toLowerCase() !== 'text') {
+                        setTimeout(() => {
+                            this.setMode('select', false);
+                        }, 700);
+                    }
                     this.checkSvgElementsMap(true);
                 },
                 (eleremoved) => {
@@ -327,8 +330,11 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     console.log('Drawing completed with tool:', drawingTool);
                     // Small delay to ensure the shape is fully created before switching
                     setTimeout(() => {
-                        this.setMode('select', false);
-                        isDrawing = false;
+                        if(drawingTool !== 'text') {
+                            this.setMode('select', false);
+                            isDrawing = false;
+                        }
+                        
                         drawingTool = '';
                     }, 150);
                 }
@@ -793,13 +799,22 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         }
                     } else {
                         let copyGaugeSettings = this.searchGaugeSettings(copiedIdsAndTypes[i]);
-                        if (copyGaugeSettings.property?.type === HtmlImageComponent.propertyWidgetType) {
+                        if (copyGaugeSettings) {
                             let gaugeSettingsDest: GaugeSettings = this.gaugesManager.createSettings(pastedIdsAndTypes[i].id, pastedIdsAndTypes[i].type);
                             gaugeSettingsDest.name = Utils.getNextName(GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names);
-                            const svgGuid = Utils.getShortGUID('', '_');
-                            gaugeSettingsDest.property = Utils.replaceStringInObject(copyGaugeSettings.property,
-                                                                                     copyGaugeSettings.property.svgGuid,
-                                                                                     svgGuid);
+
+                            if (copyGaugeSettings.property?.type === HtmlImageComponent.propertyWidgetType) {
+                                // Handle widget type images with special GUID replacement
+                                const svgGuid = Utils.getShortGUID('', '_');
+                                gaugeSettingsDest.property = Utils.replaceStringInObject(copyGaugeSettings.property,
+                                                                                         copyGaugeSettings.property.svgGuid,
+                                                                                         svgGuid);
+                            } else {
+                                // Handle regular images and other control types - copy all properties including actions and events
+                                gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
+                            }
+
+                            gaugeSettingsDest.hide = copyGaugeSettings.hide;
                             this.setGaugeSettings(gaugeSettingsDest);
                             this.checkGaugeAdded(gaugeSettingsDest);
                         } else {
