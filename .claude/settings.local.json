@@ -5,7 +5,10 @@
       "Read(//c/Users/alish/Documents/**)",
       "Bash(npm start)",
       "Bash(npm run serve:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []
