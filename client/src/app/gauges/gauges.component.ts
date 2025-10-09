@@ -605,10 +605,14 @@ export class GaugesManager {
             const value = GaugeBaseComponent.valueBitmask(event.ga.property.bitmask, event.value, this.hmiService.variables[event.variableId]?.value);
             this.hmiService.putSignalValue(event.variableId, String(value));
             event.dbg = 'put ' + event.variableId + ' ' + event.value;
-        } else if (event.ga.property && event.ga.property.variableId) {
-            const value = GaugeBaseComponent.valueBitmask(event.ga.property.bitmask, event.value, this.hmiService.variables[event.ga.property.variableId]?.value);
-            this.hmiService.putSignalValue(event.ga.property.variableId, String(value));
-            event.dbg = 'put ' + event.ga.property.variableId + ' ' + event.value;
+        } else if (event.ga.property && (event.ga.property.writeVariableId || event.ga.property.variableId)) {
+            // Use writeVariableId for writing, fallback to variableId for backward compatibility
+            const writeTagId = event.ga.property.writeVariableId || event.ga.property.variableId;
+            // Use readVariableId for reading current value, fallback to variableId
+            const readTagId = event.ga.property.readVariableId || event.ga.property.variableId;
+            const value = GaugeBaseComponent.valueBitmask(event.ga.property.bitmask, event.value, this.hmiService.variables[readTagId]?.value);
+            this.hmiService.putSignalValue(writeTagId, String(value));
+            event.dbg = 'put ' + writeTagId + ' ' + event.value;
         }
         this.onevent.emit(event);
     }

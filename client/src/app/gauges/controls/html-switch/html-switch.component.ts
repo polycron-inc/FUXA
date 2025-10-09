@@ -24,6 +24,12 @@ export class HtmlSwitchComponent extends GaugeBaseComponent {
         if (pro.variableId) {
             res.push(pro.variableId);
         }
+        if (pro.readVariableId) {
+            res.push(pro.readVariableId);
+        }
+        if (pro.writeVariableId) {
+            res.push(pro.writeVariableId);
+        }
         if (pro.alarmId) {
             res.push(pro.alarmId);
         }
@@ -59,20 +65,26 @@ export class HtmlSwitchComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, switcher?: NgxSwitchComponent) {
         try {
             if (switcher) {
-                let value = parseFloat(sig.value);
-                if (Number.isNaN(value)) {
-                    // maybe boolean
-                    value = Number(sig.value);
-                } else {
-                    value = parseFloat(value.toFixed(5));
+                // Use readVariableId for reading, fallback to variableId
+                const readTagId = (<GaugeProperty>ga.property).readVariableId || (<GaugeProperty>ga.property).variableId;
+
+                // Only process value if this signal is for reading
+                if (sig.id === readTagId) {
+                    let value = parseFloat(sig.value);
+                    if (Number.isNaN(value)) {
+                        // maybe boolean
+                        value = Number(sig.value);
+                    } else {
+                        value = parseFloat(value.toFixed(5));
+                    }
+                    if (typeof sig.value !== 'boolean') {
+                        value = GaugeBaseComponent.checkBitmaskAndValue((<GaugeProperty>ga.property).bitmask,
+                                                                                value,
+                                                                                (<GaugeProperty>ga.property).options.offValue,
+                                                                                (<GaugeProperty>ga.property).options.onValue);
+                    }
+                    switcher.setValue(value);
                 }
-                if (typeof sig.value !== 'boolean') {
-                    value = GaugeBaseComponent.checkBitmaskAndValue((<GaugeProperty>ga.property).bitmask,
-                                                                            value,
-                                                                            (<GaugeProperty>ga.property).options.offValue,
-                                                                            (<GaugeProperty>ga.property).options.onValue);
-                }
-                switcher.setValue(value);
             }
         } catch (err) {
             console.error(err);
