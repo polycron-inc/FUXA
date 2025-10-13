@@ -208,8 +208,15 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
             } else {
                 this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
             }
-            if (view.profile.bkcolor && (this.child || legacyProfile)) {
-                this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
+            if (this.child || legacyProfile) {
+                if (view.profile.bkimage) {
+                    // 設定背景圖片
+                    this.setBackgroundImage(this.dataContainer.nativeElement, view.profile);
+                }
+                if (view.profile.bkcolor) {
+                    // 設定背景色（可與背景圖片同時存在）
+                    this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
+                }
             }
             if (view.profile.align && !this.child) {
                 FuxaViewComponent.setAlignStyle(view.profile.align, this.dataContainer.nativeElement);
@@ -712,7 +719,14 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 el.setAttribute('style', style);
             }
         }
-        element.style.backgroundColor = this.view.profile.bkcolor;
+        if (this.view.profile.bkimage) {
+            // 設定背景圖片
+            this.setBackgroundImage(element, this.view.profile);
+        }
+        if (this.view.profile.bkcolor) {
+            // 設定背景色（可與背景圖片同時存在）
+            element.style.backgroundColor = this.view.profile.bkcolor;
+        }
     }
 
     private getView(viewref: string): View {
@@ -725,6 +739,28 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         }
         return view;
+    }
+
+    private setBackgroundImage(element: any, profile: any) {
+        if (profile.bkimage) {
+            element.style.backgroundImage = `url(${profile.bkimage})`;
+
+            // Set background size
+            if (profile.bkimageSize === 'stretch') {
+                element.style.backgroundSize = '100% 100%';
+            } else {
+                element.style.backgroundSize = profile.bkimageSize || 'cover';
+            }
+
+            // Set background repeat
+            element.style.backgroundRepeat = profile.bkimageRepeat || 'no-repeat';
+
+            // Set background position
+            element.style.backgroundPosition = profile.bkimagePosition || 'center';
+
+            // Ensure background attachment is fixed for better display
+            element.style.backgroundAttachment = 'scroll';
+        }
     }
 
     private static getSvgElements(svgid: string) {

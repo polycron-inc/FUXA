@@ -828,6 +828,12 @@
     "html-switch.property-on-text-color": "On Text color",
     "html-switch.property-font-size": "Font size",
     "html-switch.property-font": "Font",
+    "html-switch.property-read-tag": "Read Tag",
+    "html-switch.property-read-tag-device": "Read Tag Device",
+    "html-switch.property-read-tag-title": "Select read tag",
+    "html-switch.property-write-tag": "Write Tag",
+    "html-switch.property-write-tag-device": "Write Tag Device",
+    "html-switch.property-write-tag-title": "Select write tag",
 
     "html-input.min": "Min",
     "html-input.max": "Max",

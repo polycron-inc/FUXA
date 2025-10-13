@@ -62,7 +62,7 @@
     </mat-table>
     <mat-paginator [pageSizeOptions]="[10, 25, 100]" [pageSize]="25" style="float: left;"></mat-paginator>
 
-    <div mat-dialog-actions class="dialog-action" style="padding-top: 30px;">
+    <div mat-dialog-actions class="dialog-action" style="padding-top: 0px;">
         <button mat-raised-button (click)="onNoClick()" cdkFocusInitial>{{'dlg.cancel' | translate}}</button>
         <button mat-raised-button color="primary" (click)="onOkClick()">{{'dlg.ok' | translate}}</button>
     </div>

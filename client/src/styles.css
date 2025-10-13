@@ -491,8 +491,8 @@ mat-progress-spinner {
 }
 
 .my-form-field.link button {
-    width: 38px !important;
-    height: 38px !important;
+    width: 37px !important;
+    height: 37px !important;
     padding-right: 5px;
     padding-left: 5px;
 
@@ -729,6 +729,9 @@ mat-toolbar-row {
 .mat-tooltip {
     font-size: 14px !important;
     white-space: pre-line;
+    /* Fix tooltip interference with control selection */
+    pointer-events: none !important;
+    z-index: 10000 !important;
 }
 .mat-button-sm {
     width: 30px !important;

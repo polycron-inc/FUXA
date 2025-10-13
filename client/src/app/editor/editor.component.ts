@@ -248,9 +248,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 (eleadded) => {
                     let ga: GaugeSettings = this.getGaugeSettings(eleadded, this.ctrlInitParams);
                     this.checkGaugeAdded(ga);
-                    setTimeout(() => {
-                        this.setMode('select', false);
-                    }, 700);
+                    // Don't auto-switch to select mode for text elements
+                    if (eleadded?.tagName?.toLowerCase() !== 'text') {
+                        setTimeout(() => {
+                            this.setMode('select', false);
+                        }, 700);
+                    }
                     this.checkSvgElementsMap(true);
                 },
                 (eleremoved) => {
@@ -270,15 +273,79 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     this.checkSvgElementsMap(true);
                 }
             );
-
+            console.log('myInit');
             this.winRef.nativeWindow.svgEditor.init();
             $(initContextmenu);
+
+            // Setup observer to auto-switch to select tool after drawing basic shapes
+            this.setupSvgElementObserver();
 
         } catch (err) {
             console.error(err);
         }
         this.setFillColor(this.colorFill);
         this.setFillColor(this.colorStroke);
+    }
+
+    /**
+     * Setup global mouseup listener to detect when drawing is complete and auto-switch to select tool
+     */
+    private setupSvgElementObserver() {
+        setTimeout(() => {
+            let isDrawing = false;
+            let drawingTool = '';
+
+            // Use document-level event listeners to capture all mouse events
+            const mousedownHandler = (event: MouseEvent) => {
+                if (this.currentMode !== 'select' && this.currentMode !== '') {
+                    // Check if the mousedown is within the SVG canvas area
+                    const target = event.target as Element;
+                    console.log('Mousedown target:', target?.tagName, target?.id, target?.className);
+
+                    // Check various possible SVG-related targets
+                    const isSvgTarget = target && (
+                        target.closest('#svgcontent') ||
+                        target.id === 'svgcontent' ||
+                        target.closest('svg') ||
+                        target.tagName === 'svg' ||
+                        target.closest('#svgcanvas') ||
+                        target.id === 'svgcanvas' ||
+                        target.closest('.svg-editor') ||
+                        target.classList?.contains('svg-editor')
+                    );
+
+                    if (isSvgTarget) {
+                        isDrawing = true;
+                        drawingTool = this.currentMode;
+                        console.log('Drawing started with tool:', this.currentMode);
+                    } else {
+                        console.log('Target not in SVG area');
+                    }
+                }
+            };
+
+            const mouseupHandler = (event: MouseEvent) => {
+                console.log('Global mouseup detected, isDrawing:', isDrawing, 'tool:', drawingTool);
+                if (isDrawing && drawingTool !== 'select' && drawingTool !== '') {
+                    console.log('Drawing completed with tool:', drawingTool);
+                    // Small delay to ensure the shape is fully created before switching
+                    setTimeout(() => {
+                        if(drawingTool !== 'text') {
+                            this.setMode('select', false);
+                            isDrawing = false;
+                        }
+                        
+                        drawingTool = '';
+                    }, 150);
+                }
+            };
+
+            // Add global listeners
+            document.addEventListener('mousedown', mousedownHandler, true);
+            document.addEventListener('mouseup', mouseupHandler, true);
+
+            console.log('Global mouse listeners setup complete');
+        }, 1000); // Delay to ensure SVG editor is fully initialized
     }
 
     /**
@@ -525,7 +592,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         '<g><title>Layer 1</title></g></svg>';
                 }
                 if (this.winRef.nativeWindow.svgEditor) {
-                    this.winRef.nativeWindow.svgEditor.setDocProperty(view.name, view.profile.width, view.profile.height, view.profile.bkcolor);
+                    this.winRef.nativeWindow.svgEditor.setDocProperty(view.name, view.profile.width, view.profile.height, view.profile.bkcolor, view.profile.bkimage);
                     this.winRef.nativeWindow.svgEditor.setSvgString(svgcontent);
                 }
 
@@ -732,13 +799,22 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         }
                     } else {
                         let copyGaugeSettings = this.searchGaugeSettings(copiedIdsAndTypes[i]);
-                        if (copyGaugeSettings.property?.type === HtmlImageComponent.propertyWidgetType) {
+                        if (copyGaugeSettings) {
                             let gaugeSettingsDest: GaugeSettings = this.gaugesManager.createSettings(pastedIdsAndTypes[i].id, pastedIdsAndTypes[i].type);
                             gaugeSettingsDest.name = Utils.getNextName(GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names);
-                            const svgGuid = Utils.getShortGUID('', '_');
-                            gaugeSettingsDest.property = Utils.replaceStringInObject(copyGaugeSettings.property,
-                                                                                     copyGaugeSettings.property.svgGuid,
-                                                                                     svgGuid);
+
+                            if (copyGaugeSettings.property?.type === HtmlImageComponent.propertyWidgetType) {
+                                // Handle widget type images with special GUID replacement
+                                const svgGuid = Utils.getShortGUID('', '_');
+                                gaugeSettingsDest.property = Utils.replaceStringInObject(copyGaugeSettings.property,
+                                                                                         copyGaugeSettings.property.svgGuid,
+                                                                                         svgGuid);
+                            } else {
+                                // Handle regular images and other control types - copy all properties including actions and events
+                                gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
+                            }
+
+                            gaugeSettingsDest.hide = copyGaugeSettings.hide;
                             this.setGaugeSettings(gaugeSettingsDest);
                             this.checkGaugeAdded(gaugeSettingsDest);
                         } else {
@@ -1110,7 +1186,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     onViewPropertyChanged(view: View) {
-        this.winRef.nativeWindow.svgEditor.setDocProperty(view.name, view.profile.width, view.profile.height, view.profile.bkcolor);
+        this.winRef.nativeWindow.svgEditor.setDocProperty(view.name, view.profile.width, view.profile.height, view.profile.bkcolor, view.profile.bkimage);
         this.onSelectView(view);
     }
 

@@ -184,6 +184,10 @@ export class DocProfile {
     width = 1024;
     height = 768;
     bkcolor = '#ffffffff';
+    bkimage?: string;
+    bkimageSize?: 'cover' | 'contain' | 'auto' | 'stretch' = 'cover';
+    bkimageRepeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y' = 'no-repeat';
+    bkimagePosition?: string = 'center';
     margin = 10;
     align = DocAlignType.topCenter;
     gridType: GridType = GridType.Fixed;
@@ -221,6 +225,10 @@ export class GaugeProperty {
     options: any;
     readonly: boolean;
     text: string;               // Text property (used by button)
+    /** Read tag id - separate from write tag */
+    readVariableId?: string;
+    /** Write tag id - separate from read tag */
+    writeVariableId?: string;
 }
 
 export interface PermissionRoles {
@@ -281,6 +289,10 @@ export interface IPropertyVariable {
     bitmask: number;
     /** Reference to tag property, used to propagate to sub component */
     variableRaw: Tag;
+    /** Read tag id - separate from write tag */
+    readVariableId?: string;
+    /** Write tag id - separate from read tag */
+    writeVariableId?: string;
 }
 export class GaugeEvent {
     type: string;

@@ -118,6 +118,38 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     onAddEvent() {
         this.flexEvent.onAddEvent();
     }
+
+    onBackgroundImageSelected(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.data.profile.bkimage = e.target?.result as string;
+                if (!this.data.profile.bkimageSize) {
+                    this.data.profile.bkimageSize = 'cover';
+                }
+                if (!this.data.profile.bkimageRepeat) {
+                    this.data.profile.bkimageRepeat = 'no-repeat';
+                }
+                if (!this.data.profile.bkimagePosition) {
+                    this.data.profile.bkimagePosition = 'center';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    removeBackgroundImage() {
+        this.data.profile.bkimage = undefined;
+        this.data.profile.bkimageSize = 'cover';
+        this.data.profile.bkimageRepeat = 'no-repeat';
+        this.data.profile.bkimagePosition = 'center';
+    }
+
+    getImageFileName(base64: string): string {
+        if (!base64) return '';
+        return base64.substring(0, 50) + '...'; // 顯示前50個字符
+    }
 }
 
 export interface ViewPropertyType {
