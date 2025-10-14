@@ -223,7 +223,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
     loadMqttDevices() {
         const devices = this.projectService.getDeviceList();
         const mqttDevices = devices.filter(device => device.type === DeviceType.MQTTclient);
-        
+
         // 過濾重複名稱的設備，只保留每個名稱的第一個設備
         const uniqueMqttDevices: Device[] = [];
         const seenNames = new Set<string>();
@@ -303,7 +303,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
         // 取得所有現有設備名稱
         const devices = this.projectService.getDeviceList();
         const existingNames = new Set(devices.map(device => device.name));
-        
+
         // 只返回名稱不重複的模板
         return this.mqttTemplates.filter(template => !existingNames.has(template.name));
     }
@@ -339,7 +339,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
         device.name = template.name;
         device.property.address = template.address;
         device.polling = 350;
-        
+
         // 根據模板添加預設的 topics/tags
         if (template.topics && template.topics.length > 0) {
             template.topics.forEach((topic: any) => {
@@ -348,19 +348,19 @@ export class DeviceComponent implements OnInit, OnDestroy {
                 tag.name = topic.name;
                 tag.address = topic.address;
                 tag.type = topic.type;
-                
+
                 // 設定 MQTT subscription options
                 if (topic.subs) {
                     tag.options = {
                         subs: topic.address  // 訂閱的 topic 路徑
                     };
                 }
-                
+
                 // 添加到設備的 tags 中
                 device.tags[tagId] = tag;
             });
         }
-        
+
         // 呼叫device-map的原生新增流程
         this.deviceMap.editDevice(device, false);
     }

@@ -272,7 +272,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
             return false;
         }
         // 設定 this.sourceMap
-        
+
         this.barChartData = [];
         for (let key in this.sourceMap) {
             let dataset = this.sourceMap[key];

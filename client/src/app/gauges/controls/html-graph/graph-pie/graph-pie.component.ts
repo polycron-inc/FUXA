@@ -67,7 +67,7 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
             beforeDraw(chart) {
               const { ctx, legend } = chart;
               if (!legend || !legend.legendItems) return;
-          
+
               legend.legendItems.forEach((item, i) => {
                 item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
               });
@@ -149,7 +149,7 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
             beforeDraw(chart) {
               const { ctx, legend } = chart;
               if (!legend || !legend.legendItems) return;
-          
+
               legend.legendItems.forEach((item, i) => {
                 item.pointStyle = 'circle'; // 你也可以用 rectRounded、dash、star 等
               });
