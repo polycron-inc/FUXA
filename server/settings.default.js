@@ -65,7 +65,7 @@ module.exports = {
 
     // The maximum size of HTTP request that will be accepted by the runtime api.
     // Default: 15mb
-    apiMaxLength: '100mb',
+    apiMaxLength: '100MB',
 
     // Used to disable the server API used for Backend communication (Standalone application)
     // disable to use only the Editor

@@ -212,16 +212,26 @@ if (!fs.existsSync(settings.widgetsFileDir)) {
 }
 
 // Server settings
+const serverOptions = {
+    maxHeaderSize: 1024 * 1024 * 100, // 100MB for large JSON payloads
+};
+
 if (settings.https) {
-    server = https.createServer(settings.https, function (req, res) { app(req, res); });
+    server = https.createServer({ ...settings.https, ...serverOptions }, function (req, res) { app(req, res); });
 } else {
-    server = http.createServer(function (req, res) { app(req, res); });
+    server = http.createServer(serverOptions, function (req, res) { app(req, res); });
 }
 server.setMaxListeners(0);
 
+// Increase server timeout for large payloads
+server.setTimeout(120000); // 120 seconds
+server.requestTimeout = 120000; // 120 seconds
+server.keepAliveTimeout = 65000; // 65 seconds
+
 const io = socketIO(server, {
     pingInterval: 60000, // send ping interval
-    pingTimeout: 120000  // close connection if pong is not received
+    pingTimeout: 120000, // close connection if pong is not received
+    maxHttpBufferSize: 1024 * 1024 * 100 // 100MB for large payloads
 });
 
 // Check settings value
