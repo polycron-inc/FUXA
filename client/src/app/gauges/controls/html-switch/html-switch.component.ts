@@ -24,9 +24,6 @@ export class HtmlSwitchComponent extends GaugeBaseComponent {
         if (pro.variableId) {
             res.push(pro.variableId);
         }
-        if (pro.readVariableId) {
-            res.push(pro.readVariableId);
-        }
         if (pro.writeVariableId) {
             res.push(pro.writeVariableId);
         }
@@ -65,8 +62,8 @@ export class HtmlSwitchComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, switcher?: NgxSwitchComponent) {
         try {
             if (switcher) {
-                // Use readVariableId for reading, fallback to variableId
-                const readTagId = (<GaugeProperty>ga.property).readVariableId || (<GaugeProperty>ga.property).variableId;
+                // Use variableId for reading
+                const readTagId = (<GaugeProperty>ga.property).variableId;
 
                 // Only process value if this signal is for reading
                 if (sig.id === readTagId) {

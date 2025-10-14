@@ -8,15 +8,12 @@
                     <flex-auth [name]="name" [permission]="property.permission" [permissionRoles]="property.permissionRoles" #flexauth></flex-auth>
                 </div>
                 <div class="block">
+                    <h4>{{'html-switch.property-read-tag' | translate}}</h4>
                     <flex-head [data]="data" [property]="property" #flexhead [withStaticValue]="false" [withBitmask]="withBitmask"></flex-head>
                 </div>
                 <div class="block">
-                    <h4>{{'html-switch.property-read-tag' | translate}}</h4>
-                    <flex-head [data]="data" [property]="readProperty" #flexhead2 [withStaticValue]="false" [withBitmask]="false"></flex-head>
-                </div>
-                <div class="block">
                     <h4>{{'html-switch.property-write-tag' | translate}}</h4>
-                    <flex-head [data]="data" [property]="writeProperty" #flexhead3 [withStaticValue]="false" [withBitmask]="false"></flex-head>
+                    <flex-head [data]="data" [property]="writeProperty" #flexhead2 [withStaticValue]="false" [withBitmask]="false"></flex-head>
                 </div>
                 <div class="field-row mt10">
                 </div>

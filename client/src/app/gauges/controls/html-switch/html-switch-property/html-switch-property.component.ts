@@ -21,12 +21,10 @@ export class HtmlSwitchPropertyComponent implements OnInit, AfterContentInit {
     @ViewChild('switcher', {static: false}) switcher: NgxSwitchComponent;
 	@ViewChild('flexhead', {static: false}) flexhead: FlexHeadComponent;
     @ViewChild('flexhead2', {static: false}) flexhead2: FlexHeadComponent;
-    @ViewChild('flexhead3', {static: false}) flexhead3: FlexHeadComponent;
     @ViewChild('flexauth', {static: false}) flexauth: FlexAuthComponent;
     @ViewChild('flexevent', {static: false}) flexEvent: FlexEventComponent;
 
     property: GaugeProperty;
-    readProperty: GaugeProperty;
     writeProperty: GaugeProperty;
     options: SwitchOptions;
     name: string;
@@ -44,12 +42,9 @@ export class HtmlSwitchPropertyComponent implements OnInit, AfterContentInit {
             this.property = new GaugeProperty();
         }
 
-        // Create separate property objects for read and write tags
-        this.readProperty = new GaugeProperty();
-        this.readProperty.variableId = this.property.readVariableId || this.property.variableId;
-
+        // Create separate property object for write tag
         this.writeProperty = new GaugeProperty();
-        this.writeProperty.variableId = this.property.writeVariableId || this.property.variableId;
+        this.writeProperty.variableId = this.property.writeVariableId;
         this.name = this.data.settings.name;
         this.options = <SwitchOptions>this.property.options;
         if (!this.options) {
@@ -77,8 +72,7 @@ export class HtmlSwitchPropertyComponent implements OnInit, AfterContentInit {
     }
 
     onOkClick(): void {
-        // Sync read and write properties back to main property
-        this.property.readVariableId = this.readProperty.variableId;
+        // Sync write property back to main property
         this.property.writeVariableId = this.writeProperty.variableId;
 
         this.data.settings.property = this.property;
