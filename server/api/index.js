@@ -36,8 +36,9 @@ function init(_server, _runtime) {
                 includes(runtime.settings.logApiLevel) ? runtime.settings.logApiLevel : 'combined'));
 
             var maxApiRequestSize = runtime.settings.apiMaxLength || '35mb';
-            apiApp.use(bodyParser.json({limit:maxApiRequestSize}));
-            apiApp.use(bodyParser.urlencoded({limit:maxApiRequestSize,extended:true}));
+            console.log('API Max Request Size:', maxApiRequestSize);
+            apiApp.use(bodyParser.json({limit:maxApiRequestSize, strict: false}));
+            apiApp.use(bodyParser.urlencoded({limit:maxApiRequestSize, extended:true, parameterLimit: 50000}));
             authJwt.init(runtime.settings.secureEnabled, runtime.settings.secretCode, runtime.settings.tokenExpiresIn);
             prjApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(prjApi.app());

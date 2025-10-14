@@ -301,11 +301,19 @@ export class ProjectService {
         } else {
             this.projectData.hmi.views.push(view);
         }
+
+        // Show loading mask when saving
+        this.appService.showLoading(true);
+
         this.storage.setServerProjectData(ProjectDataCmdType.SetView, view, this.projectData).subscribe(result => {
+            // Hide loading mask after save completes
+            this.appService.showLoading(false);
             if (notify) {
                 this.notifySuccessMessage('msg.project-save-success');
             }
         }, err => {
+            // Hide loading mask on error
+            this.appService.showLoading(false);
             console.error(err);
             this.notifySaveError(err);
         });

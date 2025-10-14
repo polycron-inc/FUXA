@@ -1339,6 +1339,9 @@ mat-toolbar-row {
     width: 100% !important;
     max-width: 100% !important;
 }
+.mat-tab-body.mat-tab-body-active{
+  overflow-y: hidden !important;
+}
 .cell-item.column-item .my-form-field.half-item {
     width: 45% !important;
 }
