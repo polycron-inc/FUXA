@@ -11,6 +11,7 @@ import { SetupComponent } from '../editor/setup/setup.component';
 
 import { ProjectService, SaveMode } from '../_services/project.service';
 import { ThemeService } from '../_services/theme.service';
+import { AppService } from '../_services/app.service';
 
 import { HelpData, DEVICE_READONLY } from '../_models/hmi';
 import { TutorialComponent } from '../help/tutorial/tutorial.component';
@@ -42,7 +43,8 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
                 public dialog: MatDialog,
                 private translateService: TranslateService,
                 private themeService: ThemeService,
-                private projectService: ProjectService
+                private projectService: ProjectService,
+                private appService: AppService
     ) {
         this.router.events.pipe(
             filter(val => val instanceof NavigationEnd),
@@ -150,26 +152,42 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
             let msg = '';
             this.translateService.get('msg.project-save-ask').subscribe((txt: string) => { msg = txt; });
             if (window.confirm(msg)) {
+                this.appService.showLoading(true);
                 this.projectService.setNewProject();
                 this.onRenameProject();
+                // Hide loading after operations complete
+                setTimeout(() => {
+                    this.appService.showLoading(false);
+                }, 500);
             }
         } catch (err) {
             console.error(err);
+            this.appService.showLoading(false);
         }
     }
 
     /**
-     * Aave Project as JSON file and Download in Browser
+     * Save Project as JSON file and Download in Browser
      */
     onSaveProjectAs() {
         try {
+            this.appService.showLoading(true);
             if (this.saveFromEditor) {
                 this.projectService.saveAs();
+                // Hide loading after saveAs completes (file download)
+                setTimeout(() => {
+                    this.appService.showLoading(false);
+                }, 500);
             } else {
                 this.projectService.saveProject(SaveMode.SaveAs);
+                // Hide loading after saveProject emits
+                setTimeout(() => {
+                    this.appService.showLoading(false);
+                }, 500);
             }
         } catch (e) {
-
+            console.error(e);
+            this.appService.showLoading(false);
         }
     }
 
@@ -186,11 +204,22 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
         let input = event.target;
         let reader = new FileReader();
         reader.onload = (data) => {
-            let prj = JSON.parse(reader.result.toString());
-            this.projectService.setProject(prj, true);
+            try {
+                this.appService.showLoading(true);
+                let prj = JSON.parse(reader.result.toString());
+                this.projectService.setProject(prj, true);
+                // Hide loading after project is set
+                setTimeout(() => {
+                    this.appService.showLoading(false);
+                }, 500);
+            } catch (err) {
+                console.error(err);
+                this.appService.showLoading(false);
+            }
         };
 
-        reader.onerror = function() {
+        reader.onerror = () => {
+            this.appService.showLoading(false);
             let msg = 'Unable to read ' + input.files[0];
             // this.translateService.get('msg.project-load-error', {value: input.files[0]}).subscribe((txt: string) => { msg = txt });
             alert(msg);
@@ -204,13 +233,32 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
      */
     onSaveProject() {
         try {
+            console.log('onSaveProject called, showing loading...');
+            this.appService.showLoading(true);
             if (this.saveFromEditor) {
-                this.projectService.save();
+                console.log('Save from editor mode');
+                this.projectService.save().subscribe(
+                    result => {
+                        console.log('Save completed, hiding loading...');
+                        this.appService.showLoading(false);
+                    },
+                    err => {
+                        console.error('Save error:', err);
+                        this.appService.showLoading(false);
+                    }
+                );
             } else {
+                console.log('Save via saveProject event');
                 this.projectService.saveProject(SaveMode.Save);
+                // Hide loading after saveProject emits
+                setTimeout(() => {
+                    console.log('Timeout complete, hiding loading...');
+                    this.appService.showLoading(false);
+                }, 2000);
             }
         } catch (e) {
             console.error(e);
+            this.appService.showLoading(false);
         }
     }
 
@@ -226,7 +274,12 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
         });
         dialogRef.afterClosed().subscribe(result => {
             if (result && result.name !== this.projectService.getProjectName()) {
+                this.appService.showLoading(true);
                 this.projectService.setProjectName(result.name.replace(/ /g,''));
+                // Hide loading after rename completes
+                setTimeout(() => {
+                    this.appService.showLoading(false);
+                }, 500);
             }
         });
     }
