@@ -43,7 +43,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	ngOnInit() {
-		console.log(`Polycron v${environment.version}`);
+		console.log(`BACCO iFMS v${environment.version}`);
 		this.heartbeatService.startHeartbeatPolling();
 
 		// capture events for the token refresh
