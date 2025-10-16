@@ -96,7 +96,7 @@ export class ProjectService {
                 // this.notifySaveError(msg);
             }
         }, err => {
-            console.error('Polycron onRefreshProject error', err);
+            console.error('BACCO iFMS onRefreshProject error', err);
         });
         return true;
     }
@@ -127,7 +127,7 @@ export class ProjectService {
                 this.notifyToLoadHmi();
             }
         }, err => {
-            console.error('Polycron load error', err);
+            console.error('BACCO iFMS load error', err);
         });
     }
 
@@ -933,7 +933,7 @@ export class ProjectService {
     }
 
     private notifySaveError(err: any) {
-        console.error('Polycron notifySaveError error', err);
+        console.error('BACCO iFMS notifySaveError error', err);
         let msg = null;
         this.translateService.get('msg.project-save-error').subscribe((txt: string) => { msg = txt; });
         if (err.status === 401) {
@@ -949,7 +949,7 @@ export class ProjectService {
     }
 
     private notifyServerError() {
-        console.error('Polycron notifyServerError error');
+        console.error('BACCO iFMS notifyServerError error');
         let msg = null;
         this.translateService.get('msg.server-connection-error').subscribe((txt: string) => { msg = txt; });
         if (msg) {
@@ -964,7 +964,7 @@ export class ProjectService {
     private notifyError(msgCode: string) {
         const msg = this.translateService.instant(msgCode);
         if (msgCode) {
-            console.error(`Polycron Error: ${msg}`);
+            console.error(`BACCO iFMS Error: ${msg}`);
             this.toastr.error(msg, '', {
                 timeOut: 3000,
                 closeButton: true,

@@ -2,7 +2,7 @@ import { Utils } from '../_helpers/utils';
 
 export const FuxaServer = {
     id: '0',
-    name: 'Polycron'
+    name: 'BACCO iFMS'
 };
 
 export const PlaceholderDevice = {
