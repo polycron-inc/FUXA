@@ -1435,9 +1435,6 @@ mat-toolbar-row {
     width: 85% !important;
     max-width: 63% !important;
 }
-.mat-tab-body.mat-tab-body-active{
-  overflow-y: hidden !important;
-}
 .setting-view-property .mat-tab-body-wrapper .my-form-field input,
 .setting-view-property .mat-tab-body-wrapper .my-form-field .mat-select {
     width: 90% !important;
@@ -1472,6 +1469,9 @@ mat-toolbar-row {
 .mat-tab-body-wrapper .my-form-field.line-item input {
     width: 100% !important;
     max-width: 100% !important;
+}
+.mat-tab-body.mat-tab-body-active{
+  overflow-y: hidden !important;
 }
 .cell-item.column-item .my-form-field.half-item {
     width: 45% !important;
@@ -7041,7 +7041,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 @media print {
 	/* Prevent printers from removing background-images of controls. */
 	.leaflet-control {
-		-webkit-print-color-adjust: exact;
 		print-color-adjust: exact;
 		}
 	}

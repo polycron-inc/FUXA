@@ -20,7 +20,8 @@ const createImage = async (chartItem, chartValues) => {
                 data: chartValues[line.id],
                 fill: (line.fill) ? true : false,
                 backgroundColor: line.fill,
-                borderWidth: 1
+                borderWidth: 1,
+                tension: 0.6
             });
         });
         const configuration = {

@@ -41,8 +41,8 @@
 
 .toolbox-toadd {
     position: absolute;
-    right: 50px;
-    top: -40px;
+    right: 170px;
+    top: -48px;
 }
 
 .panelTop .chart-list,
@@ -156,7 +156,7 @@
 }
 
 .list-panel {
-    height: calc(100% - 26px); 
+    height: calc(100% - 26px);
     overflow-x: hidden;
 }
 

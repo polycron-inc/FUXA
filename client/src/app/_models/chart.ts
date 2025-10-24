@@ -16,6 +16,7 @@ export class ChartLine {
     lineInterpolation?: number;
     lineWidth?: number;
     spanGaps = true;
+    tension = 0.6;
     zones?: ChartLineZone[];
 }
 
