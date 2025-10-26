@@ -27,7 +27,8 @@ export class ChartLinePropertyComponent implements OnInit {
             yaxis: [this.data.yaxis],
             lineInterpolation: [this.data.lineInterpolation],
             lineWidth: [this.data.lineWidth],
-            spanGaps: [this.data.spanGaps]
+            spanGaps: [this.data.spanGaps],
+            tension: 0.6
         });
     }
 
