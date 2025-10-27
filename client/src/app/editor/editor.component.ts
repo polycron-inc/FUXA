@@ -1066,9 +1066,29 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * save current project and launch the Test in new Windows 'lab'
      */
-    onStartCurrent() {
-        this.onSaveProject();
-        this.winRef.nativeWindow.open('lab', 'MyTest', 'width=800,height=640,menubar=0');
+    async onStartCurrent() {
+        if (this.currentView) {
+            // Show loading mask
+            this.isLoading = true;
+
+            try {
+                // Save current view and wait for completion
+                this.currentView.svgcontent = this.getContent();
+                await this.projectService.setViewAsync(this.currentView, false);
+
+                // Hide loading mask and open window after save completes
+                this.isLoading = false;
+                this.winRef.nativeWindow.open('lab', 'MyTest', 'width=800,height=640,menubar=0');
+            } catch (error) {
+                // Hide loading mask on error
+                this.isLoading = false;
+                console.error('Error saving view:', error);
+                // Still open window even if save fails
+                this.winRef.nativeWindow.open('lab', 'MyTest', 'width=800,height=640,menubar=0');
+            }
+        } else {
+            this.winRef.nativeWindow.open('lab', 'MyTest', 'width=800,height=640,menubar=0');
+        }
     }
     //#endregion
 
