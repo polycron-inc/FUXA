@@ -255,8 +255,13 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
         } else if (attribute.lineInterpolation === this.lineInterpolations.stepBefore) {
             attribute.paths = uPlot.paths.stepped({ align: -1 });
         } else if (attribute.lineInterpolation === this.lineInterpolations.spline) {
+            // Use built-in monotone cubic spline (doesn't support custom tension)
             attribute.paths = uPlot.paths.spline();
+        } else if (attribute.lineInterpolation === this.lineInterpolations.linear) {
+            // Explicitly use linear interpolation
+            attribute.paths = uPlot.paths.linear();
         }
+        // If lineInterpolation is undefined or not set, uPlot will use its default (linear)
         this.uplot.addSeries(attribute, index);
         this.uplot.setData(this.data);
     }
@@ -307,6 +312,16 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
                 this.data[i].shift();
             }
         }
+
+        // Limit to maximum 20 data points
+        const maxDataPoints = 20;
+        if (this.data[0].length > maxDataPoints) {
+            const removeCount = this.data[0].length - maxDataPoints;
+            for (let i = 0; i < this.data.length; i++) {
+                this.data[i].splice(0, removeCount);
+            }
+        }
+
         this.uplot.setData(this.data);
     }
 

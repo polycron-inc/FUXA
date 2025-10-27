@@ -275,6 +275,11 @@ export class ChartUplotComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public addLine(id: string, name: string, line: ChartLine, addYaxisToLabel: boolean) {
         if (!this.mapData[id]) {
+            console.log('=== addLine Debug ===');
+            console.log('line.fill:', line.fill);
+            console.log('line.color:', line.color);
+            console.log('line:', line);
+
             let linelabel = line.label || name;
             if (addYaxisToLabel)
                 {linelabel = `Y${line.yaxis} - ${linelabel}`;}
@@ -285,8 +290,41 @@ export class ChartUplotComponent implements OnInit, AfterViewInit, OnDestroy {
                 serie.scale = '1';
             }
             serie.spanGaps = Utils.isNullOrUndefined(line.spanGaps) ? true : line.spanGaps;
-            if (line.fill) {
-                serie.fill = line.fill;
+
+            console.log('Checking line.fill:', line.fill, 'Type:', typeof line.fill);
+            // Use line.fill if set, otherwise use line.color
+            let fillColor = line.fill || line.color;
+            if (fillColor) {
+                console.log('✓ Creating gradient with color:', fillColor);
+                // Create gradient fill for area under the line (top 20% to bottom 90%)
+                serie.fill = (self, seriesIndex) => {
+                    const gradient = self.ctx.createLinearGradient(0, self.bbox.top, 0, self.bbox.top + self.bbox.height);
+                    // Use fillColor for gradient
+                    let color = fillColor;
+                    // Extract RGB from color string (supports hex, rgb, rgba formats)
+                    let rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+                    if (rgbMatch) {
+                        // If already rgb/rgba format
+                        gradient.addColorStop(0, `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, 0.2)`);  // Top: 20% opacity
+                        gradient.addColorStop(1, `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, 0.9)`);  // Bottom: 90% opacity
+                    } else if (color.startsWith('#')) {
+                        // If hex format, convert to rgb
+                        let hex = color.replace('#', '');
+                        let r = parseInt(hex.substring(0, 2), 16);
+                        let g = parseInt(hex.substring(2, 4), 16);
+                        let b = parseInt(hex.substring(4, 6), 16);
+                        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`);  // Top: 20% opacity
+                        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.9)`);  // Bottom: 90% opacity
+                    } else {
+                        // Fallback to solid color
+                        gradient.addColorStop(0, color);
+                        gradient.addColorStop(1, color);
+                    }
+                    console.log('✓ Gradient created successfully');
+                    return gradient;
+                };
+            } else {
+                console.log('✗ No fill color available, no gradient created');
             }
             if (line.lineWidth) {
                 serie.width = line.lineWidth;
@@ -301,16 +339,14 @@ export class ChartUplotComponent implements OnInit, AfterViewInit, OnDestroy {
                     };
                 }
             }
-            else if (line.fill) {
-                serie.fill = line.fill;
-            }
             if (line.zones?.some(zone => zone.stroke)) {
                 const zones = this.generateZones(line.zones, 'stroke', line.color);
                 if (zones) {
                     serie.stroke = (self, seriesIndex) => this.nguplot.scaleGradient(self, line.yaxis, 1, zones, true) || line.color;
                 }
             }
-            serie.lineInterpolation = line.lineInterpolation;
+            // Set lineInterpolation to spline (3) if not defined
+            serie.lineInterpolation = line.lineInterpolation !== undefined ? line.lineInterpolation : 3;
             this.mapData[id] = <MapDataType>{
                 index: Object.keys(this.mapData).length + 1,
                 attribute: serie,
