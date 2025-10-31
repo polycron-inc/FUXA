@@ -385,6 +385,12 @@
                                                 size="4" data-attr="y2" />
                                         </div>
                                     </div>
+                                    <div class="svg-property">
+                                        <span>Line Color</span>
+                                        <input id="line_stroke_color" type="color" class="rightbar-input"
+                                            style="width: 60px; height: 25px;"
+                                            (change)="onLineStrokeColorChange($event)" />
+                                    </div>
                                 </div>
                                 <div id="rect_panel">
                                     <div class="svg-property-split2">
@@ -530,6 +536,32 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <!-- Temporarily disabled: Text input border controls
+                                    <div class="svg-property-split2">
+                                        <div class="svg-property">
+                                            <span>Border Color</span>
+                                            <input id="input_border_color" type="color" class="rightbar-input"
+                                                style="width: 60px; height: 25px;"
+                                                (change)="onInputBorderColorChange($event)" />
+                                        </div>
+                                        <div class="svg-property">
+                                            <span>Border Width</span>
+                                            <input numberOnly id="input_border_width" type="number"
+                                                class="rightbar-input" size="4" min="0" step="0.5" value="0.5"
+                                                (change)="onInputBorderWidthChange($event)" />
+                                        </div>
+                                    </div>
+                                    <div class="svg-property">
+                                        <span>Border Style</span>
+                                        <select id="input_border_style" class="rightbar-input"
+                                            (change)="onInputBorderStyleChange($event)">
+                                            <option value="solid">Solid</option>
+                                            <option value="dashed">Dashed</option>
+                                            <option value="dotted">Dotted</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                    -->
 
                                     <!-- Not visible, but still used -->
                                     <input id="text" type="text" size="35" />

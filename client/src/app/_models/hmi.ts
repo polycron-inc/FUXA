@@ -254,6 +254,9 @@ export interface InputOptionsProperty {
     updatedEsc?: boolean;
     selectOnClick?: boolean;
     actionOnEsc?: InputActionEscType;
+    borderColor?: string;
+    borderWidth?: number;
+    borderStyle?: string;
 }
 
 export enum InputOptionType {

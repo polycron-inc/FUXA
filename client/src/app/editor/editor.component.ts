@@ -1024,6 +1024,55 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.winRef.nativeWindow.svgEditor.setTextAlign(align);
     }
 
+    /**
+     * set input border color
+     */
+    onInputBorderColorChange(event) {
+        const color = event.target.value;
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderColor === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderColor(color);
+        } else {
+            console.error('setInputBorderColor function not found. Available methods:', Object.keys(this.winRef.nativeWindow.svgEditor || {}).filter(k => k.startsWith('set')));
+        }
+    }
+
+    /**
+     * set input border width
+     */
+    onInputBorderWidthChange(event) {
+        const width = parseFloat(event.target.value);
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderWidth === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderWidth(width);
+        } else {
+            console.error('setInputBorderWidth function not found');
+        }
+    }
+
+    /**
+     * set input border style
+     */
+    onInputBorderStyleChange(event) {
+        const style = event.target.value;
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderStyle === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderStyle(style);
+        } else {
+            console.error('setInputBorderStyle function not found');
+        }
+    }
+
+    /**
+     * set line stroke color
+     */
+    onLineStrokeColorChange(event) {
+        const color = event.target.value;
+        // setColor(color, alpha, type) - type is 'stroke' or 'fill'
+        if (this.winRef.nativeWindow.setColor) {
+            this.winRef.nativeWindow.setColor(color, 1, 'stroke');
+        } else {
+            console.error('setColor function not found');
+        }
+    }
+
     checkMySelectedToSetColor(bkcolor, color, elems) {
         GaugesManager.initElementColor(bkcolor, color, elems);
     }
