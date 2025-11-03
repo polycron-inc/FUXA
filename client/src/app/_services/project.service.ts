@@ -975,8 +975,8 @@ export class ProjectService {
     //#endregion
 
     //#region Upload resource to server
-    uploadFile(file: any): Observable<UploadFile> {
-        return this.storage.uploadFile(file);
+    uploadFile(file: any, destination?: string): Observable<UploadFile> {
+        return this.storage.uploadFile(file, destination);
     }
     //#endregion
 

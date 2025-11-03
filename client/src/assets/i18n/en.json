@@ -644,6 +644,8 @@
     "editor.transform-image-url-title": "Change URL",
     "editor.transform-change-image": "Change Image",
     "editor.transform-change-image-title": "NOTE: This image cannot be embedded. It will depend on this path to be displayed",
+    "editor.image-source": "Image Source",
+    "editor.change-image-source": "Change Image",
     "editor.transform-angle": "angle",
     "editor.transform-angle-title": "Change rotation angle",
     "editor.transform-hide": "Hide",

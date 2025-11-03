@@ -208,6 +208,8 @@ module.exports = {
                     encoding = {encoding: 'base64'};
                 }
                 let filePath = path.join(runtime.settings.uploadFileDir, fullPath || fileName);
+                let locationPath = (fullPath || fileName);
+
                 if (destination) {
                     let destinationDir = path.resolve(runtime.settings.appDir, `_${destination}`);
                     if (process.versions.electron) {
@@ -219,9 +221,14 @@ module.exports = {
                     if (!fs.existsSync(dir)) {
                         fs.mkdirSync(dir, { recursive: true });
                     }
+                    // Use _destination path for destination uploads
+                    locationPath = `_${destination}/${(fullPath || fileName)}`;
                 }
                 fs.writeFileSync(filePath, basedata, encoding);
-                let result = {'location': '/' + runtime.settings.httpUploadFileStatic + '/' + fullPath || fileName };
+                // Return appropriate path based on whether destination is used
+                let result = destination
+                    ? {'location': '/' + locationPath }
+                    : {'location': '/' + runtime.settings.httpUploadFileStatic + '/' + locationPath };
                 res.json(result);
             } catch (err) {
                 if (err && err.code) {
