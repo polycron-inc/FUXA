@@ -385,12 +385,6 @@
                                                 size="4" data-attr="y2" />
                                         </div>
                                     </div>
-                                    <div class="svg-property">
-                                        <span>Line Color</span>
-                                        <input id="line_stroke_color" type="color" class="rightbar-input"
-                                            style="width: 60px; height: 25px;"
-                                            (change)="onLineStrokeColorChange($event)" />
-                                    </div>
                                 </div>
                                 <div id="rect_panel">
                                     <div class="svg-property-split2">
@@ -725,6 +719,12 @@
                                         matTooltip="{{'editor.stroke-capround-title' | translate}}">
                                         <span class="icon-linecap-round"></span>
                                     </div>
+                                </div>
+                                <div class="svg-property">
+                                    <span>{{'editor.stroke-color' | translate}}</span>
+                                    <input id="stroke_color" type="color" class="rightbar-input"
+                                        style="width: 60px; height: 25px;"
+                                        (input)="onStrokeColorChange($event)" />
                                 </div>
                                 <div class="svg-property-split2" style="display: none">
                                     <div class="svg-property">

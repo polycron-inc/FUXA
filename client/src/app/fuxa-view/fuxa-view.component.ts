@@ -740,6 +740,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private setBackgroundImage(element: any, profile: any) {
+        console.log('setBackgroundImage', profile)
         if (profile.bkimage) {
             element.style.backgroundImage = `url(${profile.bkimage})`;
 

@@ -662,6 +662,7 @@
     "editor.stroke-width-title": "Change stroke width by 1, shift-click to change by 0.1",
     "editor.stroke-style": "stroke style",
     "editor.stroke-style-title": "Change stroke dash style",
+    "editor.stroke-color": "stroke color",
     "editor.stroke-joinmiter-title": "Linejoin Miter",
     "editor.stroke-joinround-title": "Linejoin Round",
     "editor.stroke-joinbevel-title": "Linejoin Bevel",

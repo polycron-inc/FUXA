@@ -519,6 +519,7 @@
     "editor.stroke-width-title": "改變邊框寬度為1，按shift鍵改變為0.1",
     "editor.stroke-style": "邊框風格",
     "editor.stroke-style-title": "改變邊框破折號樣式",
+    "editor.stroke-color": "邊框顏色",
     "editor.stroke-joinmiter-title": "Linejoin Miter",
     "editor.stroke-joinround-title": "Linejoin Round",
     "editor.stroke-joinbevel-title": "Linejoin Round",

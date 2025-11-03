@@ -243,6 +243,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     } else if (type === 'stroke') {
                         this.colorStroke = color;
                         this.checkMySelectedToSetColor(null, this.colorStroke, this.winRef.nativeWindow.svgEditor.getSelectedElements());
+                        // Update stroke color input when stroke color changes
+                        const strokeColorInput = document.getElementById('stroke_color') as HTMLInputElement;
+                        if (strokeColorInput && color) {
+                            strokeColorInput.value = color;
+                            strokeColorInput.style.backgroundColor = color;
+                        }
                     }
                 },
                 (eleadded) => {
@@ -1061,15 +1067,21 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * set line stroke color
+     * set stroke color for all shapes
      */
-    onLineStrokeColorChange(event) {
+    onStrokeColorChange(event) {
         const color = event.target.value;
-        // setColor(color, alpha, type) - type is 'stroke' or 'fill'
-        if (this.winRef.nativeWindow.setColor) {
-            this.winRef.nativeWindow.setColor(color, 1, 'stroke');
+        // setColor(colorValue, alpha, type)
+        // - colorValue: color without # (setPaint will add it)
+        // - alpha: 0-100 percentage (will be divided by 100 in setPaint)
+        // - type: 'stroke' or 'fill'
+        if (this.winRef.nativeWindow.svgEditor && this.winRef.nativeWindow.svgEditor.setColor) {
+            const colorValue = color.startsWith('#') ? color.substr(1) : color;
+            this.winRef.nativeWindow.svgEditor.setColor(colorValue, 100, 'stroke');
+            // Update background color
+            event.target.style.backgroundColor = color;
         } else {
-            console.error('setColor function not found');
+            console.error('svgEditor.setColor function not found');
         }
     }
 

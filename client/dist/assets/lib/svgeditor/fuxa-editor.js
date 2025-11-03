@@ -7812,7 +7812,7 @@ var mysvgeditor = {
                           var c = d.getRotationAngle(t);
                           e("#angle").val(c);
                           var f = d.getBlur(t);
-                          if (e("#blur").val(f), e("#blur_slider").slider("option", "value", f), d.addedNew && "image" === s && 0 !== d.getHref(t).indexOf("data:") && l(), a || "pathedit" == o) {
+                          if (e("#blur").val(f), e("#blur_slider").slider("option", "value", f), !$ && !ee && !a && e("#stroke_color").val(t.getAttribute("stroke") || "#000000").css("background-color", t.getAttribute("stroke") || "#000000"), d.addedNew && "image" === s && 0 !== d.getHref(t).indexOf("data:") && l(), a || "pathedit" == o) {
                               var v = U.getNodePoint();
                               if (e("#tool_add_subpath").removeClass("push_button_pressed").addClass("tool_button"), e("#tool_node_delete").toggleClass("disabled", !U.canDeleteNodes), P("#tool_openclose_path", U.closed_subpath ? "open_path" : "close_path"), v) {
                                   var h = e("#seg_type");
@@ -7869,7 +7869,7 @@ var mysvgeditor = {
                                   e("#text").val(t.textContent), d.addedNew && !A && setTimeout(function() {
                                       e("#text").focus().select()
                                   }, 100)
-                              } else "image" == x ? he(d.getHref(t)) : "g" === x || "use" === x ? (e("#container_panel").show(), d.getTitle()) : "line" === x && (e("#marker_panel").show(), e("#line_stroke_color").val(t.getAttribute("stroke") || "#000000"))
+                              } else "image" == x ? he(d.getHref(t)) : "g" === x || "use" === x ? (e("#container_panel").show(), d.getTitle()) : "line" === x && e("#marker_panel").show()
                           }
                           r[("g" === x ? "en" : "dis") + "ableContextMenuItems"]("#ungroup"), r[("g" !== x && Y ? "en" : "dis") + "ableContextMenuItems"]("#group"), S && r.disableContextMenuItems("#ungroup"), "svg-ext-shapes-group" === t.getAttribute("type") && e("#g_panel").show()
                       } else Y ? (e("#multiselected_panel").show(), r.enableContextMenuItems("#group").disableContextMenuItems("#ungroup"), J && e("#threemoreselected_panel").show()) : r.disableContextMenuItems("#interactivity,#editBindOfTags,#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back");
