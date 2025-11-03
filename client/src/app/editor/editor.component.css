@@ -956,3 +956,41 @@ select#start_marker option[value="D"] {
 .play-btn {
     margin-left: auto;
 }
+
+/* Image Source Button */
+.image-source-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 4px;
+
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 6px;
+
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: none;
+
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.image-source-button:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+.image-source-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.image-source-button .material-icons {
+    vertical-align: middle;
+}

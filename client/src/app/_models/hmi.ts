@@ -27,6 +27,8 @@ export class View {
     type: ViewType;
     /** Property with events of view like Open or Close */
     property: ViewProperty;
+    /** Thumbnail image URL (PNG file location) */
+    thumbnail?: string;
 
     constructor(id?: string, type?: ViewType, name?: string) {
         this.id = id;
@@ -254,6 +256,9 @@ export interface InputOptionsProperty {
     updatedEsc?: boolean;
     selectOnClick?: boolean;
     actionOnEsc?: InputActionEscType;
+    borderColor?: string;
+    borderWidth?: number;
+    borderStyle?: string;
 }
 
 export enum InputOptionType {

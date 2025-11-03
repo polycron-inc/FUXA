@@ -69,6 +69,16 @@ export class FlexInputComponent implements OnInit {
             } else if (this.property.options.actionOnEsc) {
                 this.property.options.updatedEsc = null;
             }
+            // Initialize border properties
+            if (!this.property.options.borderColor) {
+                this.property.options.borderColor = '#000000';
+            }
+            if (this.property.options.borderWidth === undefined) {
+                this.property.options.borderWidth = 0.5;
+            }
+            if (!this.property.options.borderStyle) {
+                this.property.options.borderStyle = 'solid';
+            }
         }
         this.ranges.forEach(range => {
             if (!range.color) {

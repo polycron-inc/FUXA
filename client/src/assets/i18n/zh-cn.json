@@ -503,6 +503,8 @@
     "editor.transform-image-url-title": "改變URL",
     "editor.transform-change-image": "改變圖像",
     "editor.transform-change-image-title": "注意：這個圖像不能被嵌入,它將取決於這個路徑來顯示",
+    "editor.image-source": "圖片來源",
+    "editor.change-image-source": "切換圖片",
     "editor.transform-angle": "角度",
     "editor.transform-angle-title": "改變旋轉角度",
 
@@ -519,6 +521,7 @@
     "editor.stroke-width-title": "改變邊框寬度為1，按shift鍵改變為0.1",
     "editor.stroke-style": "邊框風格",
     "editor.stroke-style-title": "改變邊框破折號樣式",
+    "editor.stroke-color": "邊框顏色",
     "editor.stroke-joinmiter-title": "Linejoin Miter",
     "editor.stroke-joinround-title": "Linejoin Round",
     "editor.stroke-joinbevel-title": "Linejoin Round",

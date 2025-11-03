@@ -11,7 +11,8 @@
       "Bash(npm install)",
       "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 簡化 switch 控件為兩個 tag 配置\n\n調整 switch 控件的 tag 結構，從三個 tag（variableId、readVariableId、writeVariableId）簡化為兩個：\n- variableId：用於讀取數值\n- writeVariableId：用於控制 publish topic（寫入）\n\n主要變更：\n- 移除 html-switch-property 中的獨立 read tag 配置區塊\n- 移除 readProperty 相關代碼和 ViewChild 引用\n- 更新 html-switch.component 移除 readVariableId 的處理\n- 更新 gauges.component 使用 variableId 讀取當前值\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(npm run build:dev:*)"
+      "Bash(npm run build:dev:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

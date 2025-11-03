@@ -208,15 +208,13 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
             } else {
                 this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
             }
-            if (this.child || legacyProfile) {
-                if (view.profile.bkimage) {
-                    // 設定背景圖片
-                    this.setBackgroundImage(this.dataContainer.nativeElement, view.profile);
-                }
-                if (view.profile.bkcolor) {
-                    // 設定背景色（可與背景圖片同時存在）
-                    this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
-                }
+            if (view.profile.bkimage) {
+                // 設定背景圖片
+                this.setBackgroundImage(this.dataContainer.nativeElement, view.profile);
+            }
+            if (view.profile.bkcolor) {
+                // 設定背景色（可與背景圖片同時存在）
+                this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
             }
             if (view.profile.align && !this.child) {
                 FuxaViewComponent.setAlignStyle(view.profile.align, this.dataContainer.nativeElement);
@@ -742,6 +740,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private setBackgroundImage(element: any, profile: any) {
+        console.log('setBackgroundImage', profile)
         if (profile.bkimage) {
             element.style.backgroundImage = `url(${profile.bkimage})`;
 

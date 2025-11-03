@@ -300,7 +300,7 @@
             <!-- SVG-EDITOR -->
             <div [style.display]="(editorMode === editorModeType.SVG)?'block':'none' ">
                 <!-- RIGHT BAR -->
-                <div class="svg-tools-fly" [style.display]="(isAnySelected)?'block':'none' ">
+                <div class="svg-tools-fly" [style.display]="(isAnySelected)?'block':'none' " (mousedown)="onRightBarMouseDown($event)">
                     <mat-expansion-panel class="svg-workarea-fly-p" (opened)="panelPropertyIdOpenState = true"
                         (closed)="panelPropertyIdOpenState = false" hideToggle="true" expanded="true"
                         style="display:none">
@@ -530,6 +530,32 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <!-- Temporarily disabled: Text input border controls
+                                    <div class="svg-property-split2">
+                                        <div class="svg-property">
+                                            <span>Border Color</span>
+                                            <input id="input_border_color" type="color" class="rightbar-input"
+                                                style="width: 60px; height: 25px;"
+                                                (change)="onInputBorderColorChange($event)" />
+                                        </div>
+                                        <div class="svg-property">
+                                            <span>Border Width</span>
+                                            <input numberOnly id="input_border_width" type="number"
+                                                class="rightbar-input" size="4" min="0" step="0.5" value="0.5"
+                                                (change)="onInputBorderWidthChange($event)" />
+                                        </div>
+                                    </div>
+                                    <div class="svg-property">
+                                        <span>Border Style</span>
+                                        <select id="input_border_style" class="rightbar-input"
+                                            (change)="onInputBorderStyleChange($event)">
+                                            <option value="solid">Solid</option>
+                                            <option value="dashed">Dashed</option>
+                                            <option value="dotted">Dotted</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                    -->
 
                                     <!-- Not visible, but still used -->
                                     <input id="text" type="text" size="35" />
@@ -551,21 +577,16 @@
                                                 size="4" data-attr="height" />
                                         </div>
                                     </div>
-                                    <div class="svg-property" style="display: none;">
-                                        <div class="svg-property">
-                                            <span>{{'editor.transform-url' | translate}}</span>
-                                            <input id="image_url" class="attr_changer" type="text"
-                                                matTooltip="{{'editor.transform-image-url-title' | translate}}" />
-                                        </div>
-                                        <div class="svg-property">
-                                            <div class="svg-property">
-                                                <button id="change_image_url"
-                                                    style="display:none;">{{'editor.transform-change-image' |
-                                                    translate}}</button>
-                                                <span id="url_notice"
-                                                    matTooltip="{{'editor.transform-change-image-title' | translate}}"></span>
-                                            </div>
-                                        </div>
+                                    <div class="svg-property">
+                                        <span>{{'editor.image-source' | translate}}</span>
+                                        <input 
+                                            mat-button
+                                            (click)="changeImageFile.click()"
+                                            matTooltip="{{'editor.change-image-source' | translate}}"
+                                            matIconSuffix="image"
+                                            type="file"
+                                            accept="image/png,image/jpg,image/jpeg,image/svg+xml"
+                                        />
                                     </div>
                                 </div>
                                 <div id="tool_angle" class="svg-property">
@@ -693,6 +714,12 @@
                                         matTooltip="{{'editor.stroke-capround-title' | translate}}">
                                         <span class="icon-linecap-round"></span>
                                     </div>
+                                </div>
+                                <div class="svg-property">
+                                    <span>{{'editor.stroke-color' | translate}}</span>
+                                    <input id="stroke_color" type="color" class="rightbar-input"
+                                        style="width: 60px; height: 25px;"
+                                        (input)="onStrokeColorChange($event)" />
                                 </div>
                                 <div class="svg-property-split2" style="display: none">
                                     <div class="svg-property">

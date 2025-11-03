@@ -243,6 +243,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     } else if (type === 'stroke') {
                         this.colorStroke = color;
                         this.checkMySelectedToSetColor(null, this.colorStroke, this.winRef.nativeWindow.svgEditor.getSelectedElements());
+                        // Update stroke color input when stroke color changes
+                        const strokeColorInput = document.getElementById('stroke_color') as HTMLInputElement;
+                        if (strokeColorInput && color) {
+                            strokeColorInput.value = color;
+                            strokeColorInput.style.backgroundColor = color;
+                        }
                     }
                 },
                 (eleadded) => {
@@ -1024,8 +1030,114 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.winRef.nativeWindow.svgEditor.setTextAlign(align);
     }
 
+    /**
+     * set input border color
+     */
+    onInputBorderColorChange(event) {
+        const color = event.target.value;
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderColor === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderColor(color);
+        } else {
+            console.error('setInputBorderColor function not found. Available methods:', Object.keys(this.winRef.nativeWindow.svgEditor || {}).filter(k => k.startsWith('set')));
+        }
+    }
+
+    /**
+     * set input border width
+     */
+    onInputBorderWidthChange(event) {
+        const width = parseFloat(event.target.value);
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderWidth === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderWidth(width);
+        } else {
+            console.error('setInputBorderWidth function not found');
+        }
+    }
+
+    /**
+     * set input border style
+     */
+    onInputBorderStyleChange(event) {
+        const style = event.target.value;
+        if (this.winRef.nativeWindow.svgEditor && typeof this.winRef.nativeWindow.svgEditor.setInputBorderStyle === 'function') {
+            this.winRef.nativeWindow.svgEditor.setInputBorderStyle(style);
+        } else {
+            console.error('setInputBorderStyle function not found');
+        }
+    }
+
+    /**
+     * set stroke color for all shapes
+     */
+    onStrokeColorChange(event) {
+        const color = event.target.value;
+        // setColor(colorValue, alpha, type)
+        // - colorValue: color without # (setPaint will add it)
+        // - alpha: 0-100 percentage (will be divided by 100 in setPaint)
+        // - type: 'stroke' or 'fill'
+        if (this.winRef.nativeWindow.svgEditor && this.winRef.nativeWindow.svgEditor.setColor) {
+            const colorValue = color.startsWith('#') ? color.substr(1) : color;
+            this.winRef.nativeWindow.svgEditor.setColor(colorValue, 100, 'stroke');
+            // Update background color
+            event.target.style.backgroundColor = color;
+        } else {
+            console.error('svgEditor.setColor function not found');
+        }
+    }
+
     checkMySelectedToSetColor(bkcolor, color, elems) {
         GaugesManager.initElementColor(bkcolor, color, elems);
+    }
+
+    /**
+     * Prevent drag events from propagating when mouse is over the right bar
+     */
+    onRightBarMouseDown(event: MouseEvent) {
+        // Stop propagation to prevent SVG canvas from receiving the mousedown event
+        // This prevents dragging from starting when clicking on the right bar
+        event.stopPropagation();
+    }
+
+    /**
+     * Change the source of selected image element
+     */
+    onChangeImageSource(event) {
+        if (event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const filename = file.name;
+            const fileType = filename.split('.').pop().toLowerCase();
+
+            // Get selected image element
+            const selectedElements = this.winRef.nativeWindow.svgEditor.getSelectedElements();
+            if (!selectedElements || selectedElements.length === 0 || selectedElements[0]?.tagName !== 'image') {
+                console.error('No image element selected');
+                return;
+            }
+
+            if (fileType === 'svg') {
+                // Handle SVG files
+                const reader = new FileReader();
+                reader.onloadend = (e: any) => {
+                    const svgData = reader.result.toString();
+                    // Create data URL for SVG
+                    const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
+                    const dataUrl = 'data:image/svg+xml;base64,' + svgBase64;
+                    if (this.winRef.nativeWindow.svgEditor.setImageURL) {
+                        this.winRef.nativeWindow.svgEditor.setImageURL(dataUrl);
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                // Handle raster images (PNG, JPG, etc.)
+                this.getBase64Image(file, (imgdata) => {
+                    if (this.winRef.nativeWindow.svgEditor.setImageURL) {
+                        this.winRef.nativeWindow.svgEditor.setImageURL(imgdata);
+                    } else {
+                        console.error('setImageURL function not found');
+                    }
+                });
+            }
+        }
     }
 
     /**
@@ -1100,8 +1212,190 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     onSaveProject(notify = false) {
         if (this.currentView) {
             this.currentView.svgcontent = this.getContent();
-            this.saveView(this.currentView, notify);
+
+            // Generate and upload thumbnail
+            this.generateAndUploadThumbnail().then(thumbnailUrl => {
+                this.currentView.thumbnail = thumbnailUrl;
+                this.saveView(this.currentView, notify);
+            }).catch(err => {
+                console.error('Failed to generate/upload thumbnail:', err);
+                // Save without thumbnail if generation fails
+                this.saveView(this.currentView, notify);
+            });
         }
+    }
+
+    /**
+     * Generate thumbnail from current SVG canvas and upload to server
+     * @returns Promise with thumbnail URL
+     */
+    private generateAndUploadThumbnail(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            try {
+                // Get the SVG content (prefer the one just saved in onSaveProject)
+                let svgString = this.currentView.svgcontent;
+                if (!svgString && this.winRef?.nativeWindow?.svgEditor?.getSvgString) {
+                    svgString = this.winRef.nativeWindow.svgEditor.getSvgString();
+                }
+
+                // Validate SVG content
+                if (!svgString || svgString.length === 0) {
+                    reject('No SVG content');
+                    return;
+                }
+
+                // Remove foreignObject (HTML/canvas content) to avoid canvas tainting, then inline images and render
+                const cleanedSvg = this.stripForeignObjects(svgString);
+                this.inlineSvgImages(cleanedSvg).then((inlinedSvg) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    const blob = new Blob([inlinedSvg], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(blob);
+
+                    img.onload = () => {
+                        try {
+                            // Create canvas for thumbnail
+                            const canvas = document.createElement('canvas');
+                            const maxWidth = 300;
+                            const maxHeight = 200;
+
+                            // Calculate scaled dimensions maintaining aspect ratio
+                            let width = img.width || this.currentView.profile.width || 1920;
+                            let height = img.height || this.currentView.profile.height || 1080;
+
+                            const scale = Math.min(maxWidth / width, maxHeight / height);
+                            canvas.width = Math.max(1, Math.floor(width * scale));
+                            canvas.height = Math.max(1, Math.floor(height * scale));
+
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) {
+                                URL.revokeObjectURL(url);
+                                reject('Failed to get canvas context');
+                                return;
+                            }
+
+                            // Fill with white background
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                            // Draw the image scaled down
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                            // Convert to base64 PNG
+                            let thumbnailData: string;
+                            try {
+                                thumbnailData = canvas.toDataURL('image/png');
+                            } catch (secErr) {
+                                URL.revokeObjectURL(url);
+                                reject(`Canvas export failed: ${secErr}`);
+                                return;
+                            }
+                            URL.revokeObjectURL(url);
+
+                            // Upload thumbnail to server
+                            const fileName = `${this.currentView.id}_thumbnail.png`;
+                            const uploadData = {
+                                name: fileName,
+                                type: 'png',
+                                data: thumbnailData
+                            };
+
+                            this.projectService.uploadFile(uploadData, 'thumbnails').subscribe(
+                                (result) => {
+                                    if (result && result.location) {
+                                        resolve(result.location);
+                                    } else {
+                                        reject('Upload failed: no location returned');
+                                    }
+                                },
+                                (error) => {
+                                    reject(`Upload failed: ${error}`);
+                                }
+                            );
+                        } catch (err) {
+                            URL.revokeObjectURL(url);
+                            reject(err);
+                        }
+                    };
+
+                    img.onerror = () => {
+                        URL.revokeObjectURL(url);
+                        reject('Failed to load SVG image');
+                    };
+
+                    img.src = url;
+                }).catch((inlineErr) => {
+                    reject(`Inline images failed: ${inlineErr}`);
+                });
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    /**
+     * Remove all <foreignObject> nodes from the SVG to avoid security-taint when rasterizing.
+     */
+    private stripForeignObjects(svg: string): string {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svg, 'image/svg+xml');
+            const nodes = Array.from(doc.querySelectorAll('foreignObject'));
+            for (const n of nodes) {
+                n.parentNode?.removeChild(n);
+            }
+            const serializer = new XMLSerializer();
+            return serializer.serializeToString(doc.documentElement);
+        } catch (e) {
+            return svg;
+        }
+    }
+
+    /**
+     * Replace external <image> hrefs inside the SVG with data URLs to prevent canvas tainting.
+     */
+    private inlineSvgImages(svg: string): Promise<string> {
+        return new Promise(async (resolve) => {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svg, 'image/svg+xml');
+                const images = Array.from(doc.querySelectorAll('image')) as SVGImageElement[];
+
+                const fetchAsDataUrl = (url: string) => new Promise<string>(async (res, rej) => {
+                    try {
+                        // Ignore already inlined data URLs
+                        if (!url || url.startsWith('data:')) { res(url); return; }
+                        const response = await fetch(url, { credentials: 'same-origin' });
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        reader.onloadend = () => res(reader.result as string);
+                        reader.onerror = (e) => rej(e);
+                        reader.readAsDataURL(blob);
+                    } catch (e) {
+                        // Fallback to transparent pixel to avoid canvas tainting even if fetch fails
+                        res('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3XvQkAAAAASUVORK5CYII=');
+                    }
+                });
+
+                for (const img of images) {
+                    const href = (img.getAttribute('href') || img.getAttribute('xlink:href')) as string;
+                    if (href) {
+                        const dataUrl = await fetchAsDataUrl(href);
+                        if (img.hasAttribute('href')) {
+                            img.setAttribute('href', dataUrl);
+                        }
+                        if (img.hasAttribute('xlink:href')) {
+                            img.setAttribute('xlink:href', dataUrl);
+                        }
+                    }
+                }
+                const serializer = new XMLSerializer();
+                resolve(serializer.serializeToString(doc.documentElement));
+            } catch (_) {
+                // On any parsing error, return original svg
+                resolve(svg);
+            }
+        });
     }
 
     //#endregion

@@ -237,8 +237,24 @@ export class HtmlInputComponent extends GaugeBaseComponent {
 
                 // Set the border on the surrounding svg rect
                 let rects = ele.getElementsByTagName('rect');
-                if(rects){
-                    rects[0].setAttribute('stroke-width','0.5');
+                if(rects && rects.length > 0){
+                    const borderWidth = gab.property?.options?.borderWidth !== undefined ? gab.property.options.borderWidth : 0.5;
+                    const borderColor = gab.property?.options?.borderColor || '#000000';
+                    const borderStyle = gab.property?.options?.borderStyle || 'solid';
+
+                    rects[0].setAttribute('stroke-width', String(borderWidth));
+                    rects[0].setAttribute('stroke', borderColor);
+
+                    // Apply border style using stroke-dasharray
+                    if (borderStyle === 'dashed') {
+                        rects[0].setAttribute('stroke-dasharray', '5,5');
+                    } else if (borderStyle === 'dotted') {
+                        rects[0].setAttribute('stroke-dasharray', '1,3');
+                    } else if (borderStyle === 'none') {
+                        rects[0].setAttribute('stroke-width', '0');
+                    } else {
+                        rects[0].removeAttribute('stroke-dasharray');
+                    }
                 }
             }
         }

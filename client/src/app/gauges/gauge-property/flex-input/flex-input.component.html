@@ -164,5 +164,27 @@
                 </mat-select>
             </div>
         </div>
+        <div class="mt15">
+            <div class="my-form-field" style="width: 100px;">
+                <span>Border Color</span>
+                <input [(colorPicker)]="property.options.borderColor" [value]="property.options.borderColor" [style.background]="property.options.borderColor"
+                    [cpPresetColors]="defaultColor" [cpOKButton]="true" [cpCancelButton]="true" [cpCancelButtonClass]="'cpCancelButtonClass'"
+                    [cpCancelButtonText]="'Cancel'" [cpOKButtonText]="'OK'" [cpOKButtonClass]="'cpOKButtonClass'" class="input-color"
+                    style="width:70px;" [cpPosition]="'auto'" [cpAlphaChannel]="'always'" [cpOutputFormat]="'hex'" />
+            </div>
+            <div class="my-form-field ml20" style="width: 100px;">
+                <span>Border Width</span>
+                <input numberOnly [(ngModel)]="property.options.borderWidth" type="number" style="width: 60px" min="0" step="0.5">
+            </div>
+            <div class="my-form-field ml20" style="width: 140px;">
+                <span>Border Style</span>
+                <mat-select [(ngModel)]="property.options.borderStyle">
+                    <mat-option value="solid">Solid</mat-option>
+                    <mat-option value="dashed">Dashed</mat-option>
+                    <mat-option value="dotted">Dotted</mat-option>
+                    <mat-option value="none">None</mat-option>
+                </mat-select>
+            </div>
+        </div>
     </div>
 </div>

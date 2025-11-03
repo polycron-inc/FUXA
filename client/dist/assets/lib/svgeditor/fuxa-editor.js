@@ -1,3 +1,4 @@
+console.log('[FUXA] fuxa-editor.js loaded - VERSION 2024-12-27-v3');
 var mypathseg = function() {
   "use strict";
   return {
@@ -6416,6 +6417,38 @@ $.SvgCanvas = function(e, t) {
               attr: "text-anchor",
               value: e
           })
+      }, this.setInputBorderColor = function(color) {
+          console.log('[FUXA] setInputBorderColor called, version 2024-12-27');
+          if (w[0] && w[0].getAttribute('type') === 'svg-ext-html_input') {
+              var rects = w[0].getElementsByTagName('rect');
+              if (rects && rects.length > 0) {
+                  rects[0].setAttribute('stroke', color);
+              }
+          }
+      }, this.setInputBorderWidth = function(width) {
+          console.log('[FUXA] setInputBorderWidth called');
+          if (w[0] && w[0].getAttribute('type') === 'svg-ext-html_input') {
+              var rects = w[0].getElementsByTagName('rect');
+              if (rects && rects.length > 0) {
+                  rects[0].setAttribute('stroke-width', String(width));
+              }
+          }
+      }, this.setInputBorderStyle = function(style) {
+          console.log('[FUXA] setInputBorderStyle called');
+          if (w[0] && w[0].getAttribute('type') === 'svg-ext-html_input') {
+              var rects = w[0].getElementsByTagName('rect');
+              if (rects && rects.length > 0) {
+                  if (style === 'dashed') {
+                      rects[0].setAttribute('stroke-dasharray', '5,5');
+                  } else if (style === 'dotted') {
+                      rects[0].setAttribute('stroke-dasharray', '1,3');
+                  } else if (style === 'none') {
+                      rects[0].setAttribute('stroke-width', '0');
+                  } else {
+                      rects[0].removeAttribute('stroke-dasharray');
+                  }
+              }
+          }
       }, this.setFontColor = function(e) {
           cur_text.fill = e, je("fill", e)
       }, this.getFontColor = function() {
@@ -7066,13 +7099,41 @@ $.SvgCanvas = function(e, t) {
       var i = svgedit.utilities.getElem("canvasBackground"),
           r = $(i).find("rect")[0],
           a = svgedit.utilities.getElem("background_image");
-      r.setAttribute("fill", e), t ? (a || (a = g.createElementNS(n.SVG, "image"), svgedit.utilities.assignAttributes(a, {
-          id: "background_image",
-          width: "100%",
-          height: "100%",
-          preserveAspectRatio: "xMinYMin",
-          style: "pointer-events:none"
-      })), M(a, t), i.appendChild(a)) : a && a.parentNode.removeChild(a)
+
+      if (t) {
+          // 有背景圖片時，rect 設為透明
+          r.setAttribute("fill", "none");
+
+          if (!a) {
+              a = g.createElementNS(n.SVG, "image");
+              svgedit.utilities.assignAttributes(a, {
+                  id: "background_image",
+                  width: "100%",
+                  height: "100%",
+                  x: "0",
+                  y: "0",
+                  preserveAspectRatio: "none",
+                  style: "pointer-events:none"
+              });
+              // 插入到 rect 之後，確保圖片在背景色之上
+              var rect = $(i).find("rect")[0];
+              if (rect && rect.nextSibling) {
+                  i.insertBefore(a, rect.nextSibling);
+              } else {
+                  i.appendChild(a);
+              }
+          }
+          // 同時設置 href 和 xlink:href 以確保兼容性
+          M(a, t);
+          a.setAttribute("href", t);
+      } else {
+          // 沒有背景圖片時，設置背景色
+          r.setAttribute("fill", e || "#ffffff");
+
+          if (a && a.parentNode) {
+              a.parentNode.removeChild(a);
+          }
+      }
   }, this.cycleElement = function(e) {
       var t, i = w[0],
           r = !1,
@@ -7751,7 +7812,7 @@ var mysvgeditor = {
                           var c = d.getRotationAngle(t);
                           e("#angle").val(c);
                           var f = d.getBlur(t);
-                          if (e("#blur").val(f), e("#blur_slider").slider("option", "value", f), d.addedNew && "image" === s && 0 !== d.getHref(t).indexOf("data:") && l(), a || "pathedit" == o) {
+                          if (e("#blur").val(f), e("#blur_slider").slider("option", "value", f), !$ && !ee && !a && e("#stroke_color").val(t.getAttribute("stroke") || "#000000").css("background-color", t.getAttribute("stroke") || "#000000"), d.addedNew && "image" === s && 0 !== d.getHref(t).indexOf("data:") && l(), a || "pathedit" == o) {
                               var v = U.getNodePoint();
                               if (e("#tool_add_subpath").removeClass("push_button_pressed").addClass("tool_button"), e("#tool_node_delete").toggleClass("disabled", !U.canDeleteNodes), P("#tool_openclose_path", U.closed_subpath ? "open_path" : "close_path"), v) {
                                   var h = e("#seg_type");
@@ -8472,8 +8533,8 @@ var mysvgeditor = {
                   return d.setSvgString(e)
               }, u.enableGridSnapping = function(e) {
                   curConfig.gridSnapping = e
-              }, u.setDocProperty = function(e, t, n, o) {
-                  return !("fit" != t && !svgedit.units.isValidUnit("width", t)) && !("fit" != n && !svgedit.units.isValidUnit("height", n)) && !!d.setResolution(t, n) && (o || (o = "#ffffff"), !(o && !d.setBackground(o)) && void me())
+              }, u.setDocProperty = function(e, t, n, o, i) {
+                  return !("fit" != t && !svgedit.units.isValidUnit("width", t)) && !("fit" != n && !svgedit.units.isValidUnit("height", n)) && !!d.setResolution(t, n) && (o || (o = "#ffffff"), !(o && !d.setBackground(o, i)) && void me())
               }, u.alignSelectedElements = function(e) {
                   d.alignSelectedElements(e, "page")
               }, u.setColor = function(e, t, n) {
