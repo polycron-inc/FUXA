@@ -25,6 +25,11 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     scripts: Script[];
     private destroy$ = new Subject<void>();
 
+    // Tags management
+    viewTags: string[] = [];
+    newTagInput = '';
+    allExistingTags: string[] = [];
+
     @ViewChild('flexevent', {static: false}) flexEvent: FlexEventComponent;
     @ViewChild('tabEvents', {static: true}) tabEvents: MatTab;
 
@@ -73,6 +78,19 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
                 this.data.profile.bkcolor = '#E6E6E6';
             }
         });
+
+        // Initialize tags
+        this.viewTags = this.data.tags ? [...this.data.tags] : [];
+
+        // Collect all existing tags from all views
+        const allViews = this.projectService.getViews();
+        const tagsSet = new Set<string>();
+        allViews.forEach(view => {
+            if (view.tags && Array.isArray(view.tags)) {
+                view.tags.forEach(tag => tagsSet.add(tag));
+            }
+        });
+        this.allExistingTags = Array.from(tagsSet).sort();
     }
 
     ngOnDestroy() {
@@ -105,6 +123,8 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
 			this.data.property = new ViewProperty();
         }
         this.data.property.events = this.flexEvent.getEvents();
+        // Save tags
+        this.data.tags = this.viewTags.length > 0 ? this.viewTags : undefined;
         this.dialogRef.close(this.data);
     }
 
@@ -146,6 +166,42 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
         this.data.profile.bkimagePosition = 'center';
     }
 
+    // Tag management methods
+    addTag(tag: string) {
+        const trimmedTag = tag.trim();
+        if (trimmedTag && !this.viewTags.includes(trimmedTag)) {
+            this.viewTags.push(trimmedTag);
+            this.viewTags.sort();
+            this.newTagInput = '';
+        }
+    }
+
+    removeTag(tag: string) {
+        const index = this.viewTags.indexOf(tag);
+        if (index >= 0) {
+            this.viewTags.splice(index, 1);
+        }
+    }
+
+    toggleTag(tag: string) {
+        if (this.viewTags.includes(tag)) {
+            this.removeTag(tag);
+        } else {
+            this.addTag(tag);
+        }
+    }
+
+    isTagSelected(tag: string): boolean {
+        return this.viewTags.includes(tag);
+    }
+
+    onTagInputKeydown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.addTag(this.newTagInput);
+        }
+    }
+
     getImageFileName(base64: string): string {
         if (!base64) return '';
         return base64.substring(0, 50) + '...'; // 顯示前50個字符
@@ -158,4 +214,5 @@ export interface ViewPropertyType {
     profile: DocProfile;
     property: ViewProperty;
     existingNames?: string[];
+    tags?: string[];
 }

@@ -49,4 +49,67 @@
         overflow-x: hidden;
         overflow-y: auto;
     }
+
+    // Tags styling
+    .tags-container {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .view-tags-list {
+        margin-bottom: 10px;
+    }
+
+    .tag-input-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+
+        .tag-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 14px;
+
+            &:focus {
+                outline: none;
+                border-color: #3f51b5;
+            }
+        }
+    }
+
+    .existing-tags-section {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+        .existing-tags-label {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .existing-tags-chips {
+            ::ng-deep mat-chip {
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background-color: rgba(63, 81, 181, 0.1);
+                }
+
+                &.selected-tag {
+                    background-color: #3f51b5 !important;
+                    color: white !important;
+
+                    mat-icon {
+                        color: white !important;
+                    }
+                }
+            }
+        }
+    }
 }
