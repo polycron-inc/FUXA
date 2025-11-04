@@ -579,14 +579,21 @@
                                     </div>
                                     <div class="svg-property">
                                         <span>{{'editor.image-source' | translate}}</span>
-                                        <input 
-                                            mat-button
-                                            (click)="changeImageFile.click()"
-                                            matTooltip="{{'editor.change-image-source' | translate}}"
-                                            matIconSuffix="image"
+                                        <input
+                                            #changeImageFile
                                             type="file"
+                                            style="display: none;"
+                                            (change)="onChangeImageSource($event)"
                                             accept="image/png,image/jpg,image/jpeg,image/svg+xml"
                                         />
+                                        <button
+                                            mat-stroked-button
+                                            class="image-source-button"
+                                            (click)="changeImageFile.click()"
+                                            matTooltip="{{'editor.change-image-source' | translate}}">
+                                            <mat-icon>image</mat-icon>
+                                            {{'editor.change-image-source' | translate}}
+                                        </button>
                                     </div>
                                 </div>
                                 <div id="tool_angle" class="svg-property">
