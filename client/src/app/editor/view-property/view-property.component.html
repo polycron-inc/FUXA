@@ -121,6 +121,50 @@
                         <mat-option value="bottom right">{{'dlg.docproperty-image-position-bottomright' | translate}}</mat-option>
                     </mat-select>
                 </div>
+
+                <!-- Tags Section -->
+                <div class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-tags' | translate}}</span>
+                    <div class="tags-container">
+                        <!-- Selected tags as chips -->
+                        <mat-chip-list *ngIf="viewTags.length > 0" class="view-tags-list">
+                            <mat-chip *ngFor="let tag of viewTags" [removable]="true" (removed)="removeTag(tag)">
+                                {{tag}}
+                                <mat-icon matChipRemove>cancel</mat-icon>
+                            </mat-chip>
+                        </mat-chip-list>
+
+                        <!-- Add new tag input -->
+                        <div class="tag-input-container">
+                            <input
+                                type="text"
+                                [(ngModel)]="newTagInput"
+                                [ngModelOptions]="{standalone: true}"
+                                (keydown)="onTagInputKeydown($event)"
+                                placeholder="{{'dlg.docproperty-tags-add-placeholder' | translate}}"
+                                class="tag-input">
+                            <button mat-icon-button (click)="addTag(newTagInput)" [disabled]="!newTagInput.trim()">
+                                <mat-icon>add</mat-icon>
+                            </button>
+                        </div>
+
+                        <!-- Existing tags for selection -->
+                        <div *ngIf="allExistingTags.length > 0" class="existing-tags-section">
+                            <span class="existing-tags-label">{{'dlg.docproperty-tags-existing' | translate}}:</span>
+                            <div class="existing-tags-chips">
+                                <mat-chip-list>
+                                    <mat-chip
+                                        *ngFor="let tag of allExistingTags"
+                                        [class.selected-tag]="isTagSelected(tag)"
+                                        (click)="toggleTag(tag)">
+                                        {{tag}}
+                                        <mat-icon *ngIf="isTagSelected(tag)">check</mat-icon>
+                                    </mat-chip>
+                                </mat-chip-list>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </mat-tab>
 

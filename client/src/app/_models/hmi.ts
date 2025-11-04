@@ -29,6 +29,8 @@ export class View {
     property: ViewProperty;
     /** Thumbnail image URL (PNG file location) */
     thumbnail?: string;
+    /** Tags for categorizing and filtering views */
+    tags?: string[];
 
     constructor(id?: string, type?: ViewType, name?: string) {
         this.id = id;

@@ -1409,7 +1409,8 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 profile: new DocProfile(),
                 type: ViewType.svg,
                 existingNames: this.hmi.views.map((v) => v.name),
-                newView: true
+                newView: true,
+                tags: []
             }
         });
 
@@ -1417,6 +1418,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             if (result) {
                 let view = new View(Utils.getShortGUID('v_'), result.type, result.name);
                 view.profile = result.profile;
+                view.tags = result.tags;
                 this.hmi.views.push(view);
                 this.onSelectView(view);
                 this.saveView(this.currentView);

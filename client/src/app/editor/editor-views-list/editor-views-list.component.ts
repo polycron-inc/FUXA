@@ -111,7 +111,8 @@ export class EditorViewsListComponent {
                 name: view.name,
                 type: view.type || ViewType.svg,
                 profile: view.profile,
-                property: view.property}
+                property: view.property,
+                tags: view.tags}
         });
 
         dialogRef.afterClosed().subscribe(result => {
@@ -124,6 +125,8 @@ export class EditorViewsListComponent {
                     view.property ??= { events: [], actions: [] };
                     view.property.events = result.property.events;
                 }
+                // Save tags
+                view.tags = result.tags;
                 this.viewPropertyChanged.emit(view);
                 this.onSelectView(view);
             }
