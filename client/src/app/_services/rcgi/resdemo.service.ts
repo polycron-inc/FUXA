@@ -57,6 +57,12 @@ export class ResDemoService implements ResourceStorageService {
         });
     }
 
+    cloneView(viewId: string, newName?: string): Observable<any> {
+        return new Observable((observer) => {
+            observer.error('Clone view not supported in demo mode');
+        });
+    }
+
     uploadFile(file: any, destination?: string): Observable<UploadFile> {
         return new Observable((observer) => {
             observer.error('Not supported!');

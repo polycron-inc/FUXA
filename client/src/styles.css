@@ -1374,3 +1374,7 @@ mat-toolbar-row {
 .dark-theme mat-header-row{
     background-color: var(--Surface-tableHeader, rgba(51, 65, 85, 0.20)) !important;
 }
+.position-zero{
+    left:0px !important;
+    top:0px !important;
+}
