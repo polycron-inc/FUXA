@@ -15,7 +15,7 @@
             <input formControlName="description" type="text" style="width: 250px">
         </div>
     </div>
-    <div mat-dialog-actions class="dialog-action">
+    <div mat-dialog-actions class="dialog-action role-actions">
         <button mat-raised-button (click)="onCancelClick()">{{'dlg.cancel' | translate}}</button>
         <button mat-raised-button [disabled]="formGroup.invalid" color="primary" (click)="onOkClick()">{{'dlg.ok' | translate}}</button>
     </div>
