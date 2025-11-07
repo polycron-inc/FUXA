@@ -103,6 +103,12 @@ export class ResClientService implements ResourceStorageService {
         });
     }
 
+    cloneView(viewId: string, newName?: string): Observable<any> {
+        return new Observable((observer) => {
+            observer.error('Clone view not supported in client mode');
+        });
+    }
+
     uploadFile(file: any, destination?: string): Observable<UploadFile> {
         return new Observable((observer) => {
             observer.error('Not supported!');

@@ -186,6 +186,11 @@ function setProjectData(cmd, value) {
                 section.table = prjstorage.TableType.VIEWS;
                 section.name = value.id;
                 toremove = removeView(value);
+            } else if (cmd === ProjectDataCmdType.CloneView) {
+                var clonedView = cloneView(value.viewId, value.newName);
+                section.table = prjstorage.TableType.VIEWS;
+                section.name = clonedView.id;
+                section.value = clonedView;
             } else if (cmd === ProjectDataCmdType.HmiLayout) {
                 section.table = prjstorage.TableType.GENERAL;
                 section.name = cmd;
@@ -303,6 +308,81 @@ function setView(view) {
     } else {
         data.hmi.views.push(view);
     }
+}
+
+/**
+ * Clone a View in Project
+ * @param {*} viewId - ID of the view to clone
+ * @param {*} newName - Optional new name for the cloned view
+ * @returns {*} The cloned view object
+ */
+function cloneView(viewId, newName) {
+    // Find the source view
+    var sourceView = null;
+    for (var i = 0; i < data.hmi.views.length; i++) {
+        if (data.hmi.views[i].id === viewId) {
+            sourceView = data.hmi.views[i];
+            break;
+        }
+    }
+
+    if (!sourceView) {
+        throw new Error('View not found: ' + viewId);
+    }
+
+    // Generate short GUID (similar to client-side Utils.getShortGUID)
+    function getShortGUID() {
+        return Math.random().toString(36).substring(2, 15) +
+               Math.random().toString(36).substring(2, 15);
+    }
+
+    // Deep clone the view
+    var clonedView = JSON.parse(JSON.stringify(sourceView));
+
+    // Generate new IDs
+    clonedView.id = 'v_' + getShortGUID();
+
+    // Generate new name if not provided
+    if (!newName) {
+        var nn = 'View_';
+        var idx = 1;
+        for (idx = 1; idx < data.hmi.views.length + 2; idx++) {
+            var found = false;
+            for (var i = 0; i < data.hmi.views.length; i++) {
+                if (data.hmi.views[i].name === nn + idx) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                break;
+            }
+        }
+        clonedView.name = nn + idx;
+    } else {
+        clonedView.name = newName;
+    }
+
+    // Change all gauge IDs in items
+    if (clonedView.items) {
+        var newItems = {};
+        for (var oldId in clonedView.items) {
+            var newId = getShortGUID();
+            newItems[newId] = clonedView.items[oldId];
+
+            // Update svgcontent to replace old IDs with new IDs
+            if (clonedView.svgcontent) {
+                var regex = new RegExp(oldId, 'g');
+                clonedView.svgcontent = clonedView.svgcontent.replace(regex, newId);
+            }
+        }
+        clonedView.items = newItems;
+    }
+
+    // Add the cloned view to the project
+    data.hmi.views.push(clonedView);
+
+    return clonedView;
 }
 
 /**
@@ -1034,11 +1114,144 @@ function _mergeDefaultConfig() {
     }
 }
 
+/**
+ * Verify Project data structure
+ * @param {*} prj - project data to verify
+ * @returns {object} - { valid: boolean, error: string }
+ */
+function verifyProject(prj) {
+    let result = { valid: true, error: null };
+
+    if (!prj) {
+        result.valid = false;
+        result.error = 'Project data is null or undefined';
+        return result;
+    }
+
+    if (!prj.version) {
+        result.valid = false;
+        result.error = 'Project version is missing';
+        return result;
+    }
+
+    if (!prj.hmi) {
+        result.valid = false;
+        result.error = 'Project hmi data is missing';
+        return result;
+    }
+
+    if (!prj.devices) {
+        result.valid = false;
+        result.error = 'Project devices data is missing';
+        return result;
+    }
+
+    // Additional validations
+    if (prj.hmi && !prj.hmi.views) {
+        prj.hmi.views = [];
+    }
+
+    return result;
+}
+
+/**
+ * Verify View data structure
+ * @param {*} view - view data to verify
+ * @returns {object} - { valid: boolean, error: string }
+ */
+function verifyView(view) {
+    let result = { valid: true, error: null };
+    let errors = [];
+
+    if (!view) {
+        result.valid = false;
+        result.error = 'View data is null or undefined';
+        return result;
+    }
+
+    if (!view.svgcontent) {
+        errors.push('View svgcontent is missing');
+        result.valid = false;
+    }
+
+    if (!view.id) {
+        errors.push('View id is missing');
+        result.valid = false;
+    }
+
+    if (!view.profile) {
+        errors.push('View profile is missing');
+        result.valid = false;
+    }
+
+    if (!view.type) {
+        errors.push('View type is missing');
+        result.valid = false;
+    }
+
+    if (!view.items) {
+        errors.push('View items is missing');
+        result.valid = false;
+    }
+
+    if (!result.valid) {
+        result.error = errors.join(', ');
+    }
+
+    return result;
+}
+
+/**
+ * Import a View to Project (with name conflict resolution)
+ * @param {*} viewData - view data to import
+ * @param {*} newName - optional new name for the view
+ * @returns {*} The imported view object
+ */
+function importView(viewData, newName) {
+    // Verify view structure
+    const verification = verifyView(viewData);
+    if (!verification.valid) {
+        throw new Error('Invalid view format: ' + verification.error);
+    }
+
+    // Generate short GUID (similar to client-side Utils.getShortGUID)
+    function getShortGUID() {
+        return Math.random().toString(36).substring(2, 15) +
+               Math.random().toString(36).substring(2, 15);
+    }
+
+    // Deep clone the view
+    var importedView = JSON.parse(JSON.stringify(viewData));
+
+    // Generate new ID
+    importedView.id = 'v_' + getShortGUID();
+
+    // Handle name conflicts (same as client's logic)
+    if (newName) {
+        importedView.name = newName;
+    }
+
+    let idx = 1;
+    let startname = importedView.name;
+    let existingView = null;
+
+    // Check for name conflicts and add suffix if needed
+    while (existingView = data.hmi.views.find((v) => v.name === importedView.name)) {
+        importedView.name = startname + '_' + idx++;
+    }
+
+    // Add the imported view to the project
+    data.hmi.views.push(importedView);
+
+    return importedView;
+}
+
 const ProjectDataCmdType = {
     SetDevice: 'set-device',
     DelDevice: 'del-device',
     SetView: 'set-view',
     DelView: 'del-view',
+    CloneView: 'clone-view',
     HmiLayout: 'layout',
     Charts: 'charts',
     Graphs: 'graphs',
@@ -1074,5 +1287,9 @@ module.exports = {
     getProject: getProject,
     setProject: setProject,
     getProjectDemo: getProjectDemo,
+    cloneView: cloneView,
+    verifyProject: verifyProject,
+    verifyView: verifyView,
+    importView: importView,
     ProjectDataCmdType, ProjectDataCmdType,
 };

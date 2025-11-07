@@ -26,6 +26,8 @@ export abstract class ResourceStorageService {
 
     public abstract setServerProjectData(cmd: ProjectDataCmdType, data: any, prj: ProjectData);
 
+    public abstract cloneView(viewId: string, newName?: string): Observable<any>;
+
     public abstract uploadFile(file: any, destination?: string): Observable<UploadFile>;
 
     public abstract getDeviceSecurity(id: string): Observable<any>;

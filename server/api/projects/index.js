@@ -187,6 +187,310 @@ module.exports = {
         });
 
         /**
+         * GET Export single view
+         * Export a single view as JSON by viewId
+         * Public API - No authentication required
+         * Follows the same logic as client's onExportView
+         */
+        prjApp.get("/api/project/export-view/:viewId", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                const viewId = req.params.viewId;
+
+                if (!viewId) {
+                    res.status(400).json({error:"missing_parameter", message: "viewId is required"});
+                    runtime.logger.error("api get project/export-view: viewId is required");
+                    return;
+                }
+
+                // Get project to find the view
+                runtime.project.getProject(null, null).then(projectData => {
+                    // Find the view by ID
+                    const view = projectData.hmi?.views?.find(v => v.id === viewId);
+
+                    if (!view) {
+                        res.status(404).json({error:"view_not_found", message: `View with id '${viewId}' not found`});
+                        runtime.logger.error(`api get project/export-view: View '${viewId}' not found`);
+                        return;
+                    }
+
+                    // Export view (same as client's onExportView logic)
+                    const exportData = {
+                        ...view,
+                        type: view.type || 'svg'
+                    };
+
+                    res.json(exportData);
+                    runtime.logger.info(`api get project/export-view: Successfully exported view '${view.name}' (${viewId})`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api get project/export-view: " + err.message);
+                    } else {
+                        res.status(400).json({error:"unexpected_error", message: err});
+                        runtime.logger.error("api get project/export-view: " + err);
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"export_error", message: err.message});
+                    runtime.logger.error("api get project/export-view: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api get project/export-view: " + err);
+                }
+            }
+        });
+
+        /**
+         * GET Export project
+         * Export the entire project as JSON
+         * Public API - No authentication required
+         */
+        prjApp.get("/api/project/export", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                // Get full project without permission filtering
+                runtime.project.getProject(null, null).then(projectData => {
+                    // Clean up tag values (similar to convertToSave in client)
+                    let exportData = JSON.parse(JSON.stringify(projectData));
+
+                    // Remove runtime tag values from devices
+                    if (exportData.devices) {
+                        for (let devid in exportData.devices) {
+                            if (exportData.devices[devid].tags) {
+                                for (let tagid in exportData.devices[devid].tags) {
+                                    delete exportData.devices[devid].tags[tagid].value;
+                                }
+                            }
+                        }
+                    }
+
+                    res.json(exportData);
+                    runtime.logger.info("api get project/export: Successfully exported project");
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api get project/export: " + err.message);
+                    } else {
+                        res.status(400).json({error:"unexpected_error", message: err});
+                        runtime.logger.error("api get project/export: " + err);
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"export_error", message: err.message});
+                    runtime.logger.error("api get project/export: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api get project/export: " + err);
+                }
+            }
+        });
+
+        /**
+         * POST Clone view
+         * Clone an existing view with new IDs
+         * Public API - No authentication required
+         */
+        prjApp.post("/api/project/clone-view", function(req, res, next) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                const { viewId, newName } = req.body;
+                if (!viewId) {
+                    res.status(400).json({error:"missing_parameter", message: "viewId is required"});
+                    runtime.logger.error("api post clone-view: viewId is required");
+                    return;
+                }
+
+                const clonedView = runtime.project.cloneView(viewId, newName);
+
+                // Save the cloned view to storage
+                runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetView, clonedView).then(() => {
+                    res.json({ view: clonedView });
+                    runtime.logger.info(`api post clone-view: Successfully cloned view ${viewId} to ${clonedView.name}`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post clone-view save: " + err.message);
+                    } else {
+                        res.status(400).json({error:"unexpected_error", message: err});
+                        runtime.logger.error("api post clone-view save: " + err);
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"clone_error", message: err.message});
+                    runtime.logger.error("api post clone-view: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post clone-view: " + err);
+                }
+            }
+        });
+
+        /**
+         * POST Import project
+         * Import entire project from JSON data
+         * Public API - No authentication required
+         * Follows the same logic as client's onFileChangeListener
+         */
+        prjApp.post("/api/project/import", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                const projectData = req.body;
+
+                // Basic validation
+                if (!projectData || typeof projectData !== 'object') {
+                    res.status(400).json({error:"invalid_data", message: "Project data is required and must be a valid JSON object"});
+                    runtime.logger.error("api post project/import: Invalid project data");
+                    return;
+                }
+
+                // Verify project structure (same as client's verifyProject)
+                const verification = runtime.project.verifyProject(projectData);
+                if (!verification.valid) {
+                    res.status(400).json({
+                        error:"invalid_project_format",
+                        message: verification.error || "Project format is invalid"
+                    });
+                    runtime.logger.error("api post project/import: " + verification.error);
+                    return;
+                }
+
+                runtime.logger.info(`api post project/import: Starting import of project '${projectData.name || 'Unnamed'}'`);
+
+                // Import the project (same as client's setProject -> save -> storage.setServerProject)
+                runtime.project.setProject(projectData).then(function(data) {
+                    runtime.logger.info("api post project/import: Project imported to storage, restarting runtime...");
+
+                    // Restart runtime to apply changes (same as client's flow)
+                    runtime.restart(true).then(function(result) {
+                        res.json({
+                            success: true,
+                            message: "Project imported successfully",
+                            projectName: projectData.name || "Unnamed"
+                        });
+                        runtime.logger.info(`api post project/import: Successfully imported and reloaded project '${projectData.name || 'Unnamed'}'`);
+                    }).catch(function(err) {
+                        res.status(500).json({
+                            error:"restart_error",
+                            message: "Project imported but failed to restart runtime: " + (err.message || err)
+                        });
+                        runtime.logger.error("api post project/import restart: " + (err.message || err));
+                    });
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post project/import setProject: " + err.message);
+                    } else {
+                        res.status(400).json({error:"import_error", message: err.message || err});
+                        runtime.logger.error("api post project/import setProject: " + (err.message || err));
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"import_error", message: err.message});
+                    runtime.logger.error("api post project/import: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post project/import: " + err);
+                }
+            }
+        });
+
+        /**
+         * POST Import single view
+         * Import a single view to the project
+         * Public API - No authentication required
+         * Follows the same logic as client's onViewFileChangeListener
+         * Supports two formats:
+         * 1. Direct view data: { id, name, svgcontent, ... }
+         * 2. Wrapped format: { cmd: "import-view", data: { id, name, svgcontent, ... } }
+         */
+        prjApp.post("/api/project/import-view", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                // Support both direct view data and wrapped format {cmd, data}
+                let viewData = req.body;
+                let newName = req.body._newName; // Optional: custom name for the view
+
+                // Check if body is in wrapped format {cmd, data}
+                if (req.body.cmd === 'import-view' && req.body.data) {
+                    viewData = req.body.data;
+                    newName = req.body.data._newName || newName;
+                }
+
+                // Basic validation
+                if (!viewData || typeof viewData !== 'object') {
+                    res.status(400).json({error:"invalid_data", message: "View data is required and must be a valid JSON object"});
+                    runtime.logger.error("api post project/import-view: Invalid view data");
+                    return;
+                }
+
+                // Remove the optional _newName parameter from view data if exists
+                const cleanViewData = JSON.parse(JSON.stringify(viewData));
+                delete cleanViewData._newName;
+                delete cleanViewData.cmd;
+
+                // Verify view structure (same as client's verifyView)
+                const verification = runtime.project.verifyView(cleanViewData);
+                if (!verification.valid) {
+                    res.status(400).json({
+                        error:"invalid_view_format",
+                        message: verification.error || "View format is invalid"
+                    });
+                    runtime.logger.error("api post project/import-view: " + verification.error);
+                    return;
+                }
+
+                runtime.logger.info(`api post project/import-view: Starting import of view '${cleanViewData.name || 'Unnamed'}'`);
+
+                // Import the view (handles name conflicts and ID generation)
+                const importedView = runtime.project.importView(cleanViewData, newName);
+
+                // Save the imported view to storage
+                runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetView, importedView).then(() => {
+                    res.json({
+                        success: true,
+                        message: "View imported successfully",
+                        view: {
+                            id: importedView.id,
+                            name: importedView.name,
+                            type: importedView.type
+                        }
+                    });
+                    runtime.logger.info(`api post project/import-view: Successfully imported view '${importedView.name}'`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post project/import-view save: " + err.message);
+                    } else {
+                        res.status(400).json({error:"save_error", message: err.message || err});
+                        runtime.logger.error("api post project/import-view save: " + (err.message || err));
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"import_error", message: err.message});
+                    runtime.logger.error("api post project/import-view: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post project/import-view: " + err);
+                }
+            }
+        });
+
+        /**
          * POST Upload file resource
          * images will be in media file saved
          */

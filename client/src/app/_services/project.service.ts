@@ -379,6 +379,30 @@ export class ProjectService {
             this.notifySaveError(err);
         });
     }
+
+    /**
+     * Clone a view on Server
+     * @param viewId - ID of the view to clone
+     * @param newName - Optional new name for the cloned view
+     * @returns Observable with the cloned view
+     */
+    cloneView(viewId: string, newName?: string): Observable<View> {
+        return new Observable((observer) => {
+            this.storage.cloneView(viewId, newName).subscribe(result => {
+                if (result && result.view) {
+                    // Add the cloned view to local project data
+                    this.projectData.hmi.views.push(result.view);
+                    observer.next(result.view);
+                    observer.complete();
+                } else {
+                    observer.error('No view returned from server');
+                }
+            }, err => {
+                console.error('cloneView error:', err);
+                observer.error(err);
+            });
+        });
+    }
     //#endregion
 
     //#region Hmi, Layout resource json struct
