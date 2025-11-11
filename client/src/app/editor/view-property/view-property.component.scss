@@ -112,4 +112,45 @@
             }
         }
     }
+
+    // Permissions styling
+    .viewers-container {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .selected-viewers-list {
+        margin-bottom: 10px;
+    }
+
+    .users-selection {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+        .users-label {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        ::ng-deep mat-chip {
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: rgba(63, 81, 181, 0.1);
+            }
+
+            &.selected-user {
+                background-color: #3f51b5 !important;
+                color: white !important;
+
+                mat-icon {
+                    color: white !important;
+                }
+            }
+        }
+    }
 }

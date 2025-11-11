@@ -216,6 +216,10 @@ export class ViewProperty {
     events: GaugeEvent[] = [];
     startLocation?: MapsLocation;
     startZoom?: number;
+    creator?: string;           // 建立者 (user ID or username)
+    locked?: boolean;           // 鎖定與否
+    viewers?: string[];         // 可瀏覽人員列表 (user IDs or usernames)
+    updatedAt?: string;         // 更新日期 (ISO string)
 }
 export class GaugeProperty {
     variableId: string;

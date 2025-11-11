@@ -182,6 +182,60 @@
                 </div>
             </div>
         </mat-tab>
+
+        <mat-tab label="{{'dlg.docproperty-permissions' | translate}}">
+            <div class="mat-tab-container property-container">
+                <!-- Creator -->
+                <div class="my-form-field item-block">
+                    <span>{{'dlg.docproperty-creator' | translate}}</span>
+                    <mat-select [(value)]="data.property.creator" placeholder="{{'dlg.docproperty-select-creator' | translate}}">
+                        <mat-option [value]="undefined">{{'dlg.docproperty-no-creator' | translate}}</mat-option>
+                        <mat-option *ngFor="let user of users" [value]="user.username">
+                            {{user.username}}
+                        </mat-option>
+                    </mat-select>
+                </div>
+
+                <!-- Lock Status -->
+                <div class="my-form-field item-block mt5">
+                    <mat-checkbox [(ngModel)]="data.property.locked" [ngModelOptions]="{standalone: true}">
+                        {{'dlg.docproperty-locked' | translate}}
+                    </mat-checkbox>
+                </div>
+
+                <!-- Viewers Selection -->
+                <div class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-viewers' | translate}}</span>
+                    <div class="viewers-container">
+                        <mat-chip-list *ngIf="selectedViewers.length > 0" class="selected-viewers-list">
+                            <mat-chip *ngFor="let viewer of selectedViewers" [removable]="true" (removed)="toggleViewer(viewer)">
+                                {{viewer}}
+                                <mat-icon matChipRemove>cancel</mat-icon>
+                            </mat-chip>
+                        </mat-chip-list>
+
+                        <div *ngIf="users.length > 0" class="users-selection">
+                            <span class="users-label">{{'dlg.docproperty-select-users' | translate}}:</span>
+                            <mat-chip-list>
+                                <mat-chip
+                                    *ngFor="let user of users"
+                                    [class.selected-user]="isViewerSelected(user.username)"
+                                    (click)="toggleViewer(user.username)">
+                                    {{user.username}}
+                                    <mat-icon *ngIf="isViewerSelected(user.username)">check</mat-icon>
+                                </mat-chip>
+                            </mat-chip-list>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Updated At -->
+                <div class="my-form-field item-block mt5">
+                    <span>{{'dlg.docproperty-updated-at' | translate}}</span>
+                    <input type="text" [value]="data.property?.updatedAt ? (data.property.updatedAt | date:'medium') : 'N/A'" disabled>
+                </div>
+            </div>
+        </mat-tab>
     </mat-tab-group>
 
     <div mat-dialog-actions class="dialog-action">
