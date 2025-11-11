@@ -1511,19 +1511,24 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * @param view selected view to load resource
      */
     onSelectView(view: View, force = true) {
+        console.log('pass onSelectView')
         if (!force && this.currentView?.id === view?.id) {
             return;
         }
+        console.log('pass onSelectView 2')
         if (this.currentView) {
             this.currentView.svgcontent = this.getContent();
             // this.hmi.views[this.currentView].svgcontent = this.winRef.nativeWindow.svgEditor.getSvgString();
         } else {
             this.setFillColor(this.colorFill);
         }
+        console.log('pass onSelectView 3')
         if (this.currentView) {
             this.saveView(this.currentView);
         }
+        console.log('pass onSelectView 4')
         this.currentView = view;
+        console.log('pass onSelectView 5')
         if (this.currentView.type === ViewType.cards) {
             this.editorMode = EditorModeType.CARDS;
         } else if (this.currentView.type === ViewType.maps) {
@@ -1531,7 +1536,9 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
             this.editorMode = EditorModeType.SVG;
         }
+        console.log('pass onSelectView 6')
         localStorage.setItem('@frango.webeditor.currentview', this.currentView.name);
+        console.log('pass onSelectView 7')
         this.loadView(this.currentView);
     }
 
