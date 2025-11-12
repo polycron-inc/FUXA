@@ -58,7 +58,7 @@ function init(_settings, log, _runtime) {
  */
 function load() {
     return new Promise(function (resolve, reject) {
-        data = { devices: {}, hmi: { views: [] }, texts: [], alarms: [] };
+        data = { devices: {}, hmi: { views: [], templates: [] }, texts: [], alarms: [] };
         // load general data
         prjstorage.getSection(prjstorage.TableType.GENERAL).then(grows => {
             for (var ig = 0; ig < grows.length; ig++) {
@@ -73,6 +73,11 @@ function load() {
                 for (var iv = 0; iv < vrows.length; iv++) {
                     data.hmi.views.push(JSON.parse(vrows[iv].value));
                 }
+                // load templates
+                prjstorage.getSection(prjstorage.TableType.TEMPLATES).then(trows => {
+                    for (var it = 0; it < trows.length; it++) {
+                        data.hmi.templates.push(JSON.parse(trows[it].value));
+                    }
                 // load devices
                 prjstorage.getSection(prjstorage.TableType.DEVICES).then(drows => {
                     for (var id = 0; id < drows.length; id++) {
@@ -156,6 +161,10 @@ function load() {
                     logger.error(`project.prjstorage-failed-to-load! '${prjstorage.TableType.DEVICES}' ${err}`);
                     reject(err);
                 });
+                }).catch(function (err) {
+                    logger.error(`project.prjstorage-failed-to-load! '${prjstorage.TableType.TEMPLATES}' ${err}`);
+                    reject(err);
+                });
             }).catch(function (err) {
                 logger.error(`project.prjstorage-failed-to-load! '${prjstorage.TableType.VIEWS}' ${err}`);
                 reject(err);
@@ -186,6 +195,14 @@ function setProjectData(cmd, value) {
                 section.table = prjstorage.TableType.VIEWS;
                 section.name = value.id;
                 toremove = removeView(value);
+            } else if (cmd === ProjectDataCmdType.SetTemplate) {
+                section.table = prjstorage.TableType.TEMPLATES;
+                section.name = value.id;
+                setTemplate(value);
+            } else if (cmd === ProjectDataCmdType.DelTemplate) {
+                section.table = prjstorage.TableType.TEMPLATES;
+                section.name = value.id;
+                toremove = removeTemplate(value);
             } else if (cmd === ProjectDataCmdType.CloneView) {
                 var clonedView = cloneView(value.viewId, value.newName);
                 section.table = prjstorage.TableType.VIEWS;
@@ -398,6 +415,129 @@ function removeView(view) {
         }
     }
     return false;
+}
+
+/**
+ * Set/Update Template in Project
+ * @param {*} template
+ */
+function setTemplate(template) {
+    var pos = -1;
+    for (var i = 0; i < data.hmi.templates.length; i++) {
+        if (data.hmi.templates[i].id === template.id) {
+            pos = i;
+        }
+    }
+    if (pos >= 0) {
+        data.hmi.templates[pos] = template;
+    } else {
+        data.hmi.templates.push(template);
+    }
+}
+
+/**
+ * Remove Template from Project
+ * @param {*} template
+ * @returns {boolean} true if removed
+ */
+function removeTemplate(template) {
+    for (var i = 0; i < data.hmi.templates.length; i++) {
+        if (data.hmi.templates[i].id === template.id) {
+            data.hmi.templates.splice(i, 1);
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Get all Templates
+ * @returns {Array} Array of templates
+ */
+function getTemplates() {
+    return data.hmi.templates || [];
+}
+
+/**
+ * Convert Template to View
+ * @param {*} templateId - ID of the template to convert
+ * @param {*} newName - Optional new name for the view
+ * @returns {*} The new view object
+ */
+function convertTemplateToView(templateId, newName) {
+    var sourceTemplate = null;
+    for (var i = 0; i < data.hmi.templates.length; i++) {
+        if (data.hmi.templates[i].id === templateId) {
+            sourceTemplate = data.hmi.templates[i];
+            break;
+        }
+    }
+
+    if (!sourceTemplate) {
+        throw new Error('Template not found: ' + templateId);
+    }
+
+    // Generate short GUID (similar to client-side Utils.getShortGUID)
+    function getShortGUID() {
+        return Math.random().toString(36).substring(2, 15) +
+               Math.random().toString(36).substring(2, 15);
+    }
+
+    // Deep clone the template
+    var newView = JSON.parse(JSON.stringify(sourceTemplate));
+
+    // Generate new ID for view
+    newView.id = 'v_' + getShortGUID();
+
+    // Handle name
+    if (newName) {
+        newView.name = newName;
+    } else {
+        // Generate unique name based on template name
+        var baseName = sourceTemplate.name || 'View';
+        var name = baseName;
+        var counter = 1;
+        var nameExists = true;
+
+        while (nameExists) {
+            nameExists = false;
+            for (var i = 0; i < data.hmi.views.length; i++) {
+                if (data.hmi.views[i].name === name) {
+                    nameExists = true;
+                    name = baseName + ' (' + counter + ')';
+                    counter++;
+                    break;
+                }
+            }
+        }
+        newView.name = name;
+    }
+
+    // Change all gauge IDs in items
+    if (newView.items) {
+        var newItems = {};
+        for (var oldId in newView.items) {
+            var newId = getShortGUID();
+            newItems[newId] = newView.items[oldId];
+            newItems[newId].id = newId;
+
+            // Update svgcontent to replace old IDs with new IDs
+            if (newView.svgcontent) {
+                var regex = new RegExp(oldId, 'g');
+                newView.svgcontent = newView.svgcontent.replace(regex, newId);
+            }
+        }
+        newView.items = newItems;
+    }
+
+    // Note: Do NOT add to data.hmi.views here
+    // The API endpoint will handle adding it via setProjectData after this returns
+    // This ensures proper state management and avoids duplicate entries
+
+    // Note: Do NOT remove from templates here
+    // The API endpoint will handle removing it via setProjectData after this returns
+
+    return newView;
 }
 
 /**
@@ -724,6 +864,14 @@ function setProject(prjcontent) {
                                         for (var i = 0; i < hmi[hk].length; i++) {
                                             var view = hmi[hk][i];
                                             scs.push({ table: prjstorage.TableType.VIEWS, name: view.id, value: view });
+                                        }
+                                    }
+                                } else if (hk === 'templates') {
+                                    // templates
+                                    if (hmi[hk] && hmi[hk].length > 0) {
+                                        for (var i = 0; i < hmi[hk].length; i++) {
+                                            var template = hmi[hk][i];
+                                            scs.push({ table: prjstorage.TableType.TEMPLATES, name: template.id, value: template });
                                         }
                                     }
                                 } else {
@@ -1205,9 +1353,10 @@ function verifyView(view) {
  * Import a View to Project (with name conflict resolution)
  * @param {*} viewData - view data to import
  * @param {*} newName - optional new name for the view
- * @returns {*} The imported view object
+ * @param {*} conflictAction - how to handle name conflicts: 'create-new' (default), 'replace', 'skip'
+ * @returns {*} The imported view object or null if skipped
  */
-function importView(viewData, newName) {
+function importView(viewData, newName, conflictAction) {
     // Verify view structure
     const verification = verifyView(viewData);
     if (!verification.valid) {
@@ -1223,22 +1372,38 @@ function importView(viewData, newName) {
     // Deep clone the view
     var importedView = JSON.parse(JSON.stringify(viewData));
 
-    // Generate new ID
-    importedView.id = 'v_' + getShortGUID();
-
     // Handle name conflicts (same as client's logic)
     if (newName) {
         importedView.name = newName;
     }
 
-    let idx = 1;
-    let startname = importedView.name;
-    let existingView = null;
+    // Check for existing view with same name
+    let existingView = data.hmi.views.find((v) => v.name === importedView.name);
 
-    // Check for name conflicts and add suffix if needed
-    while (existingView = data.hmi.views.find((v) => v.name === importedView.name)) {
-        importedView.name = startname + '_' + idx++;
+    // Handle conflict based on conflictAction
+    if (existingView) {
+        if (conflictAction === 'replace') {
+            // Replace existing view: keep the same ID, update content
+            importedView.id = existingView.id;
+            const existingIndex = data.hmi.views.findIndex((v) => v.id === existingView.id);
+            if (existingIndex !== -1) {
+                data.hmi.views[existingIndex] = importedView;
+            }
+            return importedView;
+        } else if (conflictAction === 'skip') {
+            // Skip import if name exists
+            return null;
+        }
+        // Default: 'create-new' - add suffix to name
+        let idx = 1;
+        let startname = importedView.name;
+        while (existingView = data.hmi.views.find((v) => v.name === importedView.name)) {
+            importedView.name = startname + '_' + idx++;
+        }
     }
+
+    // Generate new ID
+    importedView.id = 'v_' + getShortGUID();
 
     // Add the imported view to the project
     data.hmi.views.push(importedView);
@@ -1246,18 +1411,112 @@ function importView(viewData, newName) {
     return importedView;
 }
 
+/**
+ * Verify template structure
+ * @param {*} template - template to verify
+ * @returns {*} Object with valid (boolean) and error (string) properties
+ */
+function verifyTemplate(template) {
+    let result = { valid: true, error: null };
+    let errors = [];
+
+    if (!template) {
+        result.valid = false;
+        result.error = 'Template data is null or undefined';
+        return result;
+    }
+
+    if (!template.svgcontent) {
+        errors.push('Template svgcontent is missing');
+        result.valid = false;
+    }
+
+    if (!template.id) {
+        errors.push('Template id is missing');
+        result.valid = false;
+    }
+
+    if (!template.profile) {
+        errors.push('Template profile is missing');
+        result.valid = false;
+    }
+
+    if (!template.type) {
+        errors.push('Template type is missing');
+        result.valid = false;
+    }
+
+    if (!template.items) {
+        errors.push('Template items is missing');
+        result.valid = false;
+    }
+
+    if (!result.valid) {
+        result.error = errors.join(', ');
+    }
+
+    return result;
+}
+
+/**
+ * Import a Template to Project (with name conflict resolution)
+ * @param {*} templateData - template data to import
+ * @param {*} newName - optional new name for the template
+ * @returns {*} The imported template object
+ */
+function importTemplate(templateData, newName) {
+    // Verify template structure
+    const verification = verifyTemplate(templateData);
+    if (!verification.valid) {
+        throw new Error('Invalid template format: ' + verification.error);
+    }
+
+    // Generate short GUID (similar to client-side Utils.getShortGUID)
+    function getShortGUID() {
+        return Math.random().toString(36).substring(2, 15) +
+               Math.random().toString(36).substring(2, 15);
+    }
+
+    // Deep clone the template
+    var importedTemplate = JSON.parse(JSON.stringify(templateData));
+
+    // Generate new ID
+    importedTemplate.id = 't_' + getShortGUID();
+
+    // Handle name conflicts (same as client's logic)
+    if (newName) {
+        importedTemplate.name = newName;
+    }
+
+    let idx = 1;
+    let startname = importedTemplate.name;
+    let existingTemplate = null;
+
+    // Check for name conflicts and add suffix if needed
+    while (existingTemplate = data.hmi.templates.find((t) => t.name === importedTemplate.name)) {
+        importedTemplate.name = startname + '_' + idx++;
+    }
+
+    // Add the imported template to the project
+    data.hmi.templates.push(importedTemplate);
+
+    return importedTemplate;
+}
+
 const ProjectDataCmdType = {
     SetDevice: 'set-device',
     DelDevice: 'del-device',
     SetView: 'set-view',
     DelView: 'del-view',
+    SetTemplate: 'set-template',
+    DelTemplate: 'del-template',
+    ConvertTemplateToView: 'convert-template-to-view',
     CloneView: 'clone-view',
     HmiLayout: 'layout',
     Charts: 'charts',
     Graphs: 'graphs',
     Languages: 'languages',
     ClientAccess: 'client-access',
-    SetText: 'set-text',
     SetText: 'set-text',
     DelText: 'del-text',
     SetAlarm: 'set-alarm',
@@ -1291,5 +1550,11 @@ module.exports = {
     verifyProject: verifyProject,
     verifyView: verifyView,
     importView: importView,
+    verifyTemplate: verifyTemplate,
+    importTemplate: importTemplate,
+    setTemplate: setTemplate,
+    removeTemplate: removeTemplate,
+    getTemplates: getTemplates,
+    convertTemplateToView: convertTemplateToView,
     ProjectDataCmdType, ProjectDataCmdType,
 };

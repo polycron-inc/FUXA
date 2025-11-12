@@ -379,6 +379,165 @@ export class ProjectService {
             this.notifySaveError(err);
         });
     }
+    //#endregion
+
+    //#region Template to Save
+    /**
+     * Add or update Template to Project.
+     * Save to Server
+     * @param template
+     */
+    setTemplate(template: View, notify = false) {
+        const existingTemplate = this.projectData.hmi.templates.find(t => t.id === template.id);
+        if (existingTemplate) {
+            Object.assign(existingTemplate, template);
+        } else {
+            this.projectData.hmi.templates.push(template);
+        }
+
+        this.appService.showLoading(true);
+
+        this.storage.setServerProjectData(ProjectDataCmdType.SetTemplate, template, this.projectData).subscribe(result => {
+            this.appService.showLoading(false);
+            if (notify) {
+                this.notifySuccessMessage('msg.project-save-success');
+            }
+        }, err => {
+            this.appService.showLoading(false);
+            console.error(err);
+            this.notifySaveError(err);
+        });
+    }
+
+    /**
+     * Add or update Template to Project (async version).
+     * Save to Server and return a Promise
+     * @param template
+     * @returns Promise that resolves when save completes
+     */
+    async setTemplateAsync(template: View, notify = false): Promise<void> {
+        const existingTemplate = this.projectData.hmi.templates.find(t => t.id === template.id);
+        if (existingTemplate) {
+            Object.assign(existingTemplate, template);
+        } else {
+            this.projectData.hmi.templates.push(template);
+        }
+
+        this.appService.showLoading(true);
+
+        try {
+            await this.storage.setServerProjectData(ProjectDataCmdType.SetTemplate, template, this.projectData).toPromise();
+            this.appService.showLoading(false);
+            if (notify) {
+                this.notifySuccessMessage('msg.project-save-success');
+            }
+        } catch (err) {
+            this.appService.showLoading(false);
+            console.error(err);
+            this.notifySaveError(err);
+            throw err;
+        }
+    }
+
+    /**
+     * Remove the Template from Project
+     * Delete from Server
+     * @param template
+     */
+    removeTemplate(template: View) {
+        for (let i = 0; i < this.projectData.hmi.templates.length; i++) {
+            if (this.projectData.hmi.templates[i].id === template.id) {
+                this.projectData.hmi.templates.splice(i, 1);
+                break;
+            }
+        }
+        this.storage.setServerProjectData(ProjectDataCmdType.DelTemplate, template, this.projectData).subscribe(result => {
+        }, err => {
+            console.error(err);
+            this.notifySaveError(err);
+        });
+    }
+
+    /**
+     * Convert template to view
+     * @param templateId - ID of the template to convert
+     * @returns Observable with the new view
+     */
+    convertTemplateToView(templateId: string): Observable<View> {
+        return new Observable((observer) => {
+            this.storage.convertTemplateToView(templateId).subscribe(newView => {
+                if (newView) {
+                    // Add the new view to local project data
+                    this.projectData.hmi.views.push(newView);
+
+                    // Remove the template from local project data
+                    const templateIndex = this.projectData.hmi.templates.findIndex(t => t.id === templateId);
+                    if (templateIndex !== -1) {
+                        this.projectData.hmi.templates.splice(templateIndex, 1);
+                    }
+
+                    observer.next(newView);
+                    observer.complete();
+                } else {
+                    observer.error('No view returned from server');
+                }
+            }, err => {
+                console.error('convertTemplateToView error:', err);
+                observer.error(err);
+            });
+        });
+    }
+
+    /**
+     * Import all templates, clearing existing templates first
+     * @param templates - Array of templates to import
+     * @returns Observable with import result
+     */
+    importAllTemplates(templates: any[]): Observable<any> {
+        return new Observable((observer) => {
+            this.storage.importAllTemplates(templates).subscribe(result => {
+                if (result && result.success) {
+                    // Clear existing templates from local project data
+                    this.projectData.hmi.templates = [];
+
+                    // Add all imported templates to local project data
+                    if (result.templates && Array.isArray(result.templates)) {
+                        result.templates.forEach(template => {
+                            this.projectData.hmi.templates.push(template);
+                        });
+                    }
+
+                    observer.next(result);
+                    observer.complete();
+                } else {
+                    observer.error('Import failed');
+                }
+            }, err => {
+                console.error('importAllTemplates error:', err);
+                observer.error(err);
+            });
+        });
+    }
+
+    /**
+     * Export all templates
+     * @returns Observable with export result containing all templates
+     */
+    exportAllTemplates(): Observable<any> {
+        return new Observable((observer) => {
+            this.storage.exportAllTemplates().subscribe(result => {
+                if (result && result.success) {
+                    observer.next(result);
+                    observer.complete();
+                } else {
+                    observer.error('Export failed');
+                }
+            }, err => {
+                console.error('exportAllTemplates error:', err);
+                observer.error(err);
+            });
+        });
+    }
 
     /**
      * Clone a view on Server
