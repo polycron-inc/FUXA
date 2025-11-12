@@ -98,7 +98,15 @@ module.exports = {
             } else {
                 runtime.project.setProjectData(req.body.cmd, req.body.data).then(setres => {
                     runtime.update(req.body.cmd, req.body.data).then(result => {
-                        res.end();
+                        // For add-view and add-template commands, return the generated data including ID
+                        if (req.body.cmd === 'add-view' || req.body.cmd === 'add-template') {
+                            res.json({
+                                success: true,
+                                data: req.body.data  // This now contains the generated ID
+                            });
+                        } else {
+                            res.end();
+                        }
                     });
                 }).catch(function(err) {
                     if (err && err.code) {

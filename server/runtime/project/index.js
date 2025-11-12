@@ -187,7 +187,22 @@ function setProjectData(cmd, value) {
         try {
             var toremove = false;
             var section = { table: '', name: '', value: value };
+
+            // Generate short GUID helper function
+            function getShortGUID(prefix) {
+                return (prefix || '') + Math.random().toString(36).substring(2, 15) +
+                       Math.random().toString(36).substring(2, 15);
+            }
+
             if (cmd === ProjectDataCmdType.SetView) {
+                section.table = prjstorage.TableType.VIEWS;
+                section.name = value.id;
+                setView(value);
+            } else if (cmd === ProjectDataCmdType.AddView) {
+                // Auto-generate ID if not provided or empty
+                if (!value.id || value.id.trim() === '') {
+                    value.id = getShortGUID('v_');
+                }
                 section.table = prjstorage.TableType.VIEWS;
                 section.name = value.id;
                 setView(value);
@@ -196,6 +211,14 @@ function setProjectData(cmd, value) {
                 section.name = value.id;
                 toremove = removeView(value);
             } else if (cmd === ProjectDataCmdType.SetTemplate) {
+                section.table = prjstorage.TableType.TEMPLATES;
+                section.name = value.id;
+                setTemplate(value);
+            } else if (cmd === ProjectDataCmdType.AddTemplate) {
+                // Auto-generate ID if not provided or empty
+                if (!value.id || value.id.trim() === '') {
+                    value.id = getShortGUID('t_');
+                }
                 section.table = prjstorage.TableType.TEMPLATES;
                 section.name = value.id;
                 setTemplate(value);
@@ -1507,8 +1530,10 @@ const ProjectDataCmdType = {
     SetDevice: 'set-device',
     DelDevice: 'del-device',
     SetView: 'set-view',
+    AddView: 'add-view',
     DelView: 'del-view',
     SetTemplate: 'set-template',
+    AddTemplate: 'add-template',
     DelTemplate: 'del-template',
     ConvertTemplateToView: 'convert-template-to-view',
     CloneView: 'clone-view',
