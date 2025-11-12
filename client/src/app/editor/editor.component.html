@@ -50,6 +50,34 @@
         <!-- LEFT BAR -->
         <mat-drawer mode="side" opened="true" class="svg-sidenav leave-header-area" disableClose>
             <mat-accordion multi="true">
+                <!-- TEMPLATES PANEL -->
+                <mat-expansion-panel class="svg-workarea-leftbar-p"
+                    (opened)="panelsState.panelTemplate=true;savePanelState()"
+                    (closed)="panelsState.panelTemplate=false;savePanelState()" hideToggle="true"
+                    [expanded]="panelsState.panelTemplate">
+                    <mat-expansion-panel-header class="svg-workarea-leftbar-h">
+                        <mat-panel-title>
+                            <mat-icon aria-label="Select" *ngIf="panelsState.panelTemplate">expand_less</mat-icon>
+                            <mat-icon aria-label="Select" *ngIf="!panelsState.panelTemplate">expand_more</mat-icon>
+                            <span>{{'editor.templates' | translate}}</span> <!-- TEMPLATES -->
+                        </mat-panel-title>
+                        <mat-icon aria-label="Add" [matTooltip]="'editor.template-add' | translate"
+                            *ngIf="panelsState.panelTemplate" class="leftbar-edit-btn"
+                            (click)="onAddTemplate();$event.stopPropagation()">add
+                        </mat-icon>
+                    </mat-expansion-panel-header>
+                    <div appResize class="leftbar-panel view-panel" [(height)]="panelsState.panelTemplateHeight"
+                        [style.height.px]="panelsState.panelTemplateHeight" (changeEnd)="savePanelState()">
+                        <app-editor-views-list [(views)]="hmi.templates" [select]="currentTemplate" [isTemplate]="true"
+                            (selected)="onSelectTemplate($event, false)"
+                            (viewPropertyChanged)="onTemplatePropertyChanged($event)"
+                            (cloneView)="onCloneTemplate($event)"
+                            (convertToView)="onConvertTemplateToView($event)"
+                            (deleteView)="removeTemplate($event)">
+                        </app-editor-views-list>
+                    </div>
+                </mat-expansion-panel>
+                <!-- VIEWS PANEL -->
                 <mat-expansion-panel class="svg-workarea-leftbar-p"
                     (opened)="panelsState.panelView=true;savePanelState()"
                     (closed)="panelsState.panelView=false;savePanelState()" hideToggle="true"

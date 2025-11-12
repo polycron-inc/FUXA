@@ -58,6 +58,22 @@ export class ResWebApiService implements ResourceStorageService {
         return this.http.post<any>(this.endPointConfig + '/api/project/clone-view', params, { headers: header });
     }
 
+    convertTemplateToView(templateId: string): Observable<any> {
+        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        let params = { params: templateId };
+        return this.http.post<any>(this.endPointConfig + '/api/convertTemplateToView', params, { headers: header });
+    }
+
+    importAllTemplates(templates: any[]): Observable<any> {
+        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.http.post<any>(this.endPointConfig + '/api/project/import-all-templates', templates, { headers: header });
+    }
+
+    exportAllTemplates(): Observable<any> {
+        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.http.get<any>(this.endPointConfig + '/api/project/export-all-templates', { headers: header });
+    }
+
     uploadFile(resource: any, destination?: string): Observable<UploadFile> {
         let header = new HttpHeaders({ 'Content-Type': 'application/json' });
         let params = { resource, destination };

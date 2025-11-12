@@ -30,10 +30,11 @@
     </mat-icon>
     <mat-menu #menuview="matMenu"
               class="leftbar-item-menu">
-        <button mat-menu-item (click)="onDeleteView(item)">{{'editor.view-delete' | translate}}</button>
+        <button mat-menu-item (click)="onDeleteView(item)">{{(isTemplate ? 'editor.template-delete' : 'editor.view-delete') | translate}}</button>
         <button mat-menu-item (click)="onRenameView(item)">{{'editor.view-rename' | translate}}</button>
-        <button mat-menu-item (click)="onPropertyView(item)">{{'editor.view-property' | translate}}</button>
-        <button mat-menu-item (click)="onCloneView(item)" *ngIf="item.type !== cardViewType && item.type !== mapsViewType">{{'editor.view-clone' | translate}}</button>
-        <button mat-menu-item (click)="onExportView(item)" *ngIf="item.type !== cardViewType && item.type !== mapsViewType">{{'editor.view-export' | translate}}</button>
+        <button mat-menu-item (click)="onPropertyView(item)">{{(isTemplate ? 'editor.template-property' : 'editor.view-property') | translate}}</button>
+        <button mat-menu-item (click)="onCloneView(item)" *ngIf="item.type !== cardViewType && item.type !== mapsViewType">{{(isTemplate ? 'editor.template-clone' : 'editor.view-clone') | translate}}</button>
+        <button mat-menu-item (click)="onConvertToView(item)" *ngIf="isTemplate && item.type !== cardViewType && item.type !== mapsViewType">{{'editor.template-convert' | translate}}</button>
+        <button mat-menu-item (click)="onExportView(item)" *ngIf="!isTemplate && item.type !== cardViewType && item.type !== mapsViewType">{{'editor.view-export' | translate}}</button>
     </mat-menu>
 </div>

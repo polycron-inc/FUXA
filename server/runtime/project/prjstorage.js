@@ -42,6 +42,7 @@ function _bind() {
         // prepare query
         var sql = "CREATE TABLE if not exists general (name TEXT PRIMARY KEY, value TEXT);";
         sql += "CREATE TABLE if not exists views (name TEXT PRIMARY KEY, value TEXT);";
+        sql += "CREATE TABLE if not exists templates (name TEXT PRIMARY KEY, value TEXT);";
         sql += "CREATE TABLE if not exists devices (name TEXT PRIMARY KEY, value TEXT, connection TEXT, cntid TEXT, cntpwd TEXT);";
         sql += "CREATE TABLE if not exists devicesSecurity (name TEXT PRIMARY KEY, value TEXT);";
         sql += "CREATE TABLE if not exists texts (name TEXT PRIMARY KEY, value TEXT);";
@@ -178,6 +179,7 @@ function clearAll() {
         // prepare query
         var sql = "DELETE FROM general;";
         sql += "DELETE FROM views;";
+        sql += "DELETE FROM templates;";
         sql += "DELETE FROM devices;";
         sql += "DELETE FROM texts;";
         sql += "DELETE FROM alarms;";
@@ -203,6 +205,7 @@ const TableType = {
     GENERAL: 'general',
     DEVICES: 'devices',
     VIEWS: 'views',
+    TEMPLATES: 'templates',
     DEVICESSECURITY: 'devicesSecurity',
     TEXTS: 'texts',
     ALARMS: 'alarms',

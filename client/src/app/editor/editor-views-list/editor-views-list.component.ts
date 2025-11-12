@@ -16,12 +16,15 @@ import { EditNameComponent, EditNameData } from '../../gui-helpers/edit-name/edi
 export class EditorViewsListComponent {
 
     @Input() views: View[] = [];
+    @Input() isTemplate: boolean = false;
     @Input('select') set select(view: View) {
         this.currentView = view;
     };
     @Output() selected: EventEmitter<View> = new EventEmitter<View>();
     @Output() viewPropertyChanged: EventEmitter<View> = new EventEmitter<View>();
     @Output() cloneView: EventEmitter<View> = new EventEmitter<View>();
+    @Output() convertToView: EventEmitter<View> = new EventEmitter<View>();
+    @Output() deleteView: EventEmitter<View> = new EventEmitter<View>();
 
     currentView: View = null;
 
@@ -43,6 +46,9 @@ export class EditorViewsListComponent {
     }
 
     getViewsSorted() {
+        if (!this.views || !Array.isArray(this.views)) {
+            return [];
+        }
         return this.views.sort((a, b) => {
             if (a.name > b.name) { return 1; }
             return -1;
@@ -79,7 +85,13 @@ export class EditorViewsListComponent {
                 } else if (this.views.length > 0) {
                     this.onSelectView(this.views[0]);
                 }
-                this.projectService.removeView(view);
+
+                // Emit event for template deletion, or directly call service for view
+                if (this.isTemplate) {
+                    this.deleteView.emit(view);
+                } else {
+                    this.projectService.removeView(view);
+                }
             }
         });
     }
@@ -135,6 +147,10 @@ export class EditorViewsListComponent {
 
     onCloneView(view: View) {
         this.cloneView.emit(view);
+    }
+
+    onConvertToView(view: View) {
+        this.convertToView.emit(view);
     }
 
     onExportView(view: View) {

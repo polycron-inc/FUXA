@@ -8,6 +8,8 @@ export class Hmi {
     layout: LayoutSettings = new LayoutSettings();
     /** Views list of hmi project */
     views: View[] = [];
+    /** Templates list of hmi project */
+    templates: View[] = [];
 }
 
 export class View {

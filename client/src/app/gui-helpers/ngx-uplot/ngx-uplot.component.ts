@@ -25,6 +25,7 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
         stepAfter: 1,
         stepBefore: 2,
         spline: 3,
+        hideTitle: true
     };
 
     rawData = false;
@@ -224,7 +225,7 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
                 this.options.axes[0].label = this.languageLabels.time;
             }
         }
-        if (!this.options.title) {
+        if (typeof this.options.title === 'undefined') {
             this.options.title = this.languageLabels.title;
         }
         this.options.scales = {
@@ -662,6 +663,9 @@ export interface ChartOptions extends NgxOptions {
     panel?: { height: number; width: number };
     /** when true, null data values will not cause line breaks, Series.spanGaps */
     connectSeparatedPoints?: boolean;
+
+    /** hide chart title when true */
+    hideTitle?: boolean;
 
     titleHeight?: number;
     axisLabelFontSize?: number;
