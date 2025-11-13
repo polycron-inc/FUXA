@@ -823,8 +823,29 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             if (copied.length == copiedPasted.past.length) {
                 let names = Object.values(this.currentView.items).map(gs => gs.name);
                 for (let i = 0; i < copied.length; i++) {
-                    const copiedIdsAndTypes = Utils.getInTreeIdAndType(copied[i]);
-                    const pastedIdsAndTypes = Utils.getInTreeIdAndType(pasted[i]);
+                    let copiedIdsAndTypes = Utils.getInTreeIdAndType(copied[i]);
+                    let pastedIdsAndTypes = Utils.getInTreeIdAndType(pasted[i]);
+
+                    // Handle image elements without type attribute
+                    if (copiedIdsAndTypes.length === 0 && copied[i].tagName.toLowerCase() === 'image') {
+                        const copiedId = copied[i].getAttribute('id');
+                        if (copiedId) {
+                            // Search for the gauge settings to get the type
+                            const gaSrc = this.searchGaugeSettings({ id: copiedId, type: null });
+                            if (gaSrc) {
+                                copiedIdsAndTypes = [{ id: copiedId, type: gaSrc.type }];
+                            }
+                        }
+                    }
+
+                    if (pastedIdsAndTypes.length === 0 && pasted[i].tagName.toLowerCase() === 'image') {
+                        const pastedId = pasted[i].getAttribute('id');
+                        if (pastedId && copiedIdsAndTypes.length > 0) {
+                            // Use the same type as the copied element
+                            pastedIdsAndTypes = [{ id: pastedId, type: copiedIdsAndTypes[0].type }];
+                        }
+                    }
+
                     if (copiedIdsAndTypes.length === pastedIdsAndTypes.length) {
                         for (let j = 0; j < copiedIdsAndTypes.length; j++) {
                             if (copiedIdsAndTypes[j].id && pastedIdsAndTypes[j].id && copiedIdsAndTypes[j].type === pastedIdsAndTypes[j].type) {
