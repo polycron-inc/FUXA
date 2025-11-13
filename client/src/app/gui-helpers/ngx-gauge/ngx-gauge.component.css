@@ -17,13 +17,27 @@
 }
 
 .mygauge-value {
-    text-align: center; 
-    font-size: 18px; 
+    text-align: center;
+    font-size: 18px;
     font-weight: bold;
-    color: black; 
+    color: black;
     font-family: "Segoe UI Symbol", "Roboto-Regular", "Helvetica Neue", sans-serif !important;
-    position: absolute; 
-    top: 5px; 
-    left: 0; 
+    position: absolute;
+    top: 5px;
+    left: 0;
     right: 0;
+}
+
+.mygauge-center-text {
+    text-align: center;
+    font-size: 16px;
+    font-weight: normal;
+    color: black;
+    font-family: "Segoe UI Symbol", "Roboto-Regular", "Helvetica Neue", sans-serif !important;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
 }

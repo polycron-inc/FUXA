@@ -20,6 +20,7 @@ export class NgxGaugeComponent implements OnInit, AfterViewInit, OnDestroy, OnCh
     @ViewChild('panel', {static: false}) public panel: ElementRef;
     @ViewChild('gauge', {static: false}) public canvas: ElementRef;
     @ViewChild('gaugetext', {static: false}) public gaugetext: ElementRef;
+    @ViewChild('centertext', {static: false}) public centertext: ElementRef;
 
     private destroy$ = new Subject<void>();
 
@@ -122,6 +123,17 @@ export class NgxGaugeComponent implements OnInit, AfterViewInit, OnDestroy, OnCh
             this.gaugetext.nativeElement.style.color = options.pointer.color;
         }
         this.gaugetext.nativeElement.style.top = options.textFilePosition + '%';
+
+        // Set center text options
+        if (this.centertext) {
+            this.centertext.nativeElement.textContent = options.centerText || '';
+            this.centertext.nativeElement.style.fontSize = (options.centerTextFontSize || 16) + 'px';
+            this.centertext.nativeElement.style.color = options.centerTextColor || '#000000';
+            if (options.fontFamily) {
+                this.centertext.nativeElement.style.fontFamily = options.fontFamily;
+            }
+        }
+
         this.render();
     }
 
