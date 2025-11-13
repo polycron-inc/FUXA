@@ -847,15 +847,15 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                             let gaugeSettingsDest: GaugeSettings = this.gaugesManager.createSettings(pastedIdsAndTypes[i].id, pastedIdsAndTypes[i].type);
                             gaugeSettingsDest.name = Utils.getNextName(GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names);
 
+                            // First deep clone all properties to ensure everything is copied
+                            gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
+
                             if (copyGaugeSettings.property?.type === HtmlImageComponent.propertyWidgetType) {
                                 // Handle widget type images with special GUID replacement
                                 const svgGuid = Utils.getShortGUID('', '_');
-                                gaugeSettingsDest.property = Utils.replaceStringInObject(copyGaugeSettings.property,
+                                gaugeSettingsDest.property = Utils.replaceStringInObject(gaugeSettingsDest.property,
                                                                                          copyGaugeSettings.property.svgGuid,
                                                                                          svgGuid);
-                            } else {
-                                // Handle regular images and other control types - copy all properties including actions and events
-                                gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
                             }
 
                             gaugeSettingsDest.hide = copyGaugeSettings.hide;
