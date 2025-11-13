@@ -38,10 +38,13 @@ export class EditorViewsListComponent {
     ) { }
 
     onSelectView(view: View, force = true) {
+        console.log('onSelectView', view, this.currentView);
         if (!force && this.currentView?.id === view?.id) {
             return;
         }
+        console.log('pass1');
         this.currentView = view;
+        console.log('pass2');
         this.selected.emit(this.currentView);
     }
 
