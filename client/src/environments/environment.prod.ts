@@ -7,5 +7,5 @@ export const environment = {
   serverEnabled: true,
   type: null,
   dmsApiEndpoint: 'https://fms-go.winshare.app',
-  dmsToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzQyOGQ4ODc1ZDI5NDg2MDdmM2UzZmUxMzRkNzFiNCIsImlhdCI6MTc1NzUyOTkyNiwiZXhwIjoxNzk0NzgyOTI2fQ.vfUgBPgsu2gW7NlVFZ-MzAdQuhTXoHZjd-IvZm1vvAM'
+  dmsToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4NGFkZmU3ODBmZjc1YjIyMjgxYWU0MmEzODJhNjViNiIsImlhdCI6MTc2MzAxMjczMCwiZXhwIjoxNzk0NTQ4NzMwfQ.u3bM3ZrH-uPGCtB6vrFfbd1gkzc8Cdoa0cTMdChFVjE'
 };

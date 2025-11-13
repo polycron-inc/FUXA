@@ -31,6 +31,11 @@ export class GaugeOptions {
     backgroundColor = 'rgba(255, 255, 255, 0)';
     shadowColor?: string = '#d5d5d5';
 
+    // Center text settings
+    centerText = '';
+    centerTextFontSize = 16;
+    centerTextColor = '#000000';
+
     fractionDigits = 0;
     ticksEnabled = true;
     renderTicks = {

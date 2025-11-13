@@ -298,6 +298,30 @@
                         <input [(colorPicker)]="optcfg.backgroundColor" [style.background]="optcfg.backgroundColor" [cpAlphaChannel]="'always'" class="input-color" [cpPresetColors]="defaultColor" [cpOKButton]="true" [cpCancelButton]="true" [cpCancelButtonClass]="'cpCancelButtonClass'" [cpCancelButtonText]="'Cancel'" [cpOKButtonText]="'OK'" [cpOKButtonClass]="'cpOKButtonClass'" style="padding: 8px 0 0 0; width: 126px" [cpPosition]="'top'" (colorPickerChange)="onChangeOptions('backgroundColor', $event)" />
                     </div> -->
                     </div>
+                    <div class="field-row">
+                        <div class="my-form-field slider-field">
+                            <span>{{'bag.property-center-text' | translate}}</span>
+                            <input [(ngModel)]="optcfg.centerText"
+                                (change)="onChangeOptions('centerText', optcfg.centerText)"
+                                style="width: 200px;" type="text">
+                        </div>
+                        <div class="my-form-field slider-field">
+                            <span>{{'bag.property-center-text-size' | translate}}</span>
+                            <mat-slider style="display:inline-block;" [max]="50" [min]="8" [step]="1"
+                                [thumbLabel]="true" [(ngModel)]="optcfg.centerTextFontSize"
+                                (input)="onChangeOptions('centerTextFontSize', $event.value)">
+                            </mat-slider>
+                        </div>
+                        <div class="my-form-field slider-field color-field">
+                            <span>{{'bag.property-center-text-color' | translate}}</span>
+                            <input [(colorPicker)]="optcfg.centerTextColor" [cpAlphaChannel]="'always'"
+                                [style.background]="optcfg.centerTextColor" class="input-color"
+                                [cpPresetColors]="defaultColor" [cpOKButton]="true" [cpCancelButton]="true"
+                                [cpCancelButtonClass]="'cpCancelButtonClass'" [cpCancelButtonText]="'Cancel'"
+                                [cpOKButtonText]="'OK'" [cpOKButtonClass]="'cpOKButtonClass'" style="width: 121px"
+                                [cpPosition]="'top'" (colorPickerChange)="onChangeOptions('centerTextColor', $event)" />
+                        </div>
+                    </div>
                 </div>
                 <div class="toolbox-right" *ngIf="gaugeType === gaugeTypeEnum.Zones">
                     <div style="position: absolute; top: 0px; right: 0px">
