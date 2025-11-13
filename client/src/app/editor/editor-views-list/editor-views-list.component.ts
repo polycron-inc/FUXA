@@ -38,13 +38,10 @@ export class EditorViewsListComponent {
     ) { }
 
     onSelectView(view: View, force = true) {
-        console.log('onSelectView', view, this.currentView);
         if (!force && this.currentView?.id === view?.id) {
             return;
         }
-        console.log('pass1');
         this.currentView = view;
-        console.log('pass2');
         this.selected.emit(this.currentView);
     }
 
@@ -53,13 +50,18 @@ export class EditorViewsListComponent {
             return [];
         }
         return this.views.sort((a, b) => {
+            // First compare by name
             if (a.name > b.name) { return 1; }
-            return -1;
+            if (a.name < b.name) { return -1; }
+            // If names are equal, compare by id to ensure stable sorting
+            if (a.id > b.id) { return 1; }
+            if (a.id < b.id) { return -1; }
+            return 0;
         });
     }
 
     isViewActive(view) {
-        return (this.currentView && this.currentView.name === view.name);
+        return (this.currentView && this.currentView.id === view.id);
     }
 
     onDeleteView(view) {
