@@ -1,4 +1,4 @@
-FROM node:18-bookworm
+FROM node:18.17.0
 ARG NODE_SNAP=false
 
 RUN apt-get update && apt-get install -y dos2unix
