@@ -41,8 +41,9 @@
 
 .toolbox-toadd {
     position: absolute;
-    right: 50px;
-    top: -40px;
+    right: 0px;
+    top: 0px;
+    z-index: 11;
 }
 
 .panelBottom {

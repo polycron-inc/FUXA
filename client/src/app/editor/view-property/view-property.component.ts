@@ -8,6 +8,9 @@ import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, ValidationErrors
 import { GridType } from 'angular-gridster2';
 import { FlexEventComponent } from '../../gauges/gauge-property/flex-event/flex-event.component';
 import { ProjectService } from '../../_services/project.service';
+import { UserService } from '../../_services/user.service';
+import { AuthService } from '../../_services/auth.service';
+import { User } from '../../_models/user';
 import { Subject, startWith, takeUntil } from 'rxjs';
 import { MatLegacyTab as MatTab } from '@angular/material/legacy-tabs';
 
@@ -30,6 +33,11 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     newTagInput = '';
     allExistingTags: string[] = [];
 
+    // Permission management
+    users: any[] = [];  // Changed from User[] to any[] to support minimal user objects
+    selectedViewers: string[] = [];
+    currentUser: User;
+
     @ViewChild('flexevent', {static: false}) flexEvent: FlexEventComponent;
     @ViewChild('tabEvents', {static: true}) tabEvents: MatTab;
 
@@ -41,6 +49,8 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     constructor(private fb: UntypedFormBuilder,
                 private translateService: TranslateService,
                 private projectService: ProjectService,
+                private userService: UserService,
+                private authService: AuthService,
                 public dialogRef: MatDialogRef<ViewPropertyComponent>,
                 @Inject(MAT_DIALOG_DATA) public data: ViewPropertyType & { newView: boolean}) {
 
@@ -48,6 +58,22 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
         for (let i = 0; i < this.propSizeType.length; i++) {
             this.translateService.get(this.propSizeType[i].text).subscribe((txt: string) => { this.propSizeType[i].text = txt; });
         }
+
+        // Get current user
+        this.currentUser = this.authService.getUser();
+
+        // Load users list (no admin permission required)
+        this.userService.getUsersList().subscribe(result => {
+            if (result && result.users) {
+                this.users = result.users;
+            }
+        }, error => {
+            console.error('Failed to load users list:', error);
+            // If failed to load users, at least show current user
+            if (this.currentUser) {
+                this.users = [{ username: this.currentUser.username }];
+            }
+        });
     }
 
     ngOnInit() {
@@ -91,6 +117,19 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
             }
         });
         this.allExistingTags = Array.from(tagsSet).sort();
+
+        // Initialize permissions
+        if (!this.data.property) {
+            this.data.property = new ViewProperty();
+        }
+
+        // Set creator for new views (default to current user)
+        if (this.data.newView && this.currentUser && !this.data.property.creator) {
+            this.data.property.creator = this.currentUser.username;
+        }
+
+        // Initialize viewers list
+        this.selectedViewers = this.data.property.viewers ? [...this.data.property.viewers] : [];
     }
 
     ngOnDestroy() {
@@ -125,6 +164,11 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
         this.data.property.events = this.flexEvent.getEvents();
         // Save tags
         this.data.tags = this.viewTags.length > 0 ? this.viewTags : undefined;
+
+        // Save permissions
+        this.data.property.viewers = this.selectedViewers.length > 0 ? this.selectedViewers : undefined;
+        this.data.property.updatedAt = new Date().toISOString();
+
         this.dialogRef.close(this.data);
     }
 
@@ -205,6 +249,24 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     getImageFileName(base64: string): string {
         if (!base64) return '';
         return base64.substring(0, 50) + '...'; // 顯示前50個字符
+    }
+
+    // Permission management methods
+    toggleViewer(username: string) {
+        const index = this.selectedViewers.indexOf(username);
+        if (index >= 0) {
+            this.selectedViewers.splice(index, 1);
+        } else {
+            this.selectedViewers.push(username);
+        }
+    }
+
+    isViewerSelected(username: string): boolean {
+        return this.selectedViewers.includes(username);
+    }
+
+    toggleLocked() {
+        this.data.property.locked = !this.data.property.locked;
     }
 }
 

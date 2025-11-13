@@ -67,7 +67,7 @@
 
 .mat-cell ::ng-deep .mat-checkbox-inner-container {
     width: 16px;
-    height: 16px;
+    height: 20px;
     margin-left: 2px;
 }
 

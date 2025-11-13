@@ -52,6 +52,7 @@ export class ChartPropertyComponent implements OnInit, OnDestroy {
     eventType = [Utils.getEnumKey(GaugeEventType, GaugeEventType.onLoad)];
     actionRunScript = Utils.getEnumKey(GaugeEventActionType, GaugeEventActionType.onRunScript);
     selectActionType = {};
+    showTitle: boolean = true; // Control title display
 
     private destroy$ = new Subject<void>();
 
@@ -84,6 +85,8 @@ export class ChartPropertyComponent implements OnInit, OnDestroy {
             this.property.options = ChartUplotComponent.DefaultOptions();
         }
         this.options = this.property.options;
+        // Initialize showTitle based on titleHeight
+        this.showTitle = (this.options.titleHeight === undefined || this.options.titleHeight !== 0);
         // // load charts list to choise
         this.loadChart();
         this.chartViewValue = <ChartViewType>this.property.type;
@@ -92,6 +95,18 @@ export class ChartPropertyComponent implements OnInit, OnDestroy {
             this.options = Object.assign(this.options, this.property.options);
         }
         this.chartCtrl.setValue(chart);
+    }
+
+    onTitleDisplayChanged() {
+        // Set titleHeight to 0 to hide, or 18 (default) to show
+        if (this.showTitle) {
+            if (this.options.titleHeight === 0 || this.options.titleHeight === undefined) {
+                this.options.titleHeight = 18; // Default title size
+            }
+        } else {
+            this.options.titleHeight = 0;
+        }
+        this.onChartChanged();
     }
 
     onChartChanged() {

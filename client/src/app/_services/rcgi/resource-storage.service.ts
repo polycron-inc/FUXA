@@ -28,6 +28,12 @@ export abstract class ResourceStorageService {
 
     public abstract cloneView(viewId: string, newName?: string): Observable<any>;
 
+    public abstract convertTemplateToView(templateId: string): Observable<any>;
+
+    public abstract importAllTemplates(templates: any[]): Observable<any>;
+
+    public abstract exportAllTemplates(): Observable<any>;
+
     public abstract uploadFile(file: any, destination?: string): Observable<UploadFile>;
 
     public abstract getDeviceSecurity(id: string): Observable<any>;

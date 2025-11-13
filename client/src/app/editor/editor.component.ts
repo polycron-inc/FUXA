@@ -18,6 +18,7 @@ import { GaugeBaseComponent } from '../gauges/gauge-base/gauge-base.component';
 import { Utils } from '../_helpers/utils';
 import { Define } from '../_helpers/define';
 import { LibImagesComponent } from '../resources/lib-images/lib-images.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../gui-helpers/confirm-dialog/confirm-dialog.component';
 
 import { BagPropertyComponent } from '../gauges/controls/html-bag/bag-property/bag-property.component';
 import { SliderPropertyComponent } from '../gauges/controls/slider/slider-property/slider-property.component';
@@ -84,6 +85,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     colorFill = this.colorDefault.fill;
     colorStroke = this.colorDefault.stroke;
     currentView: View = null;
+    currentTemplate: View = null;
     hmi: Hmi = new Hmi();// = {_id: '', name: '', networktype: '', ipaddress: '', maskaddress: '' };
     currentMode = '';
     imagefile: string;
@@ -95,6 +97,8 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         enabled: false,
         panelView: true,
         panelViewHeight: 200,
+        panelTemplate: true,
+        panelTemplateHeight: 200,
         panelGeneral: true,
         panelC: true,
         panelD: true,
@@ -355,15 +359,16 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Search SVG elements in View, fill into select box and select the current svg element selected
+     * Search SVG elements in View/Template, fill into select box and select the current svg element selected
      * @param loadSvgElement
      */
     checkSvgElementsMap(loadSvgElement = false) {
         if (loadSvgElement) {
+            const currentItems = (this.currentView || this.currentTemplate)?.items || {};
             this.svgElements = Array.from(document.querySelectorAll('g, text, line, rect, image, path, circle, ellipse'))
                                     .filter((svg: any) => svg.attributes?.type?.value?.startsWith('svg-ext') ||
                                                           (svg.id?.startsWith('svg_') && !svg.parentNode?.attributes?.type?.value?.startsWith('svg-ext')))
-                                    .map(ele => <ISvgElement>{id: ele.id, name: this.currentView.items[ele.id]?.name});
+                                    .map(ele => <ISvgElement>{id: ele.id, name: currentItems[ele.id]?.name});
         }
         this.svgElementSelected = this.svgElements.find(se => se.id === this.selectedElement?.id);
     }
@@ -395,6 +400,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.gaugesManager.initGaugesMap();
         this.currentView = null;
         this.hmi = this.projectService.getHmi();
+
+        // Initialize templates array if not exist
+        if (!this.hmi.templates) {
+            this.hmi.templates = [];
+        }
+
         // check new hmi
         if (!this.hmi.views || this.hmi.views.length <= 0) {
             this.hmi.views = [];
@@ -443,17 +454,15 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private getContent() {
-        if (this.currentView.type === ViewType.cards) {
-            this.currentView.svgcontent = this.cardsview.getContent();
-            return this.currentView.svgcontent;
-            // let temp = JSON.parse(JSON.stringify(this.dashboard));
-            // for (let i = 0; i < temp.length; i++) {
-            //     delete temp[i]['content'];
-            //     delete temp[i]['background'];
-            // }
-            // return JSON.stringify(temp);
-        } else if (this.currentView.type === ViewType.maps) {
-            return this.currentView.svgcontent;
+        if (!this.currentView && !this.currentTemplate) {
+            return '';
+        }
+        const view = this.currentView || this.currentTemplate;
+        if (view.type === ViewType.cards) {
+            view.svgcontent = this.cardsview.getContent();
+            return view.svgcontent;
+        } else if (view.type === ViewType.maps) {
+            return view.svgcontent;
         }
         return this.winRef.nativeWindow.svgEditor.getSvgString();
     }
@@ -475,9 +484,14 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * @param ele gauge id
      */
     getGaugeSettings(ele, initParams: any = null): GaugeSettings {
-        if (ele && this.currentView) {
-            if (this.currentView.items[ele.id]) {
-                return this.currentView.items[ele.id];
+        const currentContext = this.currentView || this.currentTemplate;
+        if (ele && currentContext) {
+            // Ensure items object exists
+            if (!currentContext.items) {
+                currentContext.items = {};
+            }
+            if (currentContext.items[ele.id]) {
+                return currentContext.items[ele.id];
             }
             let gs = this.gaugesManager.createSettings(ele.id, ele.type);
             if (initParams) {
@@ -495,14 +509,22 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private searchGaugeSettings(ele): GaugeSettings {
         if (ele) {
-            if (this.currentView) {
-                if (this.currentView.items[ele.id]) {
-                    return this.currentView.items[ele.id];
+            const currentContext = this.currentView || this.currentTemplate;
+            if (currentContext) {
+                if (currentContext.items[ele.id]) {
+                    return currentContext.items[ele.id];
                 }
             }
             for (var i = 0; i < this.hmi.views.length; i++) {
                 if (this.hmi.views[i].items[ele.id]) {
                     return this.hmi.views[i].items[ele.id];
+                }
+            }
+            if (this.hmi.templates) {
+                for (var i = 0; i < this.hmi.templates.length; i++) {
+                    if (this.hmi.templates[i].items[ele.id]) {
+                        return this.hmi.templates[i].items[ele.id];
+                    }
                 }
             }
             return this.gaugesManager.createSettings(ele.id, ele.type);
@@ -516,7 +538,10 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private setGaugeSettings(ga) {
         if (ga.id) {
-            this.currentView.items[ga.id] = ga;
+            const currentContext = this.currentView || this.currentTemplate;
+            if (currentContext) {
+                currentContext.items[ga.id] = ga;
+            }
         } else {
             console.error('!TOFIX', ga);
         }
@@ -587,7 +612,9 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             this.clearEditor();
             if (this.isSvgEditMode(this.editorMode)) {
                 let svgcontent = '';
-                let v = this.getView(view.name);
+                // Use the passed view object directly instead of looking up by name
+                // This prevents confusion between views and templates with the same name
+                let v = view;
                 if (v) {
                     svgcontent = v.svgcontent;
                 }
@@ -605,9 +632,11 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 // check gauge to init
                 this.gaugesRef = {};
                 setTimeout(() => {
-                    for (let key in v.items) {
-                        let ga: GaugeSettings = this.getGaugeSettings(v.items[key]);
-                        this.checkGaugeAdded(ga);
+                    if (v && v.items) {
+                        for (let key in v.items) {
+                            let ga: GaugeSettings = this.getGaugeSettings(v.items[key]);
+                            this.checkGaugeAdded(ga);
+                        }
                     }
                     this.winRef.nativeWindow.svgEditor.refreshCanvas();
                     this.checkSvgElementsMap(true);
@@ -640,9 +669,18 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * @param name view name
      */
     private getView(name) {
+        // Search in views
         for (var i = 0; i < this.hmi.views.length; i++) {
             if (this.hmi.views[i].name === name) {
                 return this.hmi.views[i];
+            }
+        }
+        // Search in templates
+        if (this.hmi.templates) {
+            for (var i = 0; i < this.hmi.templates.length; i++) {
+                if (this.hmi.templates[i].name === name) {
+                    return this.hmi.templates[i];
+                }
             }
         }
         return null;
@@ -1207,7 +1245,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     //#region Project Events
     /**
      * Save Project
-     * Save the current View
+     * Save the current View or Template
      */
     onSaveProject(notify = false) {
         if (this.currentView) {
@@ -1222,6 +1260,18 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 // Save without thumbnail if generation fails
                 this.saveView(this.currentView, notify);
             });
+        } else if (this.currentTemplate) {
+            this.currentTemplate.svgcontent = this.getContent();
+
+            // Generate and upload thumbnail for template
+            this.generateAndUploadThumbnail().then(thumbnailUrl => {
+                this.currentTemplate.thumbnail = thumbnailUrl;
+                this.saveTemplate(this.currentTemplate, notify);
+            }).catch(err => {
+                console.error('Failed to generate/upload thumbnail for template:', err);
+                // Save without thumbnail if generation fails
+                this.saveTemplate(this.currentTemplate, notify);
+            });
         }
     }
 
@@ -1232,8 +1282,15 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private generateAndUploadThumbnail(): Promise<string> {
         return new Promise((resolve, reject) => {
             try {
+                // Get the current view or template
+                const currentContext = this.currentView || this.currentTemplate;
+                if (!currentContext) {
+                    reject('No current view or template');
+                    return;
+                }
+
                 // Get the SVG content (prefer the one just saved in onSaveProject)
-                let svgString = this.currentView.svgcontent;
+                let svgString = currentContext.svgcontent;
                 if (!svgString && this.winRef?.nativeWindow?.svgEditor?.getSvgString) {
                     svgString = this.winRef.nativeWindow.svgEditor.getSvgString();
                 }
@@ -1260,8 +1317,8 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                             const maxHeight = 200;
 
                             // Calculate scaled dimensions maintaining aspect ratio
-                            let width = img.width || this.currentView.profile.width || 1920;
-                            let height = img.height || this.currentView.profile.height || 1080;
+                            let width = img.width || currentContext.profile.width || 1920;
+                            let height = img.height || currentContext.profile.height || 1080;
 
                             const scale = Math.min(maxWidth / width, maxHeight / height);
                             canvas.width = Math.max(1, Math.floor(width * scale));
@@ -1293,7 +1350,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                             URL.revokeObjectURL(url);
 
                             // Upload thumbnail to server
-                            const fileName = `${this.currentView.id}_thumbnail.png`;
+                            const fileName = `${currentContext.id}_thumbnail.png`;
                             const uploadData = {
                                 name: fileName,
                                 type: 'png',
@@ -1518,7 +1575,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         console.log('pass onSelectView 2')
         if (this.currentView) {
             this.currentView.svgcontent = this.getContent();
-            // this.hmi.views[this.currentView].svgcontent = this.winRef.nativeWindow.svgEditor.getSvgString();
+            this.saveView(this.currentView);
+        }
+        // Save current template if switching from template to view
+        else if (this.currentTemplate) {
+            this.currentTemplate.svgcontent = this.getContent();
+            this.saveTemplate(this.currentTemplate);
         } else {
             this.setFillColor(this.colorFill);
         }
@@ -1591,6 +1653,166 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         };
         reader.readAsText(input.files[0]);
         this.viewFileImportInput.nativeElement.value = null;
+    }
+    //#endregion
+
+    //#region Template Events (Add/Clone/Convert/...)
+    /**
+     * Add Template to Project
+     */
+    onAddTemplate() {
+        let dialogRef = this.dialog.open(ViewPropertyComponent, {
+            position: { top: '60px' },
+            data: <ViewPropertyType & { newView: boolean}> {
+                name: '',
+                profile: new DocProfile(),
+                type: ViewType.svg,
+                existingNames: this.hmi.templates.map((t) => t.name),
+                newView: true,
+                tags: []
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                let template = new View(Utils.getShortGUID('t_'), result.type, result.name);
+                template.profile = result.profile;
+                template.tags = result.tags;
+                this.hmi.templates.push(template);
+                this.onSelectTemplate(template);
+                this.saveTemplate(this.currentTemplate);
+            }
+        });
+    }
+
+    /**
+     * Clone the Template, copy and change all ids
+     * @param template
+     */
+    onCloneTemplate(template: View) {
+        if (template) {
+            let nn = 'Template_';
+            let idx = 1;
+            for (idx = 1; idx < this.hmi.templates.length + 2; idx++) {
+                let found = false;
+                for (var i = 0; i < this.hmi.templates.length; i++) {
+                    if (this.hmi.templates[i].name === nn + idx) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    {break;}
+            }
+            let torename = { content: JSON.stringify(template), id: '' };
+            // change all gauge ids
+            let idrenamed = [];
+            for (let key in template.items) {
+                torename.id = key;
+                let newid = this.winRef.nativeWindow.svgEditor.renameSvgExtensionId(torename);
+                idrenamed.push(newid);
+            }
+            let strv = this.winRef.nativeWindow.svgEditor.renameAllSvgExtensionId(torename.content, idrenamed);
+            let t: View = JSON.parse(strv);
+            t.id = 't_' + Utils.getShortGUID();
+            t.name = nn + idx;
+            this.hmi.templates.push(t);
+            this.onSelectTemplate(t);
+            this.saveTemplate(this.currentTemplate);
+        }
+    }
+
+    /**
+     * Template property changed
+     * @param template
+     */
+    onTemplatePropertyChanged(template: View) {
+        this.winRef.nativeWindow.svgEditor.setDocProperty(template.name, template.profile.width, template.profile.height, template.profile.bkcolor, template.profile.bkimage);
+        this.onSelectTemplate(template);
+    }
+
+    /**
+     * Select the template, save current view/template before
+     * @param template selected template to load resource
+     */
+    onSelectTemplate(template: View, force = true) {
+        if (!force && this.currentTemplate?.id === template?.id) {
+            return;
+        }
+        // Save current view if switching from view to template
+        if (this.currentView) {
+            this.currentView.svgcontent = this.getContent();
+            this.saveView(this.currentView);
+        }
+        // Save current template if switching from template to template
+        if (this.currentTemplate) {
+            this.currentTemplate.svgcontent = this.getContent();
+            this.saveTemplate(this.currentTemplate);
+        }
+        // Switch to new template
+        this.currentView = null;
+        this.currentTemplate = template;
+        localStorage.setItem('@frango.webeditor.currenttemplate', this.currentTemplate.name);
+        this.loadView(this.currentTemplate);
+    }
+
+    /**
+     * Convert template to view
+     * @param template
+     */
+    async onConvertTemplateToView(template: View) {
+        // Check if a view with the same name already exists
+        const existingView = this.hmi.views.find(v => v.name === template.name);
+        if (existingView) {
+            // Show warning dialog
+            let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+                position: { top: '60px' },
+                data: <ConfirmDialogData>{
+                    msg: this.translateService.instant('msg.view-name-exist'),
+                    hideCancel: true
+                }
+            });
+            return;
+        }
+
+        try {
+            // Save current template if it's being edited
+            if (this.currentTemplate && this.currentTemplate.id === template.id) {
+                this.currentTemplate.svgcontent = this.getContent();
+                await this.projectService.setTemplateAsync(this.currentTemplate, false);
+            }
+
+            // Call backend API to convert template to view
+            this.projectService.convertTemplateToView(template.id).subscribe(
+                (newView: View) => {
+                    if (newView) {
+                        // Note: projectService.convertTemplateToView already adds the view
+                        // to hmi.views and removes the template from hmi.templates
+                        this.onSelectView(newView);
+                    }
+                },
+                (error) => {
+                    console.error('Failed to convert template to view:', error);
+                }
+            );
+        } catch (error) {
+            console.error('Failed to save template before conversion:', error);
+        }
+    }
+
+    /**
+     * Save the Template to Server
+     */
+    private saveTemplate(template: View, notify = false) {
+        this.projectService.setTemplate(template, notify);
+    }
+
+    /**
+     * Remove the Template from Project
+     * @param template
+     */
+    private removeTemplate(template: View) {
+        this.projectService.removeTemplate(template);
     }
     //#endregion
 
@@ -1676,7 +1898,8 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         let eventsSupported = this.isWithEvents(settings.type);
         let actionsSupported = this.isWithActions(settings.type);
         let defaultValue = GaugesManager.getDefaultValue(settings.type);
-        let names = Object.values(this.currentView.items).map(gs => gs.name);
+        const currentContext = this.currentView || this.currentTemplate;
+        let names = Object.values(currentContext.items).map(gs => gs.name);
         // set default name
         if (!tempsettings.name) {
             tempsettings.name = Utils.getNextName(GaugesManager.getPrefixGaugeName(settings.type), names);
@@ -1783,12 +2006,12 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     devices: Object.values(this.projectService.getDevices()),
                     title: title,
                     views: hmi.views,
-                    view: this.currentView,
+                    view: currentContext,
                     dlgType: dlgType,
                     withEvents: eventsSupported,
                     withActions: actionsSupported,
                     default: defaultValue,
-                    inputs: Object.values(this.currentView.items).filter(gs => gs.name && (gs.id.startsWith('HXS_') || gs.id.startsWith('HXI_'))),
+                    inputs: Object.values(currentContext.items).filter(gs => gs.name && (gs.id.startsWith('HXS_') || gs.id.startsWith('HXI_'))),
                     names: names,
                     scripts: this.projectService.getScripts(),
                     withBitmask: bitmaskSupported,
@@ -1799,7 +2022,11 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         dialogRef.afterClosed().subscribe(result => {
             if (result) {
                 callback(result.settings);
-                this.saveView(this.currentView);
+                if (this.currentView) {
+                    this.saveView(this.currentView);
+                } else if (this.currentTemplate) {
+                    this.saveTemplate(this.currentTemplate);
+                }
                 this.gaugesManager.initInEditor(result.settings, this.resolver, this.viewContainerRef, elementWithLanguageText);
                 this.checkSvgElementsMap(true);
             }
@@ -2013,6 +2240,8 @@ interface PanelsStateType {
     enabled?: boolean;
     panelView?: boolean;
     panelViewHeight?: number;
+    panelTemplate?: boolean;
+    panelTemplateHeight?: number;
     panelGeneral?: boolean;
     panelC?: boolean;
     panelD?: boolean;

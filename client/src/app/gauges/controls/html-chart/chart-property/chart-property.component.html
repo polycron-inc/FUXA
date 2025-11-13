@@ -92,12 +92,20 @@
                             </mat-option>
                         </mat-select>
                     </div>
-                    <div class="section-inline-margin5"></div>
-                    <div class="my-form-field field-number lbk section-toogle">
-                        <span>{{'chart.property-font.titlesize' | translate}}</span>
-                        <input numberOnly [(ngModel)]="options.titleHeight" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number" min="0" max="36">
+                    <div class="section-newline"></div>
+                    <div class="my-form-field section-item" style="display: inline-block; width: 140px;margin-right: 10px">
+                        <span>{{'chart.property-title-display' | translate}}</span>
+                        <mat-radio-group [(ngModel)]="showTitle" (change)="onTitleDisplayChanged()">
+                            <mat-radio-button [value]="true">{{'chart.property-title-show' | translate}}</mat-radio-button>
+                            <mat-radio-button [value]="false">{{'chart.property-title-hide' | translate}}</mat-radio-button>
+                        </mat-radio-group>
                     </div>
                     <div class="section-inline-margin5"></div>
+                    <div class="my-form-field field-number lbk section-toogle" *ngIf="showTitle">
+                        <span>{{'chart.property-font.titlesize' | translate}}</span>
+                        <input numberOnly [(ngModel)]="options.titleHeight" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number" min="6" max="36">
+                    </div>
+                    <div class="section-inline-margin5" *ngIf="showTitle"></div>
                     <div class="my-form-field field-number lbk section-toogle">
                         <span>{{'chart.property-font.axissize' | translate}}</span>
                         <input numberOnly [(ngModel)]="options.axisLabelFontSize" (change)="onChartChanged()" (keyup.enter)="onChartChanged()" type="number" min="0" max="24">

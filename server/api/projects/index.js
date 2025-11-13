@@ -98,7 +98,15 @@ module.exports = {
             } else {
                 runtime.project.setProjectData(req.body.cmd, req.body.data).then(setres => {
                     runtime.update(req.body.cmd, req.body.data).then(result => {
-                        res.end();
+                        // For add-view and add-template commands, return the generated data including ID
+                        if (req.body.cmd === 'add-view' || req.body.cmd === 'add-template') {
+                            res.json({
+                                success: true,
+                                data: req.body.data  // This now contains the generated ID
+                            });
+                        } else {
+                            res.end();
+                        }
                     });
                 }).catch(function(err) {
                     if (err && err.code) {
@@ -335,6 +343,50 @@ module.exports = {
         });
 
         /**
+         * POST Convert template to view
+         * Convert a template into a view
+         */
+        prjApp.post("/api/convertTemplateToView", function(req, res, next) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                const templateId = req.body.params;
+                if (!templateId) {
+                    res.status(400).json({error:"missing_parameter", message: "templateId is required"});
+                    runtime.logger.error("api post convertTemplateToView: templateId is required");
+                    return;
+                }
+
+                const newView = runtime.project.convertTemplateToView(templateId);
+
+                // Save the new view to storage and delete the template
+                runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetView, newView).then(() => {
+                    // Delete the template from storage
+                    return runtime.project.setProjectData(runtime.project.ProjectDataCmdType.DelTemplate, { id: templateId });
+                }).then(() => {
+                    res.json(newView);
+                    runtime.logger.info(`api post convertTemplateToView: Successfully converted template ${templateId} to view ${newView.name}`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post convertTemplateToView save: " + err.message);
+                    } else {
+                        res.status(400).json({error:"unexpected_error", message: err});
+                        runtime.logger.error("api post convertTemplateToView save: " + err);
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"convert_error", message: err.message});
+                    runtime.logger.error("api post convertTemplateToView: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post convertTemplateToView: " + err);
+                }
+            }
+        });
+
+        /**
          * POST Import project
          * Import entire project from JSON data
          * Public API - No authentication required
@@ -407,6 +459,113 @@ module.exports = {
         });
 
         /**
+         * GET Export all templates
+         * Export all templates as a JSON array
+         * Public API - No authentication required
+         * Returns an array of all templates in the project
+         */
+        prjApp.get("/api/project/export-all-templates", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                // Get all templates from project
+                const templates = runtime.project.getTemplates();
+
+                if (!templates || templates.length === 0) {
+                    res.json({
+                        success: true,
+                        message: "No templates found",
+                        count: 0,
+                        templates: []
+                    });
+                    runtime.logger.info("api get project/export-all-templates: No templates to export");
+                    return;
+                }
+
+                // Export all templates
+                const exportData = templates.map(template => ({
+                    ...template,
+                    type: template.type || 'svg'
+                }));
+
+                res.json({
+                    success: true,
+                    message: `Successfully exported ${exportData.length} templates`,
+                    count: exportData.length,
+                    templates: exportData
+                });
+                runtime.logger.info(`api get project/export-all-templates: Successfully exported ${exportData.length} templates`);
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"export_error", message: err.message});
+                    runtime.logger.error("api get project/export-all-templates: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api get project/export-all-templates: " + err);
+                }
+            }
+        });
+
+        /**
+         * GET Export single template
+         * Export a single template as JSON by templateId
+         * Public API - No authentication required
+         * Follows the same logic as client's onExportView but for templates
+         */
+        prjApp.get("/api/project/export-template/:templateId", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                const templateId = req.params.templateId;
+
+                if (!templateId) {
+                    res.status(400).json({error:"missing_parameter", message: "templateId is required"});
+                    runtime.logger.error("api get project/export-template: templateId is required");
+                    return;
+                }
+
+                // Get project to find the template
+                runtime.project.getProject(null, null).then(projectData => {
+                    // Find the template by ID
+                    const template = projectData.hmi?.templates?.find(t => t.id === templateId);
+
+                    if (!template) {
+                        res.status(404).json({error:"template_not_found", message: `Template with id '${templateId}' not found`});
+                        runtime.logger.error(`api get project/export-template: Template '${templateId}' not found`);
+                        return;
+                    }
+
+                    // Export template (same as client's onExportView logic)
+                    const exportData = {
+                        ...template,
+                        type: template.type || 'svg'
+                    };
+
+                    res.json(exportData);
+                    runtime.logger.info(`api get project/export-template: Successfully exported template '${template.name}' (${templateId})`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api get project/export-template: " + err.message);
+                    } else {
+                        res.status(400).json({error:"unexpected_error", message: err});
+                        runtime.logger.error("api get project/export-template: " + err);
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"export_error", message: err.message});
+                    runtime.logger.error("api get project/export-template: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api get project/export-template: " + err);
+                }
+            }
+        });
+
+        /**
          * POST Import single view
          * Import a single view to the project
          * Public API - No authentication required
@@ -423,11 +582,20 @@ module.exports = {
                 // Support both direct view data and wrapped format {cmd, data}
                 let viewData = req.body;
                 let newName = req.body._newName; // Optional: custom name for the view
+                let conflictAction = null;
 
                 // Check if body is in wrapped format {cmd, data}
                 if (req.body.cmd === 'import-view' && req.body.data) {
-                    viewData = req.body.data;
-                    newName = req.body.data._newName || newName;
+                    // Check if data has a 'view' property (nested format)
+                    if (req.body.data.view) {
+                        viewData = req.body.data.view;
+                        conflictAction = req.body.data.conflictAction;
+                        newName = req.body.data._newName || newName;
+                    } else {
+                        // Direct data format
+                        viewData = req.body.data;
+                        newName = req.body.data._newName || newName;
+                    }
                 }
 
                 // Basic validation
@@ -453,10 +621,21 @@ module.exports = {
                     return;
                 }
 
-                runtime.logger.info(`api post project/import-view: Starting import of view '${cleanViewData.name || 'Unnamed'}'`);
+                runtime.logger.info(`api post project/import-view: Starting import of view '${cleanViewData.name || 'Unnamed'}' with conflict action '${conflictAction || 'create-new'}'`);
 
                 // Import the view (handles name conflicts and ID generation)
-                const importedView = runtime.project.importView(cleanViewData, newName);
+                const importedView = runtime.project.importView(cleanViewData, newName, conflictAction);
+
+                // Check if view was skipped
+                if (!importedView) {
+                    res.json({
+                        success: false,
+                        message: "View import skipped due to name conflict",
+                        skipped: true
+                    });
+                    runtime.logger.info(`api post project/import-view: Skipped view '${cleanViewData.name}' due to conflict`);
+                    return;
+                }
 
                 // Save the imported view to storage
                 runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetView, importedView).then(() => {
@@ -486,6 +665,196 @@ module.exports = {
                 } else {
                     res.status(400).json({error:"unexpected_error", message: err});
                     runtime.logger.error("api post project/import-view: " + err);
+                }
+            }
+        });
+
+        /**
+         * POST Import single template
+         * Import a single template to the project
+         * Public API - No authentication required
+         * Follows the same logic as import-view but for templates
+         * Supports two formats:
+         * 1. Direct template data: { id, name, svgcontent, ... }
+         * 2. Wrapped format: { cmd: "import-template", data: { id, name, svgcontent, ... } }
+         */
+        prjApp.post("/api/project/import-template", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                // Support both direct template data and wrapped format {cmd, data}
+                let templateData = req.body;
+                let newName = req.body._newName; // Optional: custom name for the template
+
+                // Check if body is in wrapped format {cmd, data}
+                if (req.body.cmd === 'import-template' && req.body.data) {
+                    templateData = req.body.data;
+                    newName = req.body.data._newName || newName;
+                }
+
+                // Basic validation
+                if (!templateData || typeof templateData !== 'object') {
+                    res.status(400).json({error:"invalid_data", message: "Template data is required and must be a valid JSON object"});
+                    runtime.logger.error("api post project/import-template: Invalid template data");
+                    return;
+                }
+
+                // Remove the optional _newName parameter from template data if exists
+                const cleanTemplateData = JSON.parse(JSON.stringify(templateData));
+                delete cleanTemplateData._newName;
+                delete cleanTemplateData.cmd;
+
+                // Verify template structure
+                const verification = runtime.project.verifyTemplate(cleanTemplateData);
+                if (!verification.valid) {
+                    res.status(400).json({
+                        error:"invalid_template_format",
+                        message: verification.error || "Template format is invalid"
+                    });
+                    runtime.logger.error("api post project/import-template: " + verification.error);
+                    return;
+                }
+
+                runtime.logger.info(`api post project/import-template: Starting import of template '${cleanTemplateData.name || 'Unnamed'}'`);
+
+                // Import the template (handles name conflicts and ID generation)
+                const importedTemplate = runtime.project.importTemplate(cleanTemplateData, newName);
+
+                // Save the imported template to storage
+                runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetTemplate, importedTemplate).then(() => {
+                    res.json({
+                        success: true,
+                        message: "Template imported successfully",
+                        template: {
+                            id: importedTemplate.id,
+                            name: importedTemplate.name,
+                            type: importedTemplate.type
+                        }
+                    });
+                    runtime.logger.info(`api post project/import-template: Successfully imported template '${importedTemplate.name}'`);
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post project/import-template save: " + err.message);
+                    } else {
+                        res.status(400).json({error:"save_error", message: err.message || err});
+                        runtime.logger.error("api post project/import-template save: " + (err.message || err));
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"import_error", message: err.message});
+                    runtime.logger.error("api post project/import-template: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post project/import-template: " + err);
+                }
+            }
+        });
+
+        /**
+         * POST Import all templates (batch import)
+         * Import multiple templates to the project, clearing existing templates first
+         * Public API - No authentication required
+         * Expects body format:
+         * 1. Direct array: [{ id, name, svgcontent, ... }, ...]
+         * 2. Wrapped format: { cmd: "import-all-templates", data: [{ id, name, svgcontent, ... }, ...] }
+         */
+        prjApp.post("/api/project/import-all-templates", function(req, res) {
+            try {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+                // Support both direct array and wrapped format {cmd, data}
+                let templatesData = req.body;
+
+                // Check if body is in wrapped format {cmd, data}
+                if (req.body.cmd === 'import-all-templates' && req.body.data) {
+                    templatesData = req.body.data;
+                }
+
+                // Basic validation
+                if (!Array.isArray(templatesData)) {
+                    res.status(400).json({error:"invalid_data", message: "Templates data must be an array"});
+                    runtime.logger.error("api post project/import-all-templates: Templates data must be an array");
+                    return;
+                }
+
+                runtime.logger.info(`api post project/import-all-templates: Starting import of ${templatesData.length} templates`);
+
+                // Clear all existing templates first
+                const existingTemplates = runtime.project.getTemplates();
+                const deletePromises = existingTemplates.map(template =>
+                    runtime.project.setProjectData(runtime.project.ProjectDataCmdType.DelTemplate, { id: template.id })
+                        .catch(err => {
+                            runtime.logger.error(`api post project/import-all-templates: Failed to delete template ${template.id}: ${err.message || err}`);
+                        })
+                );
+
+                // Wait for all deletions to complete
+                Promise.all(deletePromises).then(() => {
+                    // Now import all new templates
+                    const importedTemplates = [];
+                    const importPromises = [];
+
+                    for (let i = 0; i < templatesData.length; i++) {
+                        const templateData = templatesData[i];
+
+                        // Verify template structure
+                        const verification = runtime.project.verifyTemplate(templateData);
+                        if (!verification.valid) {
+                            runtime.logger.warn(`api post project/import-all-templates: Skipping invalid template at index ${i}: ${verification.error}`);
+                            continue;
+                        }
+
+                        try {
+                            // Import the template (handles name conflicts and ID generation)
+                            const importedTemplate = runtime.project.importTemplate(templateData);
+                            importedTemplates.push(importedTemplate);
+
+                            // Save the imported template to storage
+                            importPromises.push(
+                                runtime.project.setProjectData(runtime.project.ProjectDataCmdType.SetTemplate, importedTemplate)
+                                    .catch(err => {
+                                        runtime.logger.error(`api post project/import-all-templates: Failed to save template '${importedTemplate.name}': ${err.message || err}`);
+                                    })
+                            );
+                        } catch(err) {
+                            runtime.logger.warn(`api post project/import-all-templates: Failed to import template at index ${i}: ${err.message || err}`);
+                        }
+                    }
+
+                    // Wait for all imports to complete
+                    return Promise.all(importPromises).then(() => {
+                        res.json({
+                            success: true,
+                            message: `Successfully imported ${importedTemplates.length} templates`,
+                            count: importedTemplates.length,
+                            templates: importedTemplates.map(t => ({
+                                id: t.id,
+                                name: t.name,
+                                type: t.type
+                            }))
+                        });
+                        runtime.logger.info(`api post project/import-all-templates: Successfully imported ${importedTemplates.length} templates`);
+                    });
+                }).catch(function(err) {
+                    if (err && err.code) {
+                        res.status(400).json({error: err.code, message: err.message});
+                        runtime.logger.error("api post project/import-all-templates: " + err.message);
+                    } else {
+                        res.status(400).json({error:"import_error", message: err.message || err});
+                        runtime.logger.error("api post project/import-all-templates: " + (err.message || err));
+                    }
+                });
+            } catch(err) {
+                if (err && err.message) {
+                    res.status(400).json({error:"import_error", message: err.message});
+                    runtime.logger.error("api post project/import-all-templates: " + err.message);
+                } else {
+                    res.status(400).json({error:"unexpected_error", message: err});
+                    runtime.logger.error("api post project/import-all-templates: " + err);
                 }
             }
         });

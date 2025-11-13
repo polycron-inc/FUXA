@@ -8,6 +8,8 @@ export class Hmi {
     layout: LayoutSettings = new LayoutSettings();
     /** Views list of hmi project */
     views: View[] = [];
+    /** Templates list of hmi project */
+    templates: View[] = [];
 }
 
 export class View {
@@ -216,6 +218,10 @@ export class ViewProperty {
     events: GaugeEvent[] = [];
     startLocation?: MapsLocation;
     startZoom?: number;
+    creator?: string;           // 建立者 (user ID or username)
+    locked?: boolean;           // 鎖定與否
+    viewers?: string[];         // 可瀏覽人員列表 (user IDs or usernames)
+    updatedAt?: string;         // 更新日期 (ISO string)
 }
 export class GaugeProperty {
     variableId: string;

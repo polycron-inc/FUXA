@@ -25,8 +25,32 @@ module.exports = {
         });
 
         /**
+         * GET Users List (usernames only, no admin permission required)
+         * Returns only usernames for view permissions selection
+         */
+        usersApp.get("/api/users/list", secureFnc, function(req, res) {
+            const permission = checkGroupsFnc(req);
+            if (res.statusCode === 403) {
+                runtime.logger.error("api get users list: Token Expired");
+            } else {
+                runtime.users.getUsers(req.query).then(result => {
+                    if (result) {
+                        // result is directly an array of users
+                        const userList = result.map(user => ({ username: user.username }));
+                        res.json({ users: userList });
+                    } else {
+                        res.json({ users: [] });
+                    }
+                }).catch(function(err) {
+                    runtime.logger.error("api get users list: " + err.message);
+                    res.status(400).json({error: "unexpected_error", message: err.toString()});
+                });
+            }
+        });
+
+        /**
          * GET Users
-         * Take from users storage and reply 
+         * Take from users storage and reply
          */
         usersApp.get("/api/users", secureFnc, function(req, res) {
             const permission = checkGroupsFnc(req);

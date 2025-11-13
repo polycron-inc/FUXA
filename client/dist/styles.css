@@ -1226,7 +1226,7 @@ mat-toolbar-row {
 }
 .element-property-header {
     margin-top: 10px;
-
+    margin-bottom: 10px;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -1426,10 +1426,13 @@ mat-toolbar-row {
     box-shadow: 2px 0px 12px 2px var(--color-black-10, rgba(0, 0, 0, 0.1));
 }
 .my-form-field span {
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 .my-form-field .section-item {
     padding-top: 10px;
+}
+.my-form-field .mat-checkbox-inner-container{
+    height: 20px !important;
 }
 .mat-tab-body-wrapper .my-form-field input {
     width: 85% !important;
@@ -1504,6 +1507,10 @@ mat-toolbar-row {
 }
 .dark-theme mat-header-row{
     background-color: var(--Surface-tableHeader, rgba(51, 65, 85, 0.20)) !important;
+}
+.position-zero{
+    left:0px !important;
+    top:0px !important;
 }
 /*!**********************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[5].rules[0].oneOf[0].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[5].rules[0].oneOf[0].use[2]!./src/gauges.css?ngGlobalStyle ***!

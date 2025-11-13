@@ -549,7 +549,7 @@ export class ChartUplotComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private updateDomOptions(ngup: NgxUplotComponent) {
         let ele = this.chartPanel.nativeElement.getElementsByClassName('u-title');
-        if (ele) {
+        if (ele && ele.length > 0) {
             let title = ele[0];
             if (this.options.titleHeight) {
                 if (this.options.axisLabelColor) {title.style.color = this.options.axisLabelColor;}

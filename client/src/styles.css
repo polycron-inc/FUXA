@@ -549,7 +549,9 @@ textarea {
 
     font-size: 13px;
 }
-
+.my-form-field input.mat-radio-input{
+    opacity: 0;
+}
 .my-form-field input[type="number"]::-webkit-inner-spin-button,
 .my-form-field input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -1095,7 +1097,7 @@ mat-toolbar-row {
 }
 .element-property-header {
     margin-top: 10px;
-
+    margin-bottom: 10px;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -1295,10 +1297,13 @@ mat-toolbar-row {
     box-shadow: 2px 0px 12px 2px var(--color-black-10, rgba(0, 0, 0, 0.1));
 }
 .my-form-field span {
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 .my-form-field .section-item {
     padding-top: 10px;
+}
+.my-form-field .mat-checkbox-inner-container{
+    height: 20px !important;
 }
 .mat-tab-body-wrapper .my-form-field input {
     width: 85% !important;

@@ -109,6 +109,24 @@ export class ResClientService implements ResourceStorageService {
         });
     }
 
+    convertTemplateToView(templateId: string): Observable<any> {
+        return new Observable((observer) => {
+            observer.error('Convert template to view not supported in client mode');
+        });
+    }
+
+    importAllTemplates(templates: any[]): Observable<any> {
+        return new Observable((observer) => {
+            observer.error('Import all templates not supported in client mode');
+        });
+    }
+
+    exportAllTemplates(): Observable<any> {
+        return new Observable((observer) => {
+            observer.error('Export all templates not supported in client mode');
+        });
+    }
+
     uploadFile(file: any, destination?: string): Observable<UploadFile> {
         return new Observable((observer) => {
             observer.error('Not supported!');

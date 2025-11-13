@@ -25,6 +25,7 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
         stepAfter: 1,
         stepBefore: 2,
         spline: 3,
+        hideTitle: true
     };
 
     rawData = false;
@@ -224,8 +225,12 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
                 this.options.axes[0].label = this.languageLabels.time;
             }
         }
-        if (!this.options.title) {
+        if (typeof this.options.title === 'undefined') {
             this.options.title = this.languageLabels.title;
+        }
+        // If titleHeight is 0 or title is empty string, hide the title
+        if (this.options.titleHeight === 0 || this.options.title === '') {
+            this.options.title = '';
         }
         this.options.scales = {
             1: { range: [Utils.isNumeric(options.scaleY1min) ? options.scaleY1min : null, Utils.isNumeric(options.scaleY1max) ? options.scaleY1max : null] },
@@ -652,6 +657,7 @@ export interface NgxOptions extends Options {
 
     decimalsPrecision?: number;
     tooltip?: Legend;
+    titleHeight?: number;
     dateFormat?: string;
     timeFormat?: string;
     thouchZoom?: boolean;
@@ -662,6 +668,9 @@ export interface ChartOptions extends NgxOptions {
     panel?: { height: number; width: number };
     /** when true, null data values will not cause line breaks, Series.spanGaps */
     connectSeparatedPoints?: boolean;
+
+    /** hide chart title when true */
+    hideTitle?: boolean;
 
     titleHeight?: number;
     axisLabelFontSize?: number;

@@ -41,6 +41,11 @@ export class UserService {
         return this.http.get<any>(this.endPointConfig + '/api/users', { headers: header, params: params });
     }
 
+    getUsersList(): Observable<any> {
+        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.http.get<any>(this.endPointConfig + '/api/users/list', { headers: header });
+    }
+
     setUser(user: User) {
         return new Observable((observer) => {
             if (environment.serverEnabled) {

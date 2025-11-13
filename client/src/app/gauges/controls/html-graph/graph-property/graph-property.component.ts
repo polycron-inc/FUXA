@@ -6,13 +6,14 @@ import { Subject, ReplaySubject } from 'rxjs';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { Graph, GraphType, GraphRangeType, GraphBarXType, GraphDateGroupType } from '../../../../_models/graph';
+import { Graph, GraphType, GraphRangeType, GraphBarXType, GraphDateGroupType, GraphPieChartType } from '../../../../_models/graph';
 import { GraphConfigComponent, IDataGraphResult } from '../../../../editor/graph-config/graph-config.component';
 import { GraphBarComponent } from '../graph-bar/graph-bar.component';
 import { GraphOptions, GraphThemeType } from '../graph-base/graph-base.component';
 import { GaugeGraphProperty } from '../../../../_models/hmi';
 import { Utils } from '../../../../_helpers/utils';
 import { GraphPieComponent } from '../graph-pie/graph-pie.component';
+import { ProjectService } from '../../../../_services/project.service';
 
 @Component({
     selector: 'app-graph-property',
@@ -35,6 +36,8 @@ export class GraphPropertyComponent implements OnInit, OnDestroy {
     lastRangeType = GraphRangeType;
     dateGroupType = GraphDateGroupType;
     dataXType = Utils.getEnumKey(GraphBarXType, GraphBarXType.date);
+    pieChartType: GraphPieChartType = GraphPieChartType.pie;
+    pieCutout: number = 50; // Default cutout percentage for doughnut
 
     graphCtrl: UntypedFormControl = new UntypedFormControl();
     graphFilterCtrl: UntypedFormControl = new UntypedFormControl();
@@ -43,7 +46,8 @@ export class GraphPropertyComponent implements OnInit, OnDestroy {
     private _onDestroy = new Subject<void>();
 
     constructor(public dialog: MatDialog,
-                private translateService: TranslateService) {
+                private translateService: TranslateService,
+                private projectService: ProjectService) {
     }
 
     ngOnInit() {
@@ -68,6 +72,15 @@ export class GraphPropertyComponent implements OnInit, OnDestroy {
             this.options = Utils.mergeDeep(GraphBarComponent.DefaultOptions(), this.data.settings.property.options);
         } else if (this.data.settings.type.endsWith('pie')) {
             this.options = Utils.mergeDeep(GraphPieComponent.DefaultOptions(), this.data.settings.property.options);
+            // Load pie chart type from graph property
+            let graph = this.data.graphs.find(g => g.id === this.data.settings.property.id);
+            if (graph && graph.property) {
+                this.pieChartType = graph.property.chartType || GraphPieChartType.pie;
+                this.pieCutout = graph.property.cutout !== undefined ? graph.property.cutout : 50;
+            } else {
+                this.pieChartType = GraphPieChartType.pie;
+                this.pieCutout = 50;
+            }
         }
         // load graphs list to choise
         this.loadGraphs();
@@ -145,6 +158,16 @@ export class GraphPropertyComponent implements OnInit, OnDestroy {
             this.options.backgroundColor = '242424';
         } else if (this.options.theme === this.themeType.customise) {
             this.options.backgroundColor = null;
+        }
+        this.onGraphChanged();
+    }
+
+    onPieChartTypeChanged() {
+        if (this.graphCtrl.value && this.graphCtrl.value.property) {
+            this.graphCtrl.value.property.chartType = this.pieChartType;
+            this.graphCtrl.value.property.cutout = this.pieCutout;
+            // Save the updated graphs to persist the changes
+            this.projectService.setGraphs(this.data.graphs);
         }
         this.onGraphChanged();
     }
