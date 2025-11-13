@@ -1811,7 +1811,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * Remove the Template from Project
      * @param template
      */
-    private removeTemplate(template: View) {
+    removeTemplate(template: View) {
         this.projectService.removeTemplate(template);
     }
     //#endregion
