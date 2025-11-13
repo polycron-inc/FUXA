@@ -879,7 +879,10 @@ export class GaugesManager {
             if (property.id) {
                 let chart = this.hmiService.getChart(property.id);
                 if (chart) {
-                    const opt = <ChartOptions>{ ...property.options, ...{ title: chart.name, id: chart.name, scales: { x: { time: true } } } };
+                    // Only set title if titleHeight is not 0 (user wants to show title)
+                    let titleHeight = property.options?.titleHeight;
+                    let title = (titleHeight !== undefined && titleHeight !== 0) ? chart.name : '';
+                    const opt = <ChartOptions>{ ...property.options, ...{ title: title, id: chart.name, scales: { x: { time: true } } } };
                     gauge.setOptions(opt, true);
                     let yaxisNotOne = chart.lines.find(line => line.yaxis > 1);
                     for (let i = 0; i < chart.lines.length; i++) {

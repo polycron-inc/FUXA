@@ -92,7 +92,12 @@ export class GraphConfigComponent implements OnInit {
                 if (item) {
                     item.name = result.name;
                 } else {
-                    let graph = new Graph(GraphType.bar, Utils.getShortGUID(), result.name);
+                    // Determine graph type from params or default to bar
+                    let graphType = GraphType.bar;
+                    if (this.params && this.params.type === 'pie') {
+                        graphType = GraphType.pie;
+                    }
+                    let graph = new Graph(graphType, Utils.getShortGUID(), result.name);
                     this.data.graphs.push(graph);
                     this.onSelectGraph(graph);
                 }

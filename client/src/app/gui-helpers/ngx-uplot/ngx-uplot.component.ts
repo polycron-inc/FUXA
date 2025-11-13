@@ -228,6 +228,10 @@ export class NgxUplotComponent implements OnInit, OnDestroy {
         if (typeof this.options.title === 'undefined') {
             this.options.title = this.languageLabels.title;
         }
+        // If titleHeight is 0 or title is empty string, hide the title
+        if (this.options.titleHeight === 0 || this.options.title === '') {
+            this.options.title = '';
+        }
         this.options.scales = {
             1: { range: [Utils.isNumeric(options.scaleY1min) ? options.scaleY1min : null, Utils.isNumeric(options.scaleY1max) ? options.scaleY1max : null] },
             2: { range: [Utils.isNumeric(options.scaleY2min) ? options.scaleY2min : null, Utils.isNumeric(options.scaleY2max) ? options.scaleY2max : null] },
@@ -653,6 +657,7 @@ export interface NgxOptions extends Options {
 
     decimalsPrecision?: number;
     tooltip?: Legend;
+    titleHeight?: number;
     dateFormat?: string;
     timeFormat?: string;
     thouchZoom?: boolean;

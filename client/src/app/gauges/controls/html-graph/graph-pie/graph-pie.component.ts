@@ -2,7 +2,7 @@ import { Component, ViewChild, OnDestroy, Input, OnInit, AfterViewInit } from '@
 
 import { GraphBaseComponent, GraphOptions } from '../graph-base/graph-base.component';
 import { BaseChartDirective } from 'ng2-charts';
-import { GraphPieProperty, GraphSource } from '../../../../_models/graph';
+import { GraphPieProperty, GraphSource, GraphPieChartType } from '../../../../_models/graph';
 import { ChartData, ChartType } from 'chart.js';
 import DataLabelsPlugin from 'chartjs-plugin-datalabels';
 
@@ -95,6 +95,20 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
     init(title: string, property: any, sources?: GraphSource[]) {
         this.title = title;
         this.property = property;
+        // Set chart type from property
+        if (property && property.chartType) {
+            this.pieChartType = property.chartType as ChartType;
+        } else {
+            // Default to pie if not specified
+            this.pieChartType = 'pie';
+        }
+        // Set cutout from property (for doughnut charts)
+        if (property && property.cutout !== undefined) {
+            this.pieChartOptions = {
+                ...this.pieChartOptions,
+                cutout: property.cutout + '%'
+            };
+        }
         if (sources) {
             this.setSources(sources);
         }
@@ -140,6 +154,10 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
                 this.resize(this.pieChartOptions.panel.height, this.pieChartOptions.panel.width);
             }
             this.pieChartOptions.plugins.title.text = GraphBaseComponent.getTitle(options, this.title);
+            // Update cutout from property if available
+            if (this.property && this.property.cutout !== undefined) {
+                this.pieChartOptions.cutout = this.property.cutout + '%';
+            }
         }
     }
 

@@ -57,4 +57,5 @@ export interface GraphOptions extends ChartOptions {
     plugins?: any;
     scales?: any;
     backgroundColor?: string;
+    cutout?: string | number; // For doughnut charts, percentage or pixels
 }

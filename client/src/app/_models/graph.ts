@@ -11,6 +11,8 @@ export class Graph {
         this.name = _name;
         if (this.type === GraphType.bar) {
             this.property = new GraphBarProperty();
+        } else if (this.type === GraphType.pie) {
+            this.property = new GraphPieProperty();
         }
     }
 }
@@ -58,7 +60,13 @@ export class GraphBarDateFunction extends GraphBarFunction {
 }
 
 export class GraphPieProperty {
+    chartType: GraphPieChartType = GraphPieChartType.pie;
+    cutout: number = 0; // Percentage of the chart that is cut out (0-95), only for doughnut
+}
 
+export enum GraphPieChartType {
+    pie = 'pie',
+    doughnut = 'doughnut'
 }
 
 export class GraphSource {

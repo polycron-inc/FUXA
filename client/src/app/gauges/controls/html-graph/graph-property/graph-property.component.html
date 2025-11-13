@@ -46,11 +46,9 @@
                 </div>
             </ng-container>
         </div>
-        <ng-container *ngIf="graphType === graphBarType">
-            <div class="element-property-header">
-                <span>{{'graph.property-general' | translate}}</span>
-            </div>
-        </ng-container>
+        <div class="element-property-header">
+            <span>{{'graph.property-general' | translate}}</span>
+        </div>
         <ng-container *ngIf="graphType === graphBarType">
             <div class="my-form-field section-item section-item-block" style="width:85%">
                 <span>{{'graph.property-graph-oriantation' | translate}}</span>
@@ -58,6 +56,19 @@
                     <mat-option value="x">{{'graph.property-ori-vartical' | translate}}</mat-option>
                     <mat-option value="y">{{'graph.property-ori-horizontal' | translate}}</mat-option>
                 </mat-select>
+            </div>
+        </ng-container>
+        <ng-container *ngIf="graphType !== graphBarType">
+            <div class="my-form-field section-item section-item-block" style="width:85%">
+                <span>{{'graph.property-pie-chart-type' | translate}}</span>
+                <mat-select [(value)]="pieChartType" (selectionChange)="onPieChartTypeChanged()">
+                    <mat-option value="pie">{{'graph.property-pie-type-pie' | translate}}</mat-option>
+                    <mat-option value="doughnut">{{'graph.property-pie-type-doughnut' | translate}}</mat-option>
+                </mat-select>
+            </div>
+            <div class="my-form-field section-inline-number section-item-block mt10" *ngIf="pieChartType === 'doughnut'" style="width:85%">
+                <span>{{'graph.property-pie-cutout' | translate}}</span>
+                <input numberOnly [(ngModel)]="pieCutout" (change)="onPieChartTypeChanged()" (keyup.enter)="onPieChartTypeChanged()" type="number" min="0" max="95" step="5">
             </div>
         </ng-container>
         <div class="element-property-header">

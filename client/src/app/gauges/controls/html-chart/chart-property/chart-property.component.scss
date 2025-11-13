@@ -148,4 +148,40 @@
     .section-item-block mat-select, input {
         width:calc(100% - 35px);
     }
+
+    .radio-inline {
+        display: inline-flex;
+        gap: 15px;
+
+        ::ng-deep .mat-radio-button {
+            .mat-radio-input {
+                opacity: 0 !important;
+            }
+
+            .mat-radio-container {
+                .mat-radio-outer-circle {
+                    border-color: transparent;
+                }
+
+                .mat-radio-inner-circle {
+                    background-color: transparent;
+                }
+
+                &::before,
+                &::after {
+                    display: none;
+                }
+            }
+
+            &.mat-radio-checked .mat-radio-container {
+                .mat-radio-outer-circle {
+                    border-color: currentColor;
+                }
+
+                .mat-radio-inner-circle {
+                    background-color: currentColor;
+                }
+            }
+        }
+    }
 }
