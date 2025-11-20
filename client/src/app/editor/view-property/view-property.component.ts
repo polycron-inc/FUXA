@@ -13,6 +13,7 @@ import { AuthService } from '../../_services/auth.service';
 import { User } from '../../_models/user';
 import { Subject, startWith, takeUntil } from 'rxjs';
 import { MatLegacyTab as MatTab } from '@angular/material/legacy-tabs';
+import { getUserList } from '../../api/user';
 
 @Component({
     selector: 'app-view-property',
@@ -62,18 +63,37 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
         // Get current user
         this.currentUser = this.authService.getUser();
 
-        // Load users list (no admin permission required)
-        this.userService.getUsersList().subscribe(result => {
-            if (result && result.users) {
-                this.users = result.users;
+        // Load users list from API
+        this.loadUsersList();
+    }
+
+    private async loadUsersList() {
+        try {
+            const response = await getUserList({ pageNum: '1', limit: '100' });
+            if (response && response.data && response.data.pageInfo && response.data.pageInfo.list) {
+                // Map API response to user format with username
+                this.users = response.data.pageInfo.list.map((user: any) => ({
+                    username: user.username,
+                    id: user.id,
+                    email: user.email,
+                    phone: user.phone
+                }));
             }
-        }, error => {
+        } catch (error) {
             console.error('Failed to load users list:', error);
-            // If failed to load users, at least show current user
-            if (this.currentUser) {
-                this.users = [{ username: this.currentUser.username }];
-            }
-        });
+            // Fallback to old method if API fails
+            this.userService.getUsersList().subscribe(result => {
+                if (result && result.users) {
+                    this.users = result.users;
+                }
+            }, err => {
+                console.error('Fallback also failed:', err);
+                // If both methods fail, at least show current user
+                if (this.currentUser) {
+                    this.users = [{ username: this.currentUser.username }];
+                }
+            });
+        }
     }
 
     ngOnInit() {

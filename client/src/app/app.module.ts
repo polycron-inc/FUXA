@@ -218,6 +218,7 @@ import { LanguageTextPropertyComponent } from './language/language-text-property
 import { LanguageService } from './_services/language.service';
 import { KioskWidgetsComponent } from './resources/kiosk-widgets/kiosk-widgets.component';
 import { ClientScriptAccessComponent } from './editor/client-script-access/client-script-access.component';
+import { TokenReceiverComponent } from './token-receiver/token-receiver.component';
 
 export function createTranslateLoader(http: HttpClient) {
     return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -387,7 +388,8 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         LanguageTypePropertyComponent,
         LanguageTextPropertyComponent,
         LanguageTextListComponent,
-        ClientScriptAccessComponent
+        ClientScriptAccessComponent,
+        TokenReceiverComponent
     ],
     imports: [
         BrowserModule,
