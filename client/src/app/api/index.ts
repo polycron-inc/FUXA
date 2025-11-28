@@ -106,7 +106,12 @@ provider.interceptors.request.use(
         case 401:
           console.log('Unauthorized');
           localStorage.removeItem('token');
-          window.location.href = '/login';
+          const ifmsHost = localStorage.getItem('ifmsHost');
+          if (ifmsHost) {
+            window.location.href = ifmsHost + '/login';
+          } else {
+            window.location.href = '/login';
+          }
           break;
         default:
           console.log(error.message);
