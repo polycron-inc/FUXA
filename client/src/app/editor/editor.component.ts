@@ -616,9 +616,9 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 // This prevents confusion between views and templates with the same name
                 let v = view;
                 if (v) {
-                    svgcontent = v.svgcontent;
+                    svgcontent = v.svgcontent || "";
                 }
-                if (svgcontent.length <= 0) {
+                if (!svgcontent || svgcontent.length <= 0) {
                     svgcontent = '<svg id="' + view.name + '" width="' + view.profile.width + '" height="' + view.profile.height +
                         '" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">' +
                         '<filter id="blur-filter" x="-3" y="-3" width="200" height="200"><feGaussianBlur in="SourceGraphic" stdDeviation="3" /></filter>' +

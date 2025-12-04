@@ -206,7 +206,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.ongoto.emit(view.id);
                 return;
             } else {
-                this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
+                this.dataContainer.nativeElement.innerHTML = (view.svgcontent || '').replace('<title>Layer 1</title>', '');
             }
             if (view.profile.bkimage) {
                 // 設定背景圖片

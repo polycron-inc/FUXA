@@ -33,8 +33,12 @@ module.exports = {
          * Take from project storage and reply
          */
         prjApp.get("/api/project", secureFnc, function(req, res) {
+            // Get DMS user info from query params or headers (for play restriction filtering)
+            const dmsUserId = req.query.dmsUserId || req.headers['x-dms-user-id'] || null;
+            const dmsRoleId = req.query.dmsRoleId || req.headers['x-dms-role-id'] || null;
+            runtime.logger.info("api get project: dmsUserId=" + dmsUserId + ", dmsRoleId=" + dmsRoleId);
             const permission = checkGroupsFnc(req);
-            runtime.project.getProject(req.userId, permission).then(result => {
+            runtime.project.getProject(req.userId, permission, dmsUserId, dmsRoleId).then(result => {
                 // res.header("Access-Control-Allow-Origin", "*");
                 // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
                 if (result) {

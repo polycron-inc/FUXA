@@ -89,7 +89,7 @@ module.exports = {
 
     // Enable play restriction check
     // When enabled, views will be filtered based on user/role restrictions
-    playRestrictionEnabled: process.env.PLAY_RESTRICTION_ENABLED === 'true' || false,
+    playRestrictionEnabled: true,
 
     // Enable GPIO in Raspberry
     // To enable only by Raspberry Host

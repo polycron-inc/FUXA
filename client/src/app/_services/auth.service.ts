@@ -111,6 +111,10 @@ export class AuthService {
 			if (response.data && response.data.detailInfo) {
 				this.dmsUser = response.data.detailInfo;
 				this.dmsUser$.next(this.dmsUser);
+                // Store roleId to localStorage for play restriction filtering
+                if (this.dmsUser.roleId) {
+                    localStorage.setItem('roleId', this.dmsUser.roleId);
+                }
 				console.log('DMS user loaded:', this.dmsUser);
 				return this.dmsUser;
 			}

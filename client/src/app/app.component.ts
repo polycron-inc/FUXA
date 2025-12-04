@@ -84,6 +84,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 			// roleId = 1 為超級管理員，全部顯示
 			const allowedViews = this.playRestrictionsService.calculateAllowedViews(dmsUser);
 			console.log('Allowed views calculated:', allowedViews);
+			// 重新載入 project 以套用播放限制過濾
+			// 因為 localStorage 中的 userId 和 roleId 已經設定好了
+			console.log('Reloading project with play restrictions...');
+			this.projectService.reload();
 		} catch (error) {
 			console.error('Failed to load initial data:', error);
 		}
