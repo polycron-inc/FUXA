@@ -35,7 +35,18 @@ export class ResWebApiService implements ResourceStorageService {
     }
 
     getStorageProject(): Observable<any> {
-        return this.http.get<any>(this.endPointConfig + '/api/project', {});
+        // Get DMS user info from localStorage for play restriction filtering
+        const dmsUserId = localStorage.getItem('userId') || '';
+        const dmsRoleId = localStorage.getItem('roleId') || '';
+        const params: any = {};
+        if (dmsUserId) {
+            params.dmsUserId = dmsUserId;
+        }
+        if (dmsRoleId) {
+            params.dmsRoleId = dmsRoleId;
+        }
+        console.log('getStorageProject: Requesting /api/project with params:', params);
+        return this.http.get<any>(this.endPointConfig + '/api/project', { params });
     }
 
     setServerProject(prj: ProjectData) {
