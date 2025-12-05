@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Token Receiver</title>
+</head>
+<body>
+    <script>
+        // 從 URL 參數中取得 token, userId 和 ifmsHost
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const userId = urlParams.get('userId');
+        const ifmsHost = urlParams.get('ifmsHost');
+
+        if (token) {
+            localStorage.setItem('token', token);
+            console.log('Token received and stored');
+        }
+
+        if (userId) {
+            localStorage.setItem('userId', userId);
+            console.log('userId received and stored:', userId);
+        }
+
+        if (ifmsHost) {
+            localStorage.setItem('ifmsHost', ifmsHost);
+            console.log('ifmsHost received and stored:', ifmsHost);
+        }
+
+        // 顯示訊息
+        document.body.innerHTML = '<p>Token, userId and ifmsHost received. You can close this window.</p>';
+    </script>
+</body>
+</html>

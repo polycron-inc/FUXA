@@ -20,7 +20,8 @@
       "Bash(taskkill:*)",
       "Bash(git -C /c/Users/alish/Documents/FUXA status)",
       "Bash(git -C /c/Users/alish/Documents/FUXA diff --staged)",
-      "Bash(git -C /c/Users/alish/Documents/FUXA diff)"
+      "Bash(git -C /c/Users/alish/Documents/FUXA diff)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

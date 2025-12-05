@@ -23,6 +23,7 @@ export interface PlayRestriction {
 export interface AllowedViewsResponse {
     allowed: boolean;
     views: string[];
+    restrictedViews: string[];  // 被限制的 view IDs（用戶無權限的）
     isSuperAdmin?: boolean;
 }
 
@@ -41,7 +42,7 @@ export class PlayRestrictionsService {
     private isSuperAdmin: boolean = false;
 
     playRestrictions$ = new BehaviorSubject<PlayRestriction[]>([]);
-    allowedViews$ = new BehaviorSubject<AllowedViewsResponse>({ allowed: true, views: [], isSuperAdmin: false });
+    allowedViews$ = new BehaviorSubject<AllowedViewsResponse>({ allowed: true, views: [], restrictedViews: [], isSuperAdmin: false });
 
     constructor(private http: HttpClient) {}
 
@@ -94,7 +95,7 @@ export class PlayRestrictionsService {
      */
     async loadAllowedViews(): Promise<AllowedViewsResponse> {
         if (!environment.serverEnabled) {
-            return { allowed: true, views: [] };
+            return { allowed: true, views: [], restrictedViews: [] };
         }
         try {
             const result = await this.getAllowedViews().toPromise();
@@ -105,7 +106,7 @@ export class PlayRestrictionsService {
             return result;
         } catch (error) {
             console.error('Failed to load allowed views:', error);
-            return { allowed: true, views: [] };
+            return { allowed: true, views: [], restrictedViews: [] };
         }
     }
 
@@ -131,12 +132,13 @@ export class PlayRestrictionsService {
 
     /**
      * 根據 DMS 使用者資訊計算允許的 views
+     *
      * 判斷邏輯：
      * 1. roleId = 1 (超級管理員) -> 全部顯示
-     * 2. visibility_scope = 'global' -> 全部顯示
-     * 3. visibility_scope = 'role' -> 只顯示 role_id = 使用者 roleId 的 view
-     * 4. visibility_scope = 'user' -> 只顯示 user_id = 使用者 userId 的 view
-     * 5. visibility_scope = 'owner' -> 只顯示 owner_id = 使用者 userId 的 view
+     * 2. 沒有在 playRestrictions 中的 view -> 全部人可看（無限制）
+     * 3. 有在 playRestrictions 中的 view -> 只有符合 role_id 或 user_id 的人可看
+     *
+     * 回傳 restrictedViews：用戶「無權限」的 view IDs（需要從 viewList 中排除）
      *
      * @param dmsUser DMS 使用者資訊
      * @returns AllowedViewsResponse
@@ -145,7 +147,9 @@ export class PlayRestrictionsService {
         // 如果沒有使用者資訊，預設全部允許
         if (!dmsUser) {
             console.warn('No DMS user info, allowing all views');
-            return { allowed: true, views: [], isSuperAdmin: false };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false };
+            this.allowedViews$.next(result);
+            return result;
         }
 
         const userId = dmsUser.id || dmsUser.username;
@@ -157,7 +161,7 @@ export class PlayRestrictionsService {
             this.isSuperAdmin = true;
             this.isAllowed = true;
             this.allowedViews = [];
-            const result = { allowed: true, views: [], isSuperAdmin: true };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: true };
             this.allowedViews$.next(result);
             return result;
         }
@@ -169,27 +173,48 @@ export class PlayRestrictionsService {
             console.log('No play restrictions, allowing all views');
             this.isAllowed = true;
             this.allowedViews = [];
-            const result = { allowed: true, views: [], isSuperAdmin: false };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false };
             this.allowedViews$.next(result);
             return result;
         }
 
-        // 根據 visibility_scope、userId 和 roleId 過濾允許的 views
-        const allowedViewIds = new Set<string>();
-
+        // 1. 找出所有「被限制」的 view IDs（在 playRestrictions 中有記錄的）
+        const allRestrictedViewIds = new Set<string>();
         for (const restriction of this.playRestrictions) {
-            const isAllowed = this.checkRestrictionAccess(restriction, userId, roleId);
-            if (isAllowed) {
-                allowedViewIds.add(restriction.view_id);
+            allRestrictedViewIds.add(restriction.view_id);
+        }
+
+        // 2. 對於「被限制」的 view，檢查用戶是否有權限
+        const userAllowedRestrictedViewIds = new Set<string>();
+        for (const restriction of this.playRestrictions) {
+            const hasAccess = this.checkRestrictionAccess(restriction, userId, roleId);
+            if (hasAccess) {
+                userAllowedRestrictedViewIds.add(restriction.view_id);
             }
         }
 
-        this.allowedViews = Array.from(allowedViewIds);
-        this.isAllowed = this.allowedViews.length > 0;
+        // 3. 計算用戶「無權限」的 view IDs（被限制但用戶無權限的）
+        const restrictedViews: string[] = [];
+        for (const viewId of allRestrictedViewIds) {
+            if (!userAllowedRestrictedViewIds.has(viewId)) {
+                restrictedViews.push(viewId);
+            }
+        }
 
-        console.log(`Allowed views for user ${userId} (roleId: ${roleId}):`, this.allowedViews);
+        // allowedViews 現在表示「用戶有權限的被限制 views」
+        this.allowedViews = Array.from(userAllowedRestrictedViewIds);
+        this.isAllowed = true; // 只要不是全部被限制就允許
 
-        const result = { allowed: this.isAllowed, views: this.allowedViews, isSuperAdmin: false };
+        console.log(`User ${userId} (roleId: ${roleId}):`);
+        console.log(`  - Allowed restricted views:`, this.allowedViews);
+        console.log(`  - Restricted views (no access):`, restrictedViews);
+
+        const result = {
+            allowed: this.isAllowed,
+            views: this.allowedViews,
+            restrictedViews: restrictedViews,
+            isSuperAdmin: false
+        };
         this.allowedViews$.next(result);
         return result;
     }
@@ -235,6 +260,10 @@ export class PlayRestrictionsService {
 
     /**
      * 檢查 view 是否允許存取
+     * 邏輯：
+     * - 沒有在 playRestrictions 中的 view -> 允許（無限制）
+     * - 有在 playRestrictions 中的 view -> 檢查用戶是否有權限
+     *
      * @param viewId view ID
      * @returns boolean
      */
@@ -247,10 +276,16 @@ export class PlayRestrictionsService {
         if (!this.playRestrictions || this.playRestrictions.length === 0) {
             return true;
         }
-        // 如果沒有允許的 views，表示沒有任何限制匹配，不允許
-        if (this.allowedViews.length === 0) {
-            return false;
+
+        // 檢查這個 view 是否有被限制
+        const isRestricted = this.playRestrictions.some(r => r.view_id === viewId);
+
+        // 如果沒有被限制，允許
+        if (!isRestricted) {
+            return true;
         }
+
+        // 如果有被限制，檢查用戶是否在允許列表中
         return this.allowedViews.includes(viewId);
     }
 
