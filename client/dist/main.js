@@ -7679,15 +7679,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "AuthService": () => (/* binding */ AuthService),
 /* harmony export */   "UserProfile": () => (/* binding */ UserProfile)
 /* harmony export */ });
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/common/http */ 58987);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs */ 76317);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs */ 90833);
-/* harmony import */ var _models_user__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../_models/user */ 38427);
-/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../environments/environment */ 92340);
-/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../_helpers/endpointapi */ 70049);
-/* harmony import */ var _settings_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./settings.service */ 63157);
-/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/common/http */ 58987);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs */ 76317);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs */ 90833);
+/* harmony import */ var _models_user__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../_models/user */ 38427);
+/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../environments/environment */ 92340);
+/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../_helpers/endpointapi */ 70049);
+/* harmony import */ var _settings_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./settings.service */ 63157);
+/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
+/* harmony import */ var _api_user__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../api/user */ 56592);
+
+
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
       r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -7708,12 +7712,15 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let AuthService = class AuthService {
   http;
   settings;
   currentUser;
-  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_2__.EndPointApi.getURL();
-  currentUser$ = new rxjs__WEBPACK_IMPORTED_MODULE_5__.BehaviorSubject(null);
+  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_3__.EndPointApi.getURL();
+  currentUser$ = new rxjs__WEBPACK_IMPORTED_MODULE_7__.BehaviorSubject(null);
+  dmsUser$ = new rxjs__WEBPACK_IMPORTED_MODULE_7__.BehaviorSubject(null);
+  dmsUser = null;
 
   constructor(http, settings) {
     this.http = http;
@@ -7728,9 +7735,9 @@ let AuthService = class AuthService {
   }
 
   signIn(username, password) {
-    return new rxjs__WEBPACK_IMPORTED_MODULE_6__.Observable(observer => {
-      if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.serverEnabled) {
-        let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_7__.HttpHeaders({
+    return new rxjs__WEBPACK_IMPORTED_MODULE_8__.Observable(observer => {
+      if (_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.serverEnabled) {
+        let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_9__.HttpHeaders({
           'Content-Type': 'application/json'
         });
         return this.http.post(this.endPointConfig + '/api/signin', {
@@ -7776,7 +7783,7 @@ let AuthService = class AuthService {
   }
 
   isAdmin() {
-    if (this.currentUser && _models_user__WEBPACK_IMPORTED_MODULE_0__.UserGroups.ADMINMASK.indexOf(this.currentUser.groups) !== -1) {
+    if (this.currentUser && _models_user__WEBPACK_IMPORTED_MODULE_1__.UserGroups.ADMINMASK.indexOf(this.currentUser.groups) !== -1) {
       return true;
     }
 
@@ -7799,6 +7806,52 @@ let AuthService = class AuthService {
     this.currentUser$.next(this.currentUser);
   }
   /**
+   * 載入 DMS 使用者資訊
+   * @param userId 使用者 ID（如果不傳則從 localStorage 取得）
+   * @returns Promise<UserItem>
+   */
+
+
+  loadDmsCurrentUser(userId) {
+    var _this = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      try {
+        // 優先使用傳入的 userId，否則從 localStorage 取得
+        const targetUserId = userId || localStorage.getItem('userId');
+
+        if (!targetUserId) {
+          console.warn('No userId provided and no userId in localStorage');
+          return null;
+        }
+
+        const response = yield (0,_api_user__WEBPACK_IMPORTED_MODULE_6__.getUserDetail)(targetUserId);
+
+        if (response.data && response.data.detailInfo) {
+          _this.dmsUser = response.data.detailInfo;
+
+          _this.dmsUser$.next(_this.dmsUser);
+
+          console.log('DMS user loaded:', _this.dmsUser);
+          return _this.dmsUser;
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Failed to load DMS user:', error);
+        return null;
+      }
+    })();
+  }
+  /**
+   * 取得 DMS 使用者資訊
+   */
+
+
+  getDmsUser() {
+    return this.dmsUser;
+  }
+  /**
    * for Role show/enabled or 16 bitmask (0-7 enabled / 8-15 show)
    * @param {*} contextPermission permission could be permission or permissionRoles
    * @param {*} forceUndefined return true if params are undefined/null/0
@@ -7818,7 +7871,7 @@ let AuthService = class AuthService {
       };
     }
 
-    if (userPermission === -1 || userPermission === 255 || _helpers_utils__WEBPACK_IMPORTED_MODULE_4__.Utils.isNullOrUndefined(context)) {
+    if (userPermission === -1 || userPermission === 255 || _helpers_utils__WEBPACK_IMPORTED_MODULE_5__.Utils.isNullOrUndefined(context)) {
       // admin
       return {
         show: true,
@@ -7891,14 +7944,14 @@ let AuthService = class AuthService {
   }
 
   static ctorParameters = () => [{
-    type: _angular_common_http__WEBPACK_IMPORTED_MODULE_7__.HttpClient
+    type: _angular_common_http__WEBPACK_IMPORTED_MODULE_9__.HttpClient
   }, {
-    type: _settings_service__WEBPACK_IMPORTED_MODULE_3__.SettingsService
+    type: _settings_service__WEBPACK_IMPORTED_MODULE_4__.SettingsService
   }];
 };
-AuthService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_8__.Injectable)(), __metadata("design:paramtypes", [_angular_common_http__WEBPACK_IMPORTED_MODULE_7__.HttpClient, _settings_service__WEBPACK_IMPORTED_MODULE_3__.SettingsService])], AuthService);
+AuthService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_10__.Injectable)(), __metadata("design:paramtypes", [_angular_common_http__WEBPACK_IMPORTED_MODULE_9__.HttpClient, _settings_service__WEBPACK_IMPORTED_MODULE_4__.SettingsService])], AuthService);
 
-class UserProfile extends _models_user__WEBPACK_IMPORTED_MODULE_0__.User {
+class UserProfile extends _models_user__WEBPACK_IMPORTED_MODULE_1__.User {
   token;
   infoRoles;
 }
@@ -9372,6 +9425,409 @@ let MyFileService = class MyFileService {
 MyFileService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_3__.Injectable)({
   providedIn: 'root'
 }), __metadata("design:paramtypes", [_rcgi_rcgi_service__WEBPACK_IMPORTED_MODULE_0__.RcgiService])], MyFileService);
+
+
+/***/ }),
+
+/***/ 2482:
+/*!********************************************************!*\
+  !*** ./src/app/_services/play-restrictions.service.ts ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "PlayRestrictionsService": () => (/* binding */ PlayRestrictionsService)
+/* harmony export */ });
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/common/http */ 58987);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 76317);
+/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../_helpers/endpointapi */ 70049);
+/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../environments/environment */ 92340);
+
+
+var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+  var c = arguments.length,
+      r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+      d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+var __metadata = undefined && undefined.__metadata || function (k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+
+ // 超級管理員 roleId
+
+const SUPER_ADMIN_ROLE_ID = '1';
+let PlayRestrictionsService = class PlayRestrictionsService {
+  http;
+  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_1__.EndPointApi.getURL();
+  playRestrictions = [];
+  allowedViews = [];
+  isAllowed = true;
+  isSuperAdmin = false;
+  playRestrictions$ = new rxjs__WEBPACK_IMPORTED_MODULE_3__.BehaviorSubject([]);
+  allowedViews$ = new rxjs__WEBPACK_IMPORTED_MODULE_3__.BehaviorSubject({
+    allowed: true,
+    views: [],
+    restrictedViews: [],
+    isSuperAdmin: false
+  });
+
+  constructor(http) {
+    this.http = http;
+  }
+  /**
+   * 取得所有播放限制規則
+   * @param viewId 可選的 view ID 篩選
+   * @returns Observable<PlayRestriction[]>
+   */
+
+
+  getPlayRestrictions(viewId) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    let params = {};
+
+    if (viewId) {
+      params.viewId = viewId;
+    }
+
+    return this.http.get(this.endPointConfig + '/api/playrestrictions', {
+      headers: header,
+      params
+    });
+  }
+  /**
+   * 載入播放限制規則並儲存
+   * @returns Promise<PlayRestriction[]>
+   */
+
+
+  loadPlayRestrictions() {
+    var _this = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      if (!_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.serverEnabled) {
+        return [];
+      }
+
+      try {
+        const result = yield _this.getPlayRestrictions().toPromise();
+        _this.playRestrictions = result || [];
+
+        _this.playRestrictions$.next(_this.playRestrictions);
+
+        console.log('Play restrictions loaded:', _this.playRestrictions);
+        return _this.playRestrictions;
+      } catch (error) {
+        console.error('Failed to load play restrictions:', error);
+        return [];
+      }
+    })();
+  }
+  /**
+   * 取得當前使用者允許的 views
+   * @returns Observable<AllowedViewsResponse>
+   */
+
+
+  getAllowedViews() {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.get(this.endPointConfig + '/api/playrestrictions/allowed-views', {
+      headers: header
+    });
+  }
+  /**
+   * 載入允許的 views 並儲存
+   * @returns Promise<AllowedViewsResponse>
+   */
+
+
+  loadAllowedViews() {
+    var _this2 = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      if (!_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.serverEnabled) {
+        return {
+          allowed: true,
+          views: [],
+          restrictedViews: []
+        };
+      }
+
+      try {
+        const result = yield _this2.getAllowedViews().toPromise();
+        _this2.isAllowed = result?.allowed ?? true;
+        _this2.allowedViews = result?.views || [];
+
+        _this2.allowedViews$.next(result);
+
+        console.log('Allowed views loaded:', result);
+        return result;
+      } catch (error) {
+        console.error('Failed to load allowed views:', error);
+        return {
+          allowed: true,
+          views: [],
+          restrictedViews: []
+        };
+      }
+    })();
+  }
+  /**
+   * 新增或更新播放限制
+   * @param restriction 限制規則
+   * @returns Observable<any>
+   */
+
+
+  setPlayRestriction(restriction) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.post(this.endPointConfig + '/api/playrestrictions', restriction, {
+      headers: header
+    });
+  }
+  /**
+   * 刪除播放限制
+   * @param id 限制 ID
+   * @returns Observable<any>
+   */
+
+
+  deletePlayRestriction(id) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.delete(this.endPointConfig + '/api/playrestrictions/' + id, {
+      headers: header
+    });
+  }
+  /**
+   * 根據 DMS 使用者資訊計算允許的 views
+   *
+   * 判斷邏輯：
+   * 1. roleId = 1 (超級管理員) -> 全部顯示
+   * 2. 沒有在 playRestrictions 中的 view -> 全部人可看（無限制）
+   * 3. 有在 playRestrictions 中的 view -> 只有符合 role_id 或 user_id 的人可看
+   *
+   * 回傳 restrictedViews：用戶「無權限」的 view IDs（需要從 viewList 中排除）
+   *
+   * @param dmsUser DMS 使用者資訊
+   * @returns AllowedViewsResponse
+   */
+
+
+  calculateAllowedViews(dmsUser) {
+    // 如果沒有使用者資訊，預設全部允許
+    if (!dmsUser) {
+      console.warn('No DMS user info, allowing all views');
+      const result = {
+        allowed: true,
+        views: [],
+        restrictedViews: [],
+        isSuperAdmin: false
+      };
+      this.allowedViews$.next(result);
+      return result;
+    }
+
+    const userId = dmsUser.id || dmsUser.username;
+    const roleId = dmsUser.roleId; // 超級管理員 (roleId = 1) 全部顯示
+
+    if (roleId === SUPER_ADMIN_ROLE_ID) {
+      console.log('Super admin detected, allowing all views');
+      this.isSuperAdmin = true;
+      this.isAllowed = true;
+      this.allowedViews = [];
+      const result = {
+        allowed: true,
+        views: [],
+        restrictedViews: [],
+        isSuperAdmin: true
+      };
+      this.allowedViews$.next(result);
+      return result;
+    }
+
+    this.isSuperAdmin = false; // 如果沒有播放限制規則，全部顯示
+
+    if (!this.playRestrictions || this.playRestrictions.length === 0) {
+      console.log('No play restrictions, allowing all views');
+      this.isAllowed = true;
+      this.allowedViews = [];
+      const result = {
+        allowed: true,
+        views: [],
+        restrictedViews: [],
+        isSuperAdmin: false
+      };
+      this.allowedViews$.next(result);
+      return result;
+    } // 1. 找出所有「被限制」的 view IDs（在 playRestrictions 中有記錄的）
+
+
+    const allRestrictedViewIds = new Set();
+
+    for (const restriction of this.playRestrictions) {
+      allRestrictedViewIds.add(restriction.view_id);
+    } // 2. 對於「被限制」的 view，檢查用戶是否有權限
+
+
+    const userAllowedRestrictedViewIds = new Set();
+
+    for (const restriction of this.playRestrictions) {
+      const hasAccess = this.checkRestrictionAccess(restriction, userId, roleId);
+
+      if (hasAccess) {
+        userAllowedRestrictedViewIds.add(restriction.view_id);
+      }
+    } // 3. 計算用戶「無權限」的 view IDs（被限制但用戶無權限的）
+
+
+    const restrictedViews = [];
+
+    for (const viewId of allRestrictedViewIds) {
+      if (!userAllowedRestrictedViewIds.has(viewId)) {
+        restrictedViews.push(viewId);
+      }
+    } // allowedViews 現在表示「用戶有權限的被限制 views」
+
+
+    this.allowedViews = Array.from(userAllowedRestrictedViewIds);
+    this.isAllowed = true; // 只要不是全部被限制就允許
+
+    console.log(`User ${userId} (roleId: ${roleId}):`);
+    console.log(`  - Allowed restricted views:`, this.allowedViews);
+    console.log(`  - Restricted views (no access):`, restrictedViews);
+    const result = {
+      allowed: this.isAllowed,
+      views: this.allowedViews,
+      restrictedViews: restrictedViews,
+      isSuperAdmin: false
+    };
+    this.allowedViews$.next(result);
+    return result;
+  }
+  /**
+   * 檢查單一限制規則是否允許存取
+   * @param restriction 播放限制規則
+   * @param userId 使用者 ID
+   * @param roleId 角色 ID
+   * @returns boolean
+   */
+
+
+  checkRestrictionAccess(restriction, userId, roleId) {
+    const scope = restriction.visibility_scope;
+
+    switch (scope) {
+      case 'global':
+        // 全部顯示
+        return true;
+
+      case 'role':
+        // 只顯示 role_id = 使用者 roleId 的 view
+        return restriction.role_id === roleId;
+
+      case 'user':
+        // 只顯示 user_id = 使用者 userId 的 view
+        return restriction.user_id === userId;
+
+      case 'owner':
+        // 只顯示 owner_id = 使用者 userId 的 view
+        return restriction.owner_id === userId;
+
+      default:
+        // 預設：檢查舊的 type 邏輯（向後相容）
+        if (restriction.type === 'user' && restriction.user_id === userId) {
+          return true;
+        }
+
+        if (restriction.type === 'role' && restriction.role_id === roleId) {
+          return true;
+        }
+
+        return false;
+    }
+  }
+  /**
+   * 檢查 view 是否允許存取
+   * 邏輯：
+   * - 沒有在 playRestrictions 中的 view -> 允許（無限制）
+   * - 有在 playRestrictions 中的 view -> 檢查用戶是否有權限
+   *
+   * @param viewId view ID
+   * @returns boolean
+   */
+
+
+  isViewAllowed(viewId) {
+    // 超級管理員全部允許
+    if (this.isSuperAdmin) {
+      return true;
+    } // 如果沒有限制規則，全部允許
+
+
+    if (!this.playRestrictions || this.playRestrictions.length === 0) {
+      return true;
+    } // 檢查這個 view 是否有被限制
+
+
+    const isRestricted = this.playRestrictions.some(r => r.view_id === viewId); // 如果沒有被限制，允許
+
+    if (!isRestricted) {
+      return true;
+    } // 如果有被限制，檢查用戶是否在允許列表中
+
+
+    return this.allowedViews.includes(viewId);
+  }
+  /**
+   * 檢查是否為超級管理員
+   */
+
+
+  checkIsSuperAdmin() {
+    return this.isSuperAdmin;
+  }
+  /**
+   * 取得已載入的播放限制規則
+   */
+
+
+  getCachedPlayRestrictions() {
+    return this.playRestrictions;
+  }
+  /**
+   * 取得已載入的允許 views
+   */
+
+
+  getCachedAllowedViews() {
+    return this.allowedViews;
+  }
+
+  static ctorParameters = () => [{
+    type: _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpClient
+  }];
+};
+PlayRestrictionsService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_5__.Injectable)({
+  providedIn: 'root'
+}), __metadata("design:paramtypes", [_angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpClient])], PlayRestrictionsService);
 
 
 /***/ }),
@@ -14292,7 +14748,14 @@ provider.interceptors.request.use( /*#__PURE__*/function () {
       case 401:
         console.log('Unauthorized');
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        const ifmsHost = localStorage.getItem('ifmsHost');
+
+        if (ifmsHost) {
+          window.location.href = ifmsHost + '/login';
+        } else {
+          window.location.href = '/login';
+        }
+
         break;
 
       default:
@@ -14429,6 +14892,182 @@ const getDeviceList = /*#__PURE__*/function () {
 
 /***/ }),
 
+/***/ 56592:
+/*!*****************************!*\
+  !*** ./src/app/api/user.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "addUser": () => (/* binding */ addUser),
+/* harmony export */   "deleteUser": () => (/* binding */ deleteUser),
+/* harmony export */   "editUser": () => (/* binding */ editUser),
+/* harmony export */   "getCurrentUser": () => (/* binding */ getCurrentUser),
+/* harmony export */   "getUserDetail": () => (/* binding */ getUserDetail),
+/* harmony export */   "getUserList": () => (/* binding */ getUserList),
+/* harmony export */   "getUserSelectOptions": () => (/* binding */ getUserSelectOptions),
+/* harmony export */   "resetPassword": () => (/* binding */ resetPassword)
+/* harmony export */ });
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var ___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! . */ 39354);
+
+
+/**
+ * 取得使用者列表
+ * @param params 查詢參數
+ * @returns Promise<UserListResponse>
+ */
+
+const getUserList = /*#__PURE__*/function () {
+  var _ref = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (params) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/schideron/openApi/user/list', {
+      params: {
+        page: params?.page || 1,
+        pageSize: params?.pageSize || 10,
+        username: params?.username || '',
+        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+      }
+    });
+  });
+
+  return function getUserList(_x) {
+    return _ref.apply(this, arguments);
+  };
+}();
+/**
+ * 取得目前登入使用者資訊
+ * @returns Promise<UserDetailResponse>
+ */
+
+const getCurrentUser = /*#__PURE__*/function () {
+  var _ref2 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/schideron/openApi/user/me', {
+      params: {
+        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+      }
+    });
+  });
+
+  return function getCurrentUser() {
+    return _ref2.apply(this, arguments);
+  };
+}();
+/**
+ * 取得使用者詳細資訊
+ * @param userId 使用者 ID
+ * @returns Promise<UserDetailResponse>
+ */
+
+const getUserDetail = /*#__PURE__*/function () {
+  var _ref3 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get(`/schideron/openApi/user/detail/${userId}`, {
+      params: {
+        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+      }
+    });
+  });
+
+  return function getUserDetail(_x2) {
+    return _ref3.apply(this, arguments);
+  };
+}();
+/**
+ * 新增使用者
+ * @param data 使用者資料
+ * @returns Promise<ApiResponse>
+ */
+
+const addUser = /*#__PURE__*/function () {
+  var _ref4 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (data) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post('/schideron/openApi/user/add', { ...data,
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+    });
+  });
+
+  return function addUser(_x3) {
+    return _ref4.apply(this, arguments);
+  };
+}();
+/**
+ * 編輯使用者
+ * @param userId 使用者 ID
+ * @param data 使用者資料
+ * @returns Promise<ApiResponse>
+ */
+
+const editUser = /*#__PURE__*/function () {
+  var _ref5 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId, data) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.put(`/schideron/openApi/user/edit/${userId}`, { ...data,
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+    });
+  });
+
+  return function editUser(_x4, _x5) {
+    return _ref5.apply(this, arguments);
+  };
+}();
+/**
+ * 刪除使用者
+ * @param userId 使用者 ID
+ * @returns Promise<ApiResponse>
+ */
+
+const deleteUser = /*#__PURE__*/function () {
+  var _ref6 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider["delete"](`/schideron/openApi/user/delete/${userId}`, {
+      data: {
+        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+      }
+    });
+  });
+
+  return function deleteUser(_x6) {
+    return _ref6.apply(this, arguments);
+  };
+}();
+/**
+ * 重設使用者密碼
+ * @param userId 使用者 ID
+ * @param defaultPassword 新密碼 (已加密)
+ * @returns Promise<ApiResponse>
+ */
+
+const resetPassword = /*#__PURE__*/function () {
+  var _ref7 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId, defaultPassword) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post(`/schideron/openApi/user/resetPassword/${userId}`, {
+      defaultPassword,
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+    });
+  });
+
+  return function resetPassword(_x7, _x8) {
+    return _ref7.apply(this, arguments);
+  };
+}();
+/**
+ * 取得使用者選項列表 (用於下拉選單)
+ * @param params 查詢參數
+ * @returns Promise<UserSelectOption[]>
+ */
+
+const getUserSelectOptions = /*#__PURE__*/function () {
+  var _ref8 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (params) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/api/users/getUserSelectOptions', {
+      params: { ...params,
+        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+      }
+    });
+  });
+
+  return function getUserSelectOptions(_x9) {
+    return _ref8.apply(this, arguments);
+  };
+}();
+
+/***/ }),
+
 /***/ 55041:
 /*!**********************************!*\
   !*** ./src/app/app.component.ts ***!
@@ -14440,24 +15079,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "AppComponent": () => (/* binding */ AppComponent)
 /* harmony export */ });
-/* harmony import */ var _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./app.component.html?ngResource */ 33383);
-/* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./app.component.css?ngResource */ 56715);
-/* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! @angular/common */ 94666);
-/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! @angular/router */ 60124);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs */ 36646);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs */ 23280);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs */ 19337);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 32673);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs */ 28653);
-/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../environments/environment */ 92340);
-/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_services/project.service */ 47848);
-/* harmony import */ var _services_settings_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_services/settings.service */ 63157);
-/* harmony import */ var _models_user__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_models/user */ 38427);
-/* harmony import */ var _services_app_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./_services/app.service */ 2440);
-/* harmony import */ var _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./_services/heartbeat.service */ 98284);
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./app.component.html?ngResource */ 33383);
+/* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./app.component.css?ngResource */ 56715);
+/* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! @angular/common */ 94666);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! @angular/router */ 60124);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 36646);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs */ 23280);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 19337);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 32673);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs */ 28653);
+/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../environments/environment */ 92340);
+/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_services/project.service */ 47848);
+/* harmony import */ var _services_settings_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_services/settings.service */ 63157);
+/* harmony import */ var _models_user__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./_models/user */ 38427);
+/* harmony import */ var _services_app_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./_services/app.service */ 2440);
+/* harmony import */ var _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./_services/heartbeat.service */ 98284);
+/* harmony import */ var _services_auth_service__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./_services/auth.service */ 88368);
+/* harmony import */ var _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./_services/play-restrictions.service */ 2482);
+
+
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
       r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -14483,6 +15127,8 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
+
 let AppComponent = class AppComponent {
   document;
   router;
@@ -14491,6 +15137,8 @@ let AppComponent = class AppComponent {
   settingsService;
   translateService;
   heartbeatService;
+  authService;
+  playRestrictionsService;
   cdr;
   title = 'app';
   location;
@@ -14500,7 +15148,7 @@ let AppComponent = class AppComponent {
   subscriptionLoad;
   subscriptionShowLoading;
 
-  constructor(document, router, appService, projectService, settingsService, translateService, heartbeatService, cdr, location) {
+  constructor(document, router, appService, projectService, settingsService, translateService, heartbeatService, authService, playRestrictionsService, cdr, location) {
     this.document = document;
     this.router = router;
     this.appService = appService;
@@ -14508,19 +15156,49 @@ let AppComponent = class AppComponent {
     this.settingsService = settingsService;
     this.translateService = translateService;
     this.heartbeatService = heartbeatService;
+    this.authService = authService;
+    this.playRestrictionsService = playRestrictionsService;
     this.cdr = cdr;
     this.location = location;
   }
 
   ngOnInit() {
-    console.log(`BACCO iFMS v${_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.version}`);
-    this.heartbeatService.startHeartbeatPolling(); // capture events for the token refresh
+    console.log(`BACCO iFMS v${_environments_environment__WEBPACK_IMPORTED_MODULE_3__.environment.version}`);
+    this.heartbeatService.startHeartbeatPolling(); // 載入 DMS 當前使用者和播放限制
+
+    this.loadInitialData(); // capture events for the token refresh
 
     const inactivityDuration = 1 * 60 * 1000;
-    const activity$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_8__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_9__.fromEvent)(document, 'click'), (0,rxjs__WEBPACK_IMPORTED_MODULE_9__.fromEvent)(document, 'touchstart'));
-    activity$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_10__.tap)(() => this.heartbeatService.setActivity(true)), (0,rxjs__WEBPACK_IMPORTED_MODULE_11__.switchMap)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_12__.interval)(inactivityDuration))).subscribe(() => {
+    const activity$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_11__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_12__.fromEvent)(document, 'click'), (0,rxjs__WEBPACK_IMPORTED_MODULE_12__.fromEvent)(document, 'touchstart'));
+    activity$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.tap)(() => this.heartbeatService.setActivity(true)), (0,rxjs__WEBPACK_IMPORTED_MODULE_14__.switchMap)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_15__.interval)(inactivityDuration))).subscribe(() => {
       this.heartbeatService.setActivity(false);
     });
+  }
+  /**
+   * 載入初始資料：DMS 當前使用者和播放限制
+   */
+
+
+  loadInitialData() {
+    var _this = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      try {
+        // 先載入 DMS 當前使用者
+        const dmsUser = yield _this.authService.loadDmsCurrentUser();
+        console.log('DMS User loaded:', dmsUser); // 載入播放限制規則
+
+        const playRestrictions = yield _this.playRestrictionsService.loadPlayRestrictions();
+        console.log('Play restrictions loaded:', playRestrictions); // 根據 dmsUser 的 roleId 和 userId 計算允許的 views
+        // roleId = 1 為超級管理員，全部顯示
+
+        const allowedViews = _this.playRestrictionsService.calculateAllowedViews(dmsUser);
+
+        console.log('Allowed views calculated:', allowedViews);
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+      }
+    })();
   }
 
   ngAfterViewInit() {
@@ -14543,8 +15221,8 @@ let AppComponent = class AppComponent {
         let grpLabels = txt.split(',');
 
         if (grpLabels && grpLabels.length > 0) {
-          for (let i = 0; i < grpLabels.length && i < _models_user__WEBPACK_IMPORTED_MODULE_5__.UserGroups.Groups.length; i++) {
-            _models_user__WEBPACK_IMPORTED_MODULE_5__.UserGroups.Groups[i].label = grpLabels[i];
+          for (let i = 0; i < grpLabels.length && i < _models_user__WEBPACK_IMPORTED_MODULE_6__.UserGroups.Groups.length; i++) {
+            _models_user__WEBPACK_IMPORTED_MODULE_6__.UserGroups.Groups[i].label = grpLabels[i];
           }
         }
       }); // show loading manager
@@ -14640,40 +15318,44 @@ let AppComponent = class AppComponent {
   static ctorParameters = () => [{
     type: Document,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_13__.Inject,
-      args: [_angular_common__WEBPACK_IMPORTED_MODULE_14__.DOCUMENT]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.Inject,
+      args: [_angular_common__WEBPACK_IMPORTED_MODULE_17__.DOCUMENT]
     }]
   }, {
-    type: _angular_router__WEBPACK_IMPORTED_MODULE_15__.Router
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_18__.Router
   }, {
-    type: _services_app_service__WEBPACK_IMPORTED_MODULE_6__.AppService
+    type: _services_app_service__WEBPACK_IMPORTED_MODULE_7__.AppService
   }, {
-    type: _services_project_service__WEBPACK_IMPORTED_MODULE_3__.ProjectService
+    type: _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService
   }, {
-    type: _services_settings_service__WEBPACK_IMPORTED_MODULE_4__.SettingsService
+    type: _services_settings_service__WEBPACK_IMPORTED_MODULE_5__.SettingsService
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_16__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__.TranslateService
   }, {
-    type: _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_7__.HeartbeatService
+    type: _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__.HeartbeatService
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_13__.ChangeDetectorRef
+    type: _services_auth_service__WEBPACK_IMPORTED_MODULE_9__.AuthService
   }, {
-    type: _angular_common__WEBPACK_IMPORTED_MODULE_14__.Location
+    type: _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__.PlayRestrictionsService
+  }, {
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.ChangeDetectorRef
+  }, {
+    type: _angular_common__WEBPACK_IMPORTED_MODULE_17__.Location
   }];
   static propDecorators = {
     fabmenu: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_13__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.ViewChild,
       args: ['fabmenu', {
         static: false
       }]
     }]
   };
 };
-AppComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_13__.Component)({
+AppComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_16__.Component)({
   selector: 'app-root',
-  template: _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
-  styles: [(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [Document, _angular_router__WEBPACK_IMPORTED_MODULE_15__.Router, _services_app_service__WEBPACK_IMPORTED_MODULE_6__.AppService, _services_project_service__WEBPACK_IMPORTED_MODULE_3__.ProjectService, _services_settings_service__WEBPACK_IMPORTED_MODULE_4__.SettingsService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_16__.TranslateService, _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_7__.HeartbeatService, _angular_core__WEBPACK_IMPORTED_MODULE_13__.ChangeDetectorRef, _angular_common__WEBPACK_IMPORTED_MODULE_14__.Location])], AppComponent);
+  template: _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__,
+  styles: [(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default())]
+}), __metadata("design:paramtypes", [Document, _angular_router__WEBPACK_IMPORTED_MODULE_18__.Router, _services_app_service__WEBPACK_IMPORTED_MODULE_7__.AppService, _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _services_settings_service__WEBPACK_IMPORTED_MODULE_5__.SettingsService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__.TranslateService, _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__.HeartbeatService, _services_auth_service__WEBPACK_IMPORTED_MODULE_9__.AuthService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__.PlayRestrictionsService, _angular_core__WEBPACK_IMPORTED_MODULE_16__.ChangeDetectorRef, _angular_common__WEBPACK_IMPORTED_MODULE_17__.Location])], AppComponent);
 
 
 /***/ }),
@@ -14795,7 +15477,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_90__ = __webpack_require__(/*! ./gauges/controls/html-button/html-button.component */ 35227);
 /* harmony import */ var _gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_91__ = __webpack_require__(/*! ./gauges/controls/html-select/html-select.component */ 50137);
 /* harmony import */ var _gauges_controls_html_chart_html_chart_component__WEBPACK_IMPORTED_MODULE_92__ = __webpack_require__(/*! ./gauges/controls/html-chart/html-chart.component */ 63072);
-/* harmony import */ var _gauges_controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_93__ = __webpack_require__(/*! ./gauges/controls/html-graph/html-graph.component */ 74990);
+/* harmony import */ var _gauges_controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_93__ = __webpack_require__(/*! ./gauges/controls/html-graph/html-graph.component */ 6177);
 /* harmony import */ var _gauges_controls_html_iframe_html_iframe_component__WEBPACK_IMPORTED_MODULE_94__ = __webpack_require__(/*! ./gauges/controls/html-iframe/html-iframe.component */ 62567);
 /* harmony import */ var _gauges_controls_html_bag_html_bag_component__WEBPACK_IMPORTED_MODULE_95__ = __webpack_require__(/*! ./gauges/controls/html-bag/html-bag.component */ 68589);
 /* harmony import */ var _gauges_controls_html_table_html_table_component__WEBPACK_IMPORTED_MODULE_96__ = __webpack_require__(/*! ./gauges/controls/html-table/html-table.component */ 7202);
@@ -22652,16 +23334,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _editor_views_list_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./editor-views-list.component.html?ngResource */ 32525);
 /* harmony import */ var _editor_views_list_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./editor-views-list.component.scss?ngResource */ 39881);
 /* harmony import */ var _editor_views_list_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_editor_views_list_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/core */ 22560);
 /* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../_models/hmi */ 72830);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
 /* harmony import */ var _gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../gui-helpers/confirm-dialog/confirm-dialog.component */ 63226);
-/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
+/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
 /* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../_services/project.service */ 47848);
-/* harmony import */ var _view_property_view_property_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../view-property/view-property.component */ 15266);
-/* harmony import */ var file_saver__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! file-saver */ 65226);
-/* harmony import */ var file_saver__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(file_saver__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var _gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../gui-helpers/edit-name/edit-name.component */ 56379);
+/* harmony import */ var _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../_services/play-restrictions.service */ 2482);
+/* harmony import */ var _view_property_view_property_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../view-property/view-property.component */ 15266);
+/* harmony import */ var file_saver__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! file-saver */ 65226);
+/* harmony import */ var file_saver__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(file_saver__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../gui-helpers/edit-name/edit-name.component */ 56379);
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
       r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -22685,9 +23368,11 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let EditorViewsListComponent = class EditorViewsListComponent {
   projectService;
   translateService;
+  playRestrictionsService;
   dialog;
   views = [];
   isTemplate = false;
@@ -22696,19 +23381,20 @@ let EditorViewsListComponent = class EditorViewsListComponent {
     this.currentView = view;
   }
 
-  selected = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
-  viewPropertyChanged = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
-  cloneView = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
-  convertToView = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
-  deleteView = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
+  selected = new _angular_core__WEBPACK_IMPORTED_MODULE_9__.EventEmitter();
+  viewPropertyChanged = new _angular_core__WEBPACK_IMPORTED_MODULE_9__.EventEmitter();
+  cloneView = new _angular_core__WEBPACK_IMPORTED_MODULE_9__.EventEmitter();
+  convertToView = new _angular_core__WEBPACK_IMPORTED_MODULE_9__.EventEmitter();
+  deleteView = new _angular_core__WEBPACK_IMPORTED_MODULE_9__.EventEmitter();
   currentView = null;
   cardViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_2__.ViewType.cards;
   svgViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_2__.ViewType.svg;
   mapsViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_2__.ViewType.maps;
 
-  constructor(projectService, translateService, dialog) {
+  constructor(projectService, translateService, playRestrictionsService, dialog) {
     this.projectService = projectService;
     this.translateService = translateService;
+    this.playRestrictionsService = playRestrictionsService;
     this.dialog = dialog;
   }
 
@@ -22724,9 +23410,21 @@ let EditorViewsListComponent = class EditorViewsListComponent {
   getViewsSorted() {
     if (!this.views || !Array.isArray(this.views)) {
       return [];
+    } // 過濾視圖：排除 restrictedViews 中的視圖（用戶無權限的）
+    // 只對非 template 的視圖列表進行過濾
+
+
+    let filteredViews = this.views;
+
+    if (!this.isTemplate) {
+      const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+
+      if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+        filteredViews = this.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+      }
     }
 
-    return this.views.sort((a, b) => {
+    return filteredViews.sort((a, b) => {
       // First compare by name
       if (a.name > b.name) {
         return 1;
@@ -22806,7 +23504,7 @@ let EditorViewsListComponent = class EditorViewsListComponent {
 
   onRenameView(view) {
     let exist = this.views.filter(v => v.id !== view.id).map(v => v.name);
-    let dialogRef = this.dialog.open(_gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_7__.EditNameComponent, {
+    let dialogRef = this.dialog.open(_gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_8__.EditNameComponent, {
       disableClose: true,
       position: {
         top: '60px'
@@ -22826,7 +23524,7 @@ let EditorViewsListComponent = class EditorViewsListComponent {
   }
 
   onPropertyView(view) {
-    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_5__.ViewPropertyComponent, {
+    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_6__.ViewPropertyComponent, {
       position: {
         top: '60px'
       },
@@ -22887,49 +23585,51 @@ let EditorViewsListComponent = class EditorViewsListComponent {
     let blob = new Blob([content], {
       type: 'text/plain;charset=utf-8'
     });
-    file_saver__WEBPACK_IMPORTED_MODULE_6__.saveAs(blob, filename);
+    file_saver__WEBPACK_IMPORTED_MODULE_7__.saveAs(blob, filename);
   }
 
   static ctorParameters = () => [{
     type: _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_9__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_10__.TranslateService
   }, {
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_10__.MatLegacyDialog
+    type: _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__.PlayRestrictionsService
+  }, {
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_11__.MatLegacyDialog
   }];
   static propDecorators = {
     views: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Input
     }],
     isTemplate: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Input
     }],
     select: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Input,
       args: ['select']
     }],
     selected: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Output
     }],
     viewPropertyChanged: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Output
     }],
     cloneView: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Output
     }],
     convertToView: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Output
     }],
     deleteView: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_9__.Output
     }]
   };
 };
-EditorViewsListComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_8__.Component)({
+EditorViewsListComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_9__.Component)({
   selector: 'app-editor-views-list',
   template: _editor_views_list_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
   styles: [(_editor_views_list_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_9__.TranslateService, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_10__.MatLegacyDialog])], EditorViewsListComponent);
+}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_10__.TranslateService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__.PlayRestrictionsService, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_11__.MatLegacyDialog])], EditorViewsListComponent);
 
 
 /***/ }),
@@ -22952,41 +23652,42 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _editor_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./editor.component.css?ngResource */ 44012);
 /* harmony import */ var _editor_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_editor_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _linkproperty_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./linkproperty.dialog.html?ngResource */ 65708);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
-/* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! @angular/platform-browser */ 34497);
-/* harmony import */ var _angular_material_icon__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! @angular/material/icon */ 57822);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! rxjs */ 80228);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! rxjs */ 32673);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! rxjs */ 68951);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
+/* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! @angular/platform-browser */ 34497);
+/* harmony import */ var _angular_material_icon__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! @angular/material/icon */ 57822);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! rxjs */ 80228);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! rxjs */ 32673);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! rxjs */ 68951);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
 /* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../_services/project.service */ 47848);
-/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../_models/hmi */ 72830);
-/* harmony import */ var _helpers_windowref__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../_helpers/windowref */ 73386);
-/* harmony import */ var _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../gauges/gauge-property/gauge-property.component */ 14744);
-/* harmony import */ var _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../gauges/gauges.component */ 28757);
-/* harmony import */ var _gauges_gauge_base_gauge_base_component__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../gauges/gauge-base/gauge-base.component */ 96389);
-/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
-/* harmony import */ var _helpers_define__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../_helpers/define */ 42343);
-/* harmony import */ var _resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../resources/lib-images/lib-images.component */ 84259);
-/* harmony import */ var _gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../gui-helpers/confirm-dialog/confirm-dialog.component */ 63226);
-/* harmony import */ var _gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../gauges/controls/html-bag/bag-property/bag-property.component */ 14779);
-/* harmony import */ var _gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../gauges/controls/slider/slider-property/slider-property.component */ 75080);
-/* harmony import */ var _gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../gauges/controls/html-input/html-input.component */ 89548);
-/* harmony import */ var _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../gauges/controls/html-button/html-button.component */ 35227);
-/* harmony import */ var _gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ../gauges/controls/html-select/html-select.component */ 50137);
-/* harmony import */ var _gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../gauges/controls/value/value.component */ 46682);
-/* harmony import */ var _gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../gauges/controls/gauge-progress/gauge-progress.component */ 54739);
-/* harmony import */ var _gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../gauges/controls/gauge-semaphore/gauge-semaphore.component */ 16681);
-/* harmony import */ var _gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../gauges/controls/html-switch/html-switch-property/html-switch-property.component */ 89154);
-/* harmony import */ var _card_config_card_config_component__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./card-config/card-config.component */ 57898);
-/* harmony import */ var _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ../cards-view/cards-view.component */ 40590);
-/* harmony import */ var _tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./tags-ids-config/tags-ids-config.component */ 75644);
-/* harmony import */ var _view_property_view_property_component__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./view-property/view-property.component */ 15266);
-/* harmony import */ var _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ../gauges/controls/html-image/html-image.component */ 81961);
-/* harmony import */ var _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ../resources/lib-widgets/lib-widgets.service */ 12898);
-/* harmony import */ var _maps_maps_view_maps_view_component__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ../maps/maps-view/maps-view.component */ 61661);
-/* harmony import */ var _resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ../resources/kiosk-widgets/kiosk-widgets.component */ 77284);
+/* harmony import */ var _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../_services/play-restrictions.service */ 2482);
+/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../_models/hmi */ 72830);
+/* harmony import */ var _helpers_windowref__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../_helpers/windowref */ 73386);
+/* harmony import */ var _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../gauges/gauge-property/gauge-property.component */ 14744);
+/* harmony import */ var _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../gauges/gauges.component */ 28757);
+/* harmony import */ var _gauges_gauge_base_gauge_base_component__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../gauges/gauge-base/gauge-base.component */ 96389);
+/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
+/* harmony import */ var _helpers_define__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../_helpers/define */ 42343);
+/* harmony import */ var _resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../resources/lib-images/lib-images.component */ 84259);
+/* harmony import */ var _gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../gui-helpers/confirm-dialog/confirm-dialog.component */ 63226);
+/* harmony import */ var _gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../gauges/controls/html-bag/bag-property/bag-property.component */ 14779);
+/* harmony import */ var _gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../gauges/controls/slider/slider-property/slider-property.component */ 75080);
+/* harmony import */ var _gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../gauges/controls/html-input/html-input.component */ 89548);
+/* harmony import */ var _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ../gauges/controls/html-button/html-button.component */ 35227);
+/* harmony import */ var _gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../gauges/controls/html-select/html-select.component */ 50137);
+/* harmony import */ var _gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../gauges/controls/value/value.component */ 46682);
+/* harmony import */ var _gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../gauges/controls/gauge-progress/gauge-progress.component */ 54739);
+/* harmony import */ var _gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../gauges/controls/gauge-semaphore/gauge-semaphore.component */ 16681);
+/* harmony import */ var _gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ../gauges/controls/html-switch/html-switch-property/html-switch-property.component */ 89154);
+/* harmony import */ var _card_config_card_config_component__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./card-config/card-config.component */ 57898);
+/* harmony import */ var _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ../cards-view/cards-view.component */ 40590);
+/* harmony import */ var _tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./tags-ids-config/tags-ids-config.component */ 75644);
+/* harmony import */ var _view_property_view_property_component__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./view-property/view-property.component */ 15266);
+/* harmony import */ var _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ../gauges/controls/html-image/html-image.component */ 81961);
+/* harmony import */ var _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ../resources/lib-widgets/lib-widgets.service */ 12898);
+/* harmony import */ var _maps_maps_view_maps_view_component__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ../maps/maps-view/maps-view.component */ 61661);
+/* harmony import */ var _resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ../resources/kiosk-widgets/kiosk-widgets.component */ 77284);
 
 
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
@@ -23041,6 +23742,7 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let EditorComponent = class EditorComponent {
   projectService;
   winRef;
@@ -23051,6 +23753,7 @@ let EditorComponent = class EditorComponent {
   viewContainerRef;
   resolver;
   libWidgetsService;
+  playRestrictionsService;
   mdIconRegistry;
   sanitizer;
   gaugePanelComponent;
@@ -23062,7 +23765,7 @@ let EditorComponent = class EditorComponent {
   mapsView;
   svgElementSelected = null;
   svgElements = [];
-  gaugeDialogType = _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType;
+  gaugeDialogType = _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType;
   gaugeDialog = {
     type: null,
     data: null
@@ -23072,23 +23775,23 @@ let EditorComponent = class EditorComponent {
     fill: 'transparent',
     stroke: '#000000'
   };
-  fonts = _helpers_define__WEBPACK_IMPORTED_MODULE_11__.Define.fonts;
+  fonts = _helpers_define__WEBPACK_IMPORTED_MODULE_12__.Define.fonts;
   isLoading = true;
   editorModeType = EditorModeType;
   editorMode = EditorModeType.SVG;
-  defaultColor = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.defaultColor;
+  defaultColor = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.defaultColor;
   colorFill = this.colorDefault.fill;
   colorStroke = this.colorDefault.stroke;
   currentView = null;
   currentTemplate = null;
-  hmi = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.Hmi(); // = {_id: '', name: '', networktype: '', ipaddress: '', maskaddress: '' };
+  hmi = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.Hmi(); // = {_id: '', name: '', networktype: '', ipaddress: '', maskaddress: '' };
 
   currentMode = '';
   imagefile;
   ctrlInitParams;
   gridOn = false;
   isAnySelected = false;
-  selectedElement = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.SelElement();
+  selectedElement = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.SelElement();
   panelsState = {
     enabled: false,
     panelView: true,
@@ -23111,16 +23814,16 @@ let EditorComponent = class EditorComponent {
   gaugeSettingsHide = false;
   gaugeSettingsLock = false;
   dashboard;
-  cardViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.cards;
-  svgViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.svg;
-  mapsViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.maps;
+  cardViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.cards;
+  svgViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.svg;
+  mapsViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.maps;
   shapesGrps = [];
   gaugesRef = {};
   subscriptionSave;
   subscriptionLoad;
-  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_31__.Subject();
+  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_32__.Subject();
 
-  constructor(projectService, winRef, dialog, changeDetector, translateService, gaugesManager, viewContainerRef, resolver, libWidgetsService, mdIconRegistry, sanitizer) {
+  constructor(projectService, winRef, dialog, changeDetector, translateService, gaugesManager, viewContainerRef, resolver, libWidgetsService, playRestrictionsService, mdIconRegistry, sanitizer) {
     this.projectService = projectService;
     this.winRef = winRef;
     this.dialog = dialog;
@@ -23130,6 +23833,7 @@ let EditorComponent = class EditorComponent {
     this.viewContainerRef = viewContainerRef;
     this.resolver = resolver;
     this.libWidgetsService = libWidgetsService;
+    this.playRestrictionsService = playRestrictionsService;
     this.mdIconRegistry = mdIconRegistry;
     this.sanitizer = sanitizer;
     mdIconRegistry.addSvgIcon('group', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/group.svg'));
@@ -23158,10 +23862,10 @@ let EditorComponent = class EditorComponent {
       console.error(err);
     }
 
-    this.libWidgetsService.svgWidgetSelected$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_32__.switchMap)(widgetPath => fetch(widgetPath).then(response => response.text().then(content => ({
+    this.libWidgetsService.svgWidgetSelected$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_33__.switchMap)(widgetPath => fetch(widgetPath).then(response => response.text().then(content => ({
       content,
       widgetPath
-    })))), (0,rxjs__WEBPACK_IMPORTED_MODULE_33__.takeUntil)(this.destroy$)).subscribe(({
+    })))), (0,rxjs__WEBPACK_IMPORTED_MODULE_34__.takeUntil)(this.destroy$)).subscribe(({
       content,
       widgetPath
     }) => {
@@ -23393,34 +24097,47 @@ let EditorComponent = class EditorComponent {
 
     if (!this.hmi.templates) {
       this.hmi.templates = [];
+    } // 取得允許的視圖列表（過濾掉用戶無權限的視圖）
+
+
+    const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+    let allowedViews = this.hmi.views || [];
+
+    if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+      allowedViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
     } // check new hmi
 
 
     if (!this.hmi.views || this.hmi.views.length <= 0) {
       this.hmi.views = [];
       this.addView(); // this.selectView(this.hmi.views[0].name);
+    } else if (allowedViews.length <= 0) {
+      // 用戶沒有權限查看任何視圖
+      console.warn('No views allowed for current user');
     } else {
       let oldsel = localStorage.getItem('@frango.webeditor.currentview');
 
-      if (!oldsel && this.hmi.views.length) {
-        oldsel = this.hmi.views[0].name;
-      }
+      if (!oldsel && allowedViews.length) {
+        oldsel = allowedViews[0].name;
+      } // 在允許的視圖中尋找上次選擇的視圖
 
-      for (let i = 0; i < this.hmi.views.length; i++) {
-        if (this.hmi.views[i].name === oldsel && this.hmi.views[i].type !== _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.maps) {
-          this.onSelectView(this.hmi.views[i]);
+
+      for (let i = 0; i < allowedViews.length; i++) {
+        if (allowedViews[i].name === oldsel && allowedViews[i].type !== _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.maps) {
+          this.onSelectView(allowedViews[i]);
           break;
         }
-      }
+      } // 如果上次選擇的視圖不在允許列表中，選擇第一個允許的視圖
 
-      if (!this.currentView) {
-        this.onSelectView(this.hmi.views[0]);
+
+      if (!this.currentView && allowedViews.length > 0) {
+        this.onSelectView(allowedViews[0]);
       }
     }
 
-    this.hmi.layout = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.mergeDeep(new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.LayoutSettings(), this.hmi.layout); // check and set start page
+    this.hmi.layout = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.mergeDeep(new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.LayoutSettings(), this.hmi.layout); // check and set start page
 
-    if (!this.hmi.layout.start) {
+    if (!this.hmi.layout.start && this.hmi.views.length > 0) {
       this.hmi.layout.start = this.hmi.views[0].id;
     }
 
@@ -23454,10 +24171,10 @@ let EditorComponent = class EditorComponent {
 
     const view = this.currentView || this.currentTemplate;
 
-    if (view.type === _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.cards) {
+    if (view.type === _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.cards) {
       view.svgcontent = this.cardsview.getContent();
       return view.svgcontent;
-    } else if (view.type === _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.maps) {
+    } else if (view.type === _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.maps) {
       return view.svgcontent;
     }
 
@@ -23500,7 +24217,7 @@ let EditorComponent = class EditorComponent {
       let gs = this.gaugesManager.createSettings(ele.id, ele.type);
 
       if (initParams) {
-        gs.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.GaugeProperty();
+        gs.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.GaugeProperty();
         gs.property.address = initParams;
       }
 
@@ -23590,7 +24307,7 @@ let EditorComponent = class EditorComponent {
         stroke: clrstroke
       };
 
-      if (_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.checkGaugeColor(ele, eles, colors)) {
+      if (_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.checkGaugeColor(ele, eles, colors)) {
         if (colors.fill) {
           this.colorFill = colors.fill;
         }
@@ -23643,11 +24360,11 @@ let EditorComponent = class EditorComponent {
 
         let v = view;
 
-        if (v) {
+        if (v && v.svgcontent) {
           svgcontent = v.svgcontent;
         }
 
-        if (svgcontent.length <= 0) {
+        if (!svgcontent || svgcontent.length <= 0) {
           svgcontent = '<svg id="' + view.name + '" width="' + view.profile.width + '" height="' + view.profile.height + '" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">' + '<filter id="blur-filter" x="-3" y="-3" width="200" height="200"><feGaussianBlur in="SourceGraphic" stdDeviation="3" /></filter>' + '<g><title>Layer 1</title></g></svg>';
         }
 
@@ -23736,9 +24453,9 @@ let EditorComponent = class EditorComponent {
       exist = exist.filter(n => n !== item.card.data);
     }
 
-    let cardType = _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.cards;
+    let cardType = _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.cards;
     let views = this.hmi.views.filter(v => v.type !== cardType && exist.indexOf(v.name) < 0).map(v => v.name);
-    let dialogRef = this.dialog.open(_card_config_card_config_component__WEBPACK_IMPORTED_MODULE_23__.CardConfigComponent, {
+    let dialogRef = this.dialog.open(_card_config_card_config_component__WEBPACK_IMPORTED_MODULE_24__.CardConfigComponent, {
       position: {
         top: '60px'
       },
@@ -23877,8 +24594,8 @@ let EditorComponent = class EditorComponent {
         let names = Object.values(this.currentView.items).map(gs => gs.name);
 
         for (let i = 0; i < copied.length; i++) {
-          let copiedIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getInTreeIdAndType(copied[i]);
-          let pastedIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getInTreeIdAndType(pasted[i]); // Handle image elements without type attribute
+          let copiedIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getInTreeIdAndType(copied[i]);
+          let pastedIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getInTreeIdAndType(pasted[i]); // Handle image elements without type attribute
 
           if (copiedIdsAndTypes.length === 0 && copied[i].tagName.toLowerCase() === 'image') {
             const copiedId = copied[i].getAttribute('id');
@@ -23918,7 +24635,7 @@ let EditorComponent = class EditorComponent {
 
                 if (gaSrc) {
                   let gaDest = this.gaugesManager.createSettings(pastedIdsAndTypes[j].id, pastedIdsAndTypes[j].type);
-                  gaDest.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[j].type), names);
+                  gaDest.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[j].type), names);
                   gaDest.property = JSON.parse(JSON.stringify(gaSrc.property));
                   gaDest.hide = gaSrc.hide;
                   this.setGaugeSettings(gaDest);
@@ -23933,14 +24650,14 @@ let EditorComponent = class EditorComponent {
 
             if (copyGaugeSettings) {
               let gaugeSettingsDest = this.gaugesManager.createSettings(pastedIdsAndTypes[i].id, pastedIdsAndTypes[i].type);
-              gaugeSettingsDest.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names); // First deep clone all properties to ensure everything is copied
+              gaugeSettingsDest.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.getPrefixGaugeName(pastedIdsAndTypes[i].type), names); // First deep clone all properties to ensure everything is copied
 
               gaugeSettingsDest.property = JSON.parse(JSON.stringify(copyGaugeSettings.property));
 
-              if (copyGaugeSettings.property?.type === _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_27__.HtmlImageComponent.propertyWidgetType) {
+              if (copyGaugeSettings.property?.type === _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_28__.HtmlImageComponent.propertyWidgetType) {
                 // Handle widget type images with special GUID replacement
-                const svgGuid = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID('', '_');
-                gaugeSettingsDest.property = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.replaceStringInObject(gaugeSettingsDest.property, copyGaugeSettings.property.svgGuid, svgGuid);
+                const svgGuid = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID('', '_');
+                gaugeSettingsDest.property = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.replaceStringInObject(gaugeSettingsDest.property, copyGaugeSettings.property.svgGuid, svgGuid);
               }
 
               gaugeSettingsDest.hide = copyGaugeSettings.hide;
@@ -24254,7 +24971,7 @@ let EditorComponent = class EditorComponent {
   }
 
   checkMySelectedToSetColor(bkcolor, color, elems) {
-    _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.initElementColor(bkcolor, color, elems);
+    _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.initElementColor(bkcolor, color, elems);
   }
   /**
    * Prevent drag events from propagating when mouse is over the right bar
@@ -24634,14 +25351,14 @@ let EditorComponent = class EditorComponent {
 
 
   onAddDoc() {
-    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_26__.ViewPropertyComponent, {
+    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_27__.ViewPropertyComponent, {
       position: {
         top: '60px'
       },
       data: {
         name: '',
-        profile: new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.DocProfile(),
-        type: _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.svg,
+        profile: new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.DocProfile(),
+        type: _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.svg,
         existingNames: this.hmi.views.map(v => v.name),
         newView: true,
         tags: []
@@ -24649,7 +25366,7 @@ let EditorComponent = class EditorComponent {
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        let view = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID('v_'), result.type, result.name);
+        let view = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID('v_'), result.type, result.name);
         view.profile = result.profile;
         view.tags = result.tags;
         this.hmi.views.push(view);
@@ -24683,7 +25400,7 @@ let EditorComponent = class EditorComponent {
         }
       }
 
-      let v = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID('v_'), type);
+      let v = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID('v_'), type);
 
       if (name) {
         v.name = name;
@@ -24694,7 +25411,7 @@ let EditorComponent = class EditorComponent {
         v.profile.bkcolor = '#ffffffff';
       }
 
-      if (type === _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.cards) {
+      if (type === _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.cards) {
         v.profile.bkcolor = 'rgba(67, 67, 67, 1)';
       }
 
@@ -24747,7 +25464,7 @@ let EditorComponent = class EditorComponent {
 
       let strv = this.winRef.nativeWindow.svgEditor.renameAllSvgExtensionId(torename.content, idrenamed);
       let v = JSON.parse(strv);
-      v.id = 'v_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID();
+      v.id = 'v_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID();
       v.name = nn + idx;
       this.hmi.views.push(v);
       this.onSelectView(v);
@@ -24795,9 +25512,9 @@ let EditorComponent = class EditorComponent {
     this.currentView = view;
     console.log('pass onSelectView 5');
 
-    if (this.currentView.type === _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.cards) {
+    if (this.currentView.type === _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.cards) {
       this.editorMode = EditorModeType.CARDS;
-    } else if (this.currentView.type === _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.maps) {
+    } else if (this.currentView.type === _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.maps) {
       this.editorMode = EditorModeType.MAPS;
     } else {
       this.editorMode = EditorModeType.SVG;
@@ -24850,7 +25567,7 @@ let EditorComponent = class EditorComponent {
           view.name = startname + '_' + idx++;
         }
 
-        view.id = 'v_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID();
+        view.id = 'v_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID();
         this.hmi.views.push(view);
         this.onSelectView(view);
         this.saveView(this.currentView);
@@ -24875,14 +25592,14 @@ let EditorComponent = class EditorComponent {
 
 
   onAddTemplate() {
-    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_26__.ViewPropertyComponent, {
+    let dialogRef = this.dialog.open(_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_27__.ViewPropertyComponent, {
       position: {
         top: '60px'
       },
       data: {
         name: '',
-        profile: new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.DocProfile(),
-        type: _models_hmi__WEBPACK_IMPORTED_MODULE_5__.ViewType.svg,
+        profile: new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.DocProfile(),
+        type: _models_hmi__WEBPACK_IMPORTED_MODULE_6__.ViewType.svg,
         existingNames: this.hmi.templates.map(t => t.name),
         newView: true,
         tags: []
@@ -24890,7 +25607,7 @@ let EditorComponent = class EditorComponent {
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        let template = new _models_hmi__WEBPACK_IMPORTED_MODULE_5__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID('t_'), result.type, result.name);
+        let template = new _models_hmi__WEBPACK_IMPORTED_MODULE_6__.View(_helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID('t_'), result.type, result.name);
         template.profile = result.profile;
         template.tags = result.tags;
         this.hmi.templates.push(template);
@@ -24940,7 +25657,7 @@ let EditorComponent = class EditorComponent {
 
       let strv = this.winRef.nativeWindow.svgEditor.renameAllSvgExtensionId(torename.content, idrenamed);
       let t = JSON.parse(strv);
-      t.id = 't_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getShortGUID();
+      t.id = 't_' + _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getShortGUID();
       t.name = nn + idx;
       this.hmi.templates.push(t);
       this.onSelectTemplate(t);
@@ -25001,7 +25718,7 @@ let EditorComponent = class EditorComponent {
 
       if (existingView) {
         // Show warning dialog
-        let dialogRef = _this2.dialog.open(_gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_13__.ConfirmDialogComponent, {
+        let dialogRef = _this2.dialog.open(_gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_14__.ConfirmDialogComponent, {
           position: {
             top: '60px'
           },
@@ -25065,7 +25782,7 @@ let EditorComponent = class EditorComponent {
     this.panelsState.enabled = true;
 
     if (ps) {
-      this.panelsState = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.mergeDeep(this.panelsState, JSON.parse(ps));
+      this.panelsState = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.mergeDeep(this.panelsState, JSON.parse(ps));
     }
   }
   /**
@@ -25142,22 +25859,22 @@ let EditorComponent = class EditorComponent {
 
     let tempsettings = JSON.parse(JSON.stringify(settings));
     let hmi = this.projectService.getHmi();
-    let dlgType = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.getEditDialogTypeToUse(settings.type);
-    let bitmaskSupported = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.isBitmaskSupported(settings.type);
+    let dlgType = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.getEditDialogTypeToUse(settings.type);
+    let bitmaskSupported = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.isBitmaskSupported(settings.type);
     let eventsSupported = this.isWithEvents(settings.type);
     let actionsSupported = this.isWithActions(settings.type);
-    let defaultValue = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.getDefaultValue(settings.type);
+    let defaultValue = _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.getDefaultValue(settings.type);
     const currentContext = this.currentView || this.currentTemplate;
     let names = Object.values(currentContext.items).map(gs => gs.name); // set default name
 
     if (!tempsettings.name) {
-      tempsettings.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager.getPrefixGaugeName(settings.type), names);
+      tempsettings.name = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getNextName(_gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager.getPrefixGaugeName(settings.type), names);
     }
 
     let dialogRef;
     let elementWithLanguageText;
 
-    if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Chart) {
+    if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Chart) {
       this.gaugeDialog.type = dlgType;
       this.gaugeDialog.data = {
         settings: tempsettings,
@@ -25174,7 +25891,7 @@ let EditorComponent = class EditorComponent {
 
       this.reloadGaugeDialog = !this.reloadGaugeDialog;
       return;
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Graph) {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Graph) {
       this.gaugeDialog.type = dlgType;
       this.gaugeDialog.data = {
         settings: tempsettings,
@@ -25191,7 +25908,7 @@ let EditorComponent = class EditorComponent {
 
       this.reloadGaugeDialog = !this.reloadGaugeDialog;
       return;
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Iframe) {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Iframe) {
       this.gaugeDialog.type = dlgType;
       this.gaugeDialog.data = {
         settings: tempsettings,
@@ -25205,8 +25922,8 @@ let EditorComponent = class EditorComponent {
 
       this.reloadGaugeDialog = !this.reloadGaugeDialog;
       return;
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Gauge) {
-      dialogRef = this.dialog.open(_gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_14__.BagPropertyComponent, {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Gauge) {
+      dialogRef = this.dialog.open(_gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_15__.BagPropertyComponent, {
         position: {
           top: '30px'
         },
@@ -25217,7 +25934,7 @@ let EditorComponent = class EditorComponent {
           names: names
         }
       });
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Pipe) {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Pipe) {
       this.gaugeDialog.type = dlgType;
       this.gaugeDialog.data = {
         settings: tempsettings,
@@ -25233,8 +25950,8 @@ let EditorComponent = class EditorComponent {
 
       this.reloadGaugeDialog = !this.reloadGaugeDialog;
       return;
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Slider) {
-      dialogRef = this.dialog.open(_gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_15__.SliderPropertyComponent, {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Slider) {
+      dialogRef = this.dialog.open(_gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_16__.SliderPropertyComponent, {
         position: {
           top: '60px'
         },
@@ -25246,8 +25963,8 @@ let EditorComponent = class EditorComponent {
           names: names
         }
       });
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Switch) {
-      dialogRef = this.dialog.open(_gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_22__.HtmlSwitchPropertyComponent, {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Switch) {
+      dialogRef = this.dialog.open(_gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_23__.HtmlSwitchPropertyComponent, {
         position: {
           top: '60px'
         },
@@ -25264,7 +25981,7 @@ let EditorComponent = class EditorComponent {
           names: names
         }
       });
-    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Table || dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugeDialogType.Panel) {
+    } else if (dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Table || dlgType === _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugeDialogType.Panel) {
       this.gaugeDialog.type = dlgType;
       this.gaugeDialog.data = {
         settings: tempsettings,
@@ -25282,7 +25999,7 @@ let EditorComponent = class EditorComponent {
       //!TODO to be refactored (GaugePropertyComponent)
       elementWithLanguageText = this.isSelectedElementToEnableLanguageTextSettings();
       let title = this.getGaugeTitle(settings.type);
-      dialogRef = this.dialog.open(_gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_7__.GaugePropertyComponent, {
+      dialogRef = this.dialog.open(_gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_8__.GaugePropertyComponent, {
         position: {
           top: '60px'
         },
@@ -25337,12 +26054,12 @@ let EditorComponent = class EditorComponent {
     const tagsIds = new Set();
 
     if (elesSelected?.length) {
-      const eleIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.getInTreeIdAndType(elesSelected[0]);
+      const eleIdsAndTypes = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.getInTreeIdAndType(elesSelected[0]);
 
       if (eleIdsAndTypes?.length) {
         for (let i = 0; i < eleIdsAndTypes.length; i++) {
           let gaSrc = this.searchGaugeSettings(eleIdsAndTypes[i]);
-          const variablesIds = _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.searchValuesByAttribute(gaSrc, 'variableId');
+          const variablesIds = _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.searchValuesByAttribute(gaSrc, 'variableId');
 
           if (variablesIds?.length) {
             gaugesSettings.push(gaSrc);
@@ -25354,7 +26071,7 @@ let EditorComponent = class EditorComponent {
       }
     }
 
-    const dialogRef = this.dialog.open(_tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_25__.TagsIdsConfigComponent, {
+    const dialogRef = this.dialog.open(_tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_26__.TagsIdsConfigComponent, {
       position: {
         top: '60px'
       },
@@ -25370,7 +26087,7 @@ let EditorComponent = class EditorComponent {
       if (result?.length) {
         gaugesSettings.forEach(gaSettings => {
           result.forEach(tagIdRef => {
-            _helpers_utils__WEBPACK_IMPORTED_MODULE_10__.Utils.changeAttributeValue(gaSettings, 'variableId', tagIdRef.srcId, tagIdRef.destId);
+            _helpers_utils__WEBPACK_IMPORTED_MODULE_11__.Utils.changeAttributeValue(gaSettings, 'variableId', tagIdRef.srcId, tagIdRef.destId);
           });
         });
         this.saveView(this.currentView);
@@ -25394,17 +26111,17 @@ let EditorComponent = class EditorComponent {
   }
 
   getGaugeTitle(type) {
-    if (type.startsWith(_gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_16__.HtmlInputComponent.TypeTag)) {
+    if (type.startsWith(_gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_17__.HtmlInputComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-input-settings');
-    } else if (type.startsWith(_gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_19__.ValueComponent.TypeTag)) {
+    } else if (type.startsWith(_gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_20__.ValueComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-output-settings');
-    } else if (type.startsWith(_gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__.HtmlButtonComponent.TypeTag)) {
+    } else if (type.startsWith(_gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_18__.HtmlButtonComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-button-settings');
-    } else if (type.startsWith(_gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_18__.HtmlSelectComponent.TypeTag)) {
+    } else if (type.startsWith(_gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_19__.HtmlSelectComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-select-settings');
-    } else if (type.startsWith(_gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_20__.GaugeProgressComponent.TypeTag)) {
+    } else if (type.startsWith(_gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_21__.GaugeProgressComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-progress-settings');
-    } else if (type.startsWith(_gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_21__.GaugeSemaphoreComponent.TypeTag)) {
+    } else if (type.startsWith(_gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_22__.GaugeSemaphoreComponent.TypeTag)) {
       return this.translateService.instant('editor.controls-semaphore-settings');
     } else {
       return this.translateService.instant('editor.controls-shape-settings');
@@ -25413,7 +26130,7 @@ let EditorComponent = class EditorComponent {
 
 
   onAddResource() {
-    let dialogRef = this.dialog.open(_resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_12__.LibImagesComponent, {
+    let dialogRef = this.dialog.open(_resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_13__.LibImagesComponent, {
       disableClose: true,
       position: {
         top: '60px'
@@ -25448,7 +26165,7 @@ let EditorComponent = class EditorComponent {
   }
 
   onWidgetKiosk() {
-    let dialogRef = this.dialog.open(_resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_30__.KioskWidgetsComponent, {
+    let dialogRef = this.dialog.open(_resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_31__.KioskWidgetsComponent, {
       disableClose: true,
       position: {
         top: '60px'
@@ -25518,75 +26235,77 @@ let EditorComponent = class EditorComponent {
   static ctorParameters = () => [{
     type: _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService
   }, {
-    type: _helpers_windowref__WEBPACK_IMPORTED_MODULE_6__.WindowRef
+    type: _helpers_windowref__WEBPACK_IMPORTED_MODULE_7__.WindowRef
   }, {
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialog
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialog
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ChangeDetectorRef
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ChangeDetectorRef
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_36__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_37__.TranslateService
   }, {
-    type: _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager
+    type: _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewContainerRef
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewContainerRef
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ComponentFactoryResolver
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ComponentFactoryResolver
   }, {
-    type: _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_28__.LibWidgetsService
+    type: _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_29__.LibWidgetsService
   }, {
-    type: _angular_material_icon__WEBPACK_IMPORTED_MODULE_37__.MatIconRegistry
+    type: _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__.PlayRestrictionsService
   }, {
-    type: _angular_platform_browser__WEBPACK_IMPORTED_MODULE_38__.DomSanitizer
+    type: _angular_material_icon__WEBPACK_IMPORTED_MODULE_38__.MatIconRegistry
+  }, {
+    type: _angular_platform_browser__WEBPACK_IMPORTED_MODULE_39__.DomSanitizer
   }];
   static propDecorators = {
     gaugePanelComponent: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['gaugepanel', {
         static: false
       }]
     }],
     viewFileImportInput: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['viewFileImportInput', {
         static: false
       }]
     }],
     cardsview: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['cardsview', {
         static: false
       }]
     }],
     sidePanel: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['sidePanel', {
         static: false
       }]
     }],
     svgSelectorPanel: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['svgSelectorPanel', {
         static: false
       }]
     }],
     svgPreview: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['svgpreview', {
         static: false
       }]
     }],
     mapsView: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewChild,
       args: ['mapsView', {
         static: false
       }]
     }]
   };
 };
-EditorComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_35__.Component)({
+EditorComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_36__.Component)({
   template: _editor_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__,
   styles: [(_editor_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default())]
-}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _helpers_windowref__WEBPACK_IMPORTED_MODULE_6__.WindowRef, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialog, _angular_core__WEBPACK_IMPORTED_MODULE_35__.ChangeDetectorRef, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_36__.TranslateService, _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_8__.GaugesManager, _angular_core__WEBPACK_IMPORTED_MODULE_35__.ViewContainerRef, _angular_core__WEBPACK_IMPORTED_MODULE_35__.ComponentFactoryResolver, _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_28__.LibWidgetsService, _angular_material_icon__WEBPACK_IMPORTED_MODULE_37__.MatIconRegistry, _angular_platform_browser__WEBPACK_IMPORTED_MODULE_38__.DomSanitizer])], EditorComponent);
+}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _helpers_windowref__WEBPACK_IMPORTED_MODULE_7__.WindowRef, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialog, _angular_core__WEBPACK_IMPORTED_MODULE_36__.ChangeDetectorRef, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_37__.TranslateService, _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager, _angular_core__WEBPACK_IMPORTED_MODULE_36__.ViewContainerRef, _angular_core__WEBPACK_IMPORTED_MODULE_36__.ComponentFactoryResolver, _resources_lib_widgets_lib_widgets_service__WEBPACK_IMPORTED_MODULE_29__.LibWidgetsService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_5__.PlayRestrictionsService, _angular_material_icon__WEBPACK_IMPORTED_MODULE_38__.MatIconRegistry, _angular_platform_browser__WEBPACK_IMPORTED_MODULE_39__.DomSanitizer])], EditorComponent);
 
 let DialogLinkProperty = class DialogLinkProperty {
   dialogRef;
@@ -25602,19 +26321,19 @@ let DialogLinkProperty = class DialogLinkProperty {
   }
 
   static ctorParameters = () => [{
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialogRef
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialogRef
   }, {
     type: undefined,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_35__.Inject,
-      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MAT_LEGACY_DIALOG_DATA]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_36__.Inject,
+      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MAT_LEGACY_DIALOG_DATA]
     }]
   }];
 };
-DialogLinkProperty = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_35__.Component)({
+DialogLinkProperty = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_36__.Component)({
   selector: 'dialog-link-property',
   template: _linkproperty_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_3__
-}), __metadata("design:paramtypes", [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialogRef, Object])], DialogLinkProperty);
+}), __metadata("design:paramtypes", [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialogRef, Object])], DialogLinkProperty);
 
 var EditorModeType;
 
@@ -34535,7 +35254,7 @@ GraphPropertyComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_9
 
 /***/ }),
 
-/***/ 74990:
+/***/ 6177:
 /*!********************************************************************!*\
   !*** ./src/app/gauges/controls/html-graph/html-graph.component.ts ***!
   \********************************************************************/
@@ -42796,7 +43515,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./controls/html-button/html-button.component */ 35227);
 /* harmony import */ var _controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./controls/html-select/html-select.component */ 50137);
 /* harmony import */ var _controls_html_chart_html_chart_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./controls/html-chart/html-chart.component */ 63072);
-/* harmony import */ var _controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./controls/html-graph/html-graph.component */ 74990);
+/* harmony import */ var _controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./controls/html-graph/html-graph.component */ 6177);
 /* harmony import */ var _controls_html_bag_html_bag_component__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./controls/html-bag/html-bag.component */ 68589);
 /* harmony import */ var _controls_html_switch_html_switch_component__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./controls/html-switch/html-switch.component */ 27076);
 /* harmony import */ var _controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./controls/gauge-progress/gauge-progress.component */ 54739);
@@ -50525,41 +51244,42 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _home_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./home.component.scss?ngResource */ 42095);
 /* harmony import */ var _home_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_home_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _userinfo_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./userinfo.dialog.html?ngResource */ 21978);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! rxjs */ 80228);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs */ 26562);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs */ 36646);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs */ 10745);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs */ 78947);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! rxjs */ 28653);
-/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! @angular/router */ 60124);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs */ 80228);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs */ 26562);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs */ 36646);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs */ 10745);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs */ 78947);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! rxjs */ 28653);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! @angular/router */ 60124);
 /* harmony import */ var _sidenav_sidenav_component__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../sidenav/sidenav.component */ 10226);
 /* harmony import */ var _fuxa_view_fuxa_view_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../fuxa-view/fuxa-view.component */ 68608);
 /* harmony import */ var _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../cards-view/cards-view.component */ 40590);
 /* harmony import */ var _services_hmi_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../_services/hmi.service */ 23994);
 /* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../_services/project.service */ 47848);
 /* harmony import */ var _services_auth_service__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../_services/auth.service */ 88368);
-/* harmony import */ var _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../gauges/gauges.component */ 28757);
-/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../_models/hmi */ 72830);
-/* harmony import */ var _login_login_component__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../login/login.component */ 98458);
-/* harmony import */ var _alarms_alarm_view_alarm_view_component__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../alarms/alarm-view/alarm-view.component */ 37441);
-/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
-/* harmony import */ var _models_alarm__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../_models/alarm */ 96614);
-/* harmony import */ var panzoom__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! panzoom */ 45689);
-/* harmony import */ var panzoom__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(panzoom__WEBPACK_IMPORTED_MODULE_15__);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs/operators */ 32673);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs/operators */ 50635);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! rxjs/operators */ 44874);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! rxjs/operators */ 68951);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! rxjs/operators */ 60116);
-/* harmony import */ var _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../gauges/controls/html-button/html-button.component */ 35227);
-/* harmony import */ var _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../users/user-edit/user-edit.component */ 41923);
-/* harmony import */ var _helpers_intervals__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ../_helpers/intervals */ 81592);
-/* harmony import */ var _models_script__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../_models/script */ 33530);
-/* harmony import */ var _services_script_service__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../_services/script.service */ 84480);
-/* harmony import */ var ngx_toastr__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ngx-toastr */ 94817);
-/* harmony import */ var _services_language_service__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../_services/language.service */ 38543);
+/* harmony import */ var _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../_services/play-restrictions.service */ 2482);
+/* harmony import */ var _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../gauges/gauges.component */ 28757);
+/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../_models/hmi */ 72830);
+/* harmony import */ var _login_login_component__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../login/login.component */ 98458);
+/* harmony import */ var _alarms_alarm_view_alarm_view_component__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../alarms/alarm-view/alarm-view.component */ 37441);
+/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../_helpers/utils */ 28257);
+/* harmony import */ var _models_alarm__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../_models/alarm */ 96614);
+/* harmony import */ var panzoom__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! panzoom */ 45689);
+/* harmony import */ var panzoom__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(panzoom__WEBPACK_IMPORTED_MODULE_16__);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs/operators */ 32673);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! rxjs/operators */ 50635);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! rxjs/operators */ 44874);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! rxjs/operators */ 68951);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! rxjs/operators */ 60116);
+/* harmony import */ var _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../gauges/controls/html-button/html-button.component */ 35227);
+/* harmony import */ var _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ../users/user-edit/user-edit.component */ 41923);
+/* harmony import */ var _helpers_intervals__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../_helpers/intervals */ 81592);
+/* harmony import */ var _models_script__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../_models/script */ 33530);
+/* harmony import */ var _services_script_service__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../_services/script.service */ 84480);
+/* harmony import */ var ngx_toastr__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ngx-toastr */ 94817);
+/* harmony import */ var _services_language_service__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../_services/language.service */ 38543);
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
       r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -50603,6 +51323,7 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
  // declare var panzoom: any;
 
 
@@ -50618,6 +51339,7 @@ let HomeComponent = class HomeComponent {
   scriptService;
   languageService;
   authService;
+  playRestrictionsService;
   gaugesManager;
   sidenav;
   matsidenav;
@@ -50628,8 +51350,8 @@ let HomeComponent = class HomeComponent {
   header;
   iframes = [];
   isLoading = true;
-  homeView = new _models_hmi__WEBPACK_IMPORTED_MODULE_10__.View();
-  hmi = new _models_hmi__WEBPACK_IMPORTED_MODULE_10__.Hmi();
+  homeView = new _models_hmi__WEBPACK_IMPORTED_MODULE_11__.View();
+  hmi = new _models_hmi__WEBPACK_IMPORTED_MODULE_11__.Hmi();
   showSidenav = 'over';
   homeLink = '';
   showHomeLink = false;
@@ -50646,27 +51368,28 @@ let HomeComponent = class HomeComponent {
     count: 0,
     mode: ''
   };
-  headerButtonMode = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType;
-  layoutHeader = new _models_hmi__WEBPACK_IMPORTED_MODULE_10__.HeaderSettings();
+  headerButtonMode = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType;
+  layoutHeader = new _models_hmi__WEBPACK_IMPORTED_MODULE_11__.HeaderSettings();
   showNavigation = true;
-  viewAsAlarms = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.LinkType.alarms;
+  viewAsAlarms = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LinkType.alarms;
   alarmPanelWidth = '100%';
   serverErrorBanner$;
-  cardViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.ViewType.cards;
-  mapsViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.ViewType.maps;
+  cardViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.ViewType.cards;
+  mapsViewType = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.ViewType.maps;
   gridOptions = new _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_5__.GridOptions();
-  intervalsScript = new _helpers_intervals__WEBPACK_IMPORTED_MODULE_18__.Intervals();
+  intervalsScript = new _helpers_intervals__WEBPACK_IMPORTED_MODULE_19__.Intervals();
   currentDateTime = new Date();
   headerItemsMap = new Map();
   subscriptionLoad;
   subscriptionAlarmsStatus;
   subscriptiongoTo;
   subscriptionOpen;
-  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_22__.Subject();
+  subscriptionAllowedViews;
+  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_23__.Subject();
   loggedUser$;
   language$;
 
-  constructor(projectService, changeDetector, dialog, router, route, hmiService, toastr, scriptService, languageService, authService, gaugesManager) {
+  constructor(projectService, changeDetector, dialog, router, route, hmiService, toastr, scriptService, languageService, authService, playRestrictionsService, gaugesManager) {
     this.projectService = projectService;
     this.changeDetector = changeDetector;
     this.dialog = dialog;
@@ -50677,6 +51400,7 @@ let HomeComponent = class HomeComponent {
     this.scriptService = scriptService;
     this.languageService = languageService;
     this.authService = authService;
+    this.playRestrictionsService = playRestrictionsService;
     this.gaugesManager = gaugesManager;
     this.gridOptions.draggable = {
       enabled: false
@@ -50706,11 +51430,18 @@ let HomeComponent = class HomeComponent {
       this.subscriptionOpen = this.hmiService.onOpen.subscribe(viewToOpen => {
         this.fuxaview.onOpenCard(null, null, this.projectService.getViewId(viewToOpen.viewName), viewToOpen.options);
       });
-      this.serverErrorBanner$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_23__.combineLatest)([this.hmiService.onServerConnection$, this.authService.currentUser$]).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_24__.switchMap)(([connectionStatus, userProfile]) => (0,rxjs__WEBPACK_IMPORTED_MODULE_25__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_26__.of)(false), (0,rxjs__WEBPACK_IMPORTED_MODULE_27__.timer)(20000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_28__.map)(() => this.securityEnabled && !userProfile ? false : true))).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_29__.startWith)(false))), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_30__.takeUntil)(this.destroy$));
+      this.serverErrorBanner$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_24__.combineLatest)([this.hmiService.onServerConnection$, this.authService.currentUser$]).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_25__.switchMap)(([connectionStatus, userProfile]) => (0,rxjs__WEBPACK_IMPORTED_MODULE_26__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_27__.of)(false), (0,rxjs__WEBPACK_IMPORTED_MODULE_28__.timer)(20000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_29__.map)(() => this.securityEnabled && !userProfile ? false : true))).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_30__.startWith)(false))), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_31__.takeUntil)(this.destroy$));
       this.language$ = this.languageService.languageConfig$;
       this.loggedUser$ = this.authService.currentUser$;
-      this.gaugesManager.onchange.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_30__.takeUntil)(this.destroy$), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_31__.filter)(varTag => this.headerItemsMap.has(varTag.id))).subscribe(varTag => {
+      this.gaugesManager.onchange.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_31__.takeUntil)(this.destroy$), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_32__.filter)(varTag => this.headerItemsMap.has(varTag.id))).subscribe(varTag => {
         this.processValueInHeaderItem(varTag);
+      }); // 訂閱播放限制變化，當限制計算完成後重新載入視圖
+
+      this.subscriptionAllowedViews = this.playRestrictionsService.allowedViews$.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_32__.filter)(result => result.views.length > 0 || result.isSuperAdmin)).subscribe(() => {
+        // 如果 HMI 已載入，重新過濾視圖
+        if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+          this.applyViewRestrictions();
+        }
       });
     } catch (err) {
       console.error(err);
@@ -50748,6 +51479,10 @@ let HomeComponent = class HomeComponent {
         this.subscriptiongoTo.unsubscribe();
       }
 
+      if (this.subscriptionAllowedViews) {
+        this.subscriptionAllowedViews.unsubscribe();
+      }
+
       this.destroy$.next(null);
       this.destroy$.complete();
       this.intervalsScript.clearIntervals();
@@ -50756,7 +51491,7 @@ let HomeComponent = class HomeComponent {
 
   checkDateTimeTimer() {
     if (this.hmi.layout?.header?.dateTimeDisplay) {
-      (0,rxjs__WEBPACK_IMPORTED_MODULE_32__.interval)(1000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_30__.takeUntil)(this.destroy$)).subscribe(() => {
+      (0,rxjs__WEBPACK_IMPORTED_MODULE_33__.interval)(1000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_31__.takeUntil)(this.destroy$)).subscribe(() => {
         this.currentDateTime = new Date();
       });
     }
@@ -50765,7 +51500,7 @@ let HomeComponent = class HomeComponent {
   initScheduledScripts() {
     this.intervalsScript.clearIntervals();
     this.projectService.getScripts()?.forEach(script => {
-      if (script.mode === _models_script__WEBPACK_IMPORTED_MODULE_19__.ScriptMode.CLIENT && script.scheduling?.interval > 0) {
+      if (script.mode === _models_script__WEBPACK_IMPORTED_MODULE_20__.ScriptMode.CLIENT && script.scheduling?.interval > 0) {
         this.intervalsScript.addInterval(script.scheduling.interval * 1000, this.scriptService.evalScript, script, this.scriptService);
       }
     });
@@ -50776,6 +51511,12 @@ let HomeComponent = class HomeComponent {
       this.onAlarmsShowMode('expand');
       this.checkToCloseSideNav();
     } else if (!this.homeView || viewId !== this.homeView?.id || force || this.fuxaview?.view?.id !== viewId) {
+      // 檢查用戶是否有權限訪問該視圖
+      if (!this.playRestrictionsService.isViewAllowed(viewId)) {
+        console.warn('Access denied to view:', viewId);
+        return;
+      }
+
       const view = this.hmi.views.find(x => x.id === viewId);
       this.setIframe();
       this.showHomeLink = false;
@@ -50848,9 +51589,9 @@ let HomeComponent = class HomeComponent {
 
   checkToCloseSideNav() {
     if (this.hmi.layout) {
-      let nvoid = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType[this.hmi.layout.navigation.mode];
+      let nvoid = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType[this.hmi.layout.navigation.mode];
 
-      if (nvoid !== _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType.fix && this.matsidenav) {
+      if (nvoid !== _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType.fix && this.matsidenav) {
         this.matsidenav.close();
       }
     }
@@ -50881,13 +51622,13 @@ let HomeComponent = class HomeComponent {
         data: {},
         disableClose: true,
         autoFocus: false,
-        ...(this.hmi.layout.loginoverlaycolor && this.hmi.layout.loginoverlaycolor !== _models_hmi__WEBPACK_IMPORTED_MODULE_10__.LoginOverlayColorType.none && {
-          backdropClass: this.hmi.layout.loginoverlaycolor === _models_hmi__WEBPACK_IMPORTED_MODULE_10__.LoginOverlayColorType.black ? 'backdrop-black' : 'backdrop-white'
+        ...(this.hmi.layout.loginoverlaycolor && this.hmi.layout.loginoverlaycolor !== _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LoginOverlayColorType.none && {
+          backdropClass: this.hmi.layout.loginoverlaycolor === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LoginOverlayColorType.black ? 'backdrop-black' : 'backdrop-white'
         })
       };
-      let dialogRef = this.dialog.open(_login_login_component__WEBPACK_IMPORTED_MODULE_11__.LoginComponent, dialogConfig);
+      let dialogRef = this.dialog.open(_login_login_component__WEBPACK_IMPORTED_MODULE_12__.LoginComponent, dialogConfig);
       dialogRef.afterClosed().subscribe(result => {
-        const userInfo = new _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_17__.UserInfo(this.authService.getUser()?.info);
+        const userInfo = new _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_18__.UserInfo(this.authService.getUser()?.info);
 
         if (userInfo.start) {
           this.onGoToPage(userInfo.start);
@@ -50909,7 +51650,7 @@ let HomeComponent = class HomeComponent {
   }
 
   onAlarmsShowMode(mode) {
-    if (_helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.getEnumKey(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType, _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType.fix) === this.hmi.layout.navigation.mode && this.matsidenav) {
+    if (_helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.getEnumKey(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType, _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType.fix) === this.hmi.layout.navigation.mode && this.matsidenav) {
       this.alarmPanelWidth = `calc(100% - ${this.matsidenav._getWidth()}px)`;
     }
 
@@ -50938,9 +51679,9 @@ let HomeComponent = class HomeComponent {
   processValueInHeaderItem(varTag) {
     this.headerItemsMap.get(varTag.id)?.forEach(item => {
       if (item.status.variablesValue[varTag.id] !== varTag.value) {
-        _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_16__.HtmlButtonComponent.processValue({
+        _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__.HtmlButtonComponent.processValue({
           property: item.property
-        }, item.element ?? _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.findElementByIdRecursive(this.header.nativeElement, item.id), varTag, item.status, item.type === 'label');
+        }, item.element ?? _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.findElementByIdRecursive(this.header.nativeElement, item.id), varTag, item.status, item.type === 'label');
       }
 
       item.status.variablesValue[varTag.id] = varTag.value;
@@ -50949,6 +51690,55 @@ let HomeComponent = class HomeComponent {
 
   goTo(destination) {
     this.router.navigate([destination]); //, this.ID]);
+  }
+  /**
+   * 應用播放限制，過濾視圖和導航項目
+   * 當 allowedViews$ 變化時調用
+   *
+   * 邏輯：排除 restrictedViews 中的視圖（用戶無權限的）
+   */
+
+
+  applyViewRestrictions() {
+    const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+    console.log('Applying view restrictions:', allowedViewsResult); // 如果是超級管理員，不需要過濾
+
+    if (allowedViewsResult.isSuperAdmin) {
+      return;
+    } // 如果沒有被限制的視圖，不需要過濾
+
+
+    if (!allowedViewsResult.restrictedViews || allowedViewsResult.restrictedViews.length === 0) {
+      return;
+    } // 過濾視圖：排除 restrictedViews 中的視圖
+
+
+    const filteredViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+    console.log('Filtered views after restriction:', filteredViews.map(v => v.id)); // 如果當前視圖在 restrictedViews 中（無權限），切換到第一個允許的視圖
+
+    if (this.homeView && allowedViewsResult.restrictedViews.includes(this.homeView.id)) {
+      const allowedStartView = filteredViews.find(x => x.id === this.hmi.layout?.start);
+      this.homeView = allowedStartView || filteredViews[0];
+
+      if (this.homeView && this.fuxaview) {
+        this.setBackground();
+        this.fuxaview.hmi.layout = this.hmi.layout;
+        this.fuxaview.loadHmi(this.homeView);
+      }
+    } // 重新過濾導航項目：排除 restrictedViews 中的視圖
+
+
+    if (this.hmi.layout && this.sidenav) {
+      const layoutToSet = _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.clone(this.hmi.layout);
+
+      if (layoutToSet.navigation?.items) {
+        layoutToSet.navigation.items = layoutToSet.navigation.items.filter(item => !allowedViewsResult.restrictedViews.includes(item.view) || item.view === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LinkType.alarms || item.view === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LinkType.address);
+      }
+
+      this.sidenav.setLayout(layoutToSet);
+    }
+
+    this.changeDetector.detectChanges();
   }
 
   loadHmi() {
@@ -50959,17 +51749,26 @@ let HomeComponent = class HomeComponent {
     }
 
     if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+      // 過濾視圖：根據播放限制排除用戶無權限的視圖
+      const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+      let filteredViews = this.hmi.views; // 排除 restrictedViews 中的視圖（用戶無權限的）
+
+      if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews && allowedViewsResult.restrictedViews.length > 0) {
+        filteredViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+        console.log('Filtered views for home (excluded restricted):', filteredViews.map(v => v.id));
+      }
+
       let viewToShow = null;
 
       if (this.hmi.layout?.start) {
-        viewToShow = this.hmi.views.find(x => x.id === this.hmi.layout.start);
+        viewToShow = filteredViews.find(x => x.id === this.hmi.layout.start);
       }
 
-      if (!viewToShow) {
-        viewToShow = this.hmi.views[0];
+      if (!viewToShow && filteredViews.length > 0) {
+        viewToShow = filteredViews[0];
       }
 
-      let startView = this.hmi.views.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
+      let startView = filteredViews.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
 
       if (startView) {
         viewToShow = startView;
@@ -50981,26 +51780,33 @@ let HomeComponent = class HomeComponent {
       this.showSidenav = null;
 
       if (this.hmi.layout) {
-        if (_helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.Boolify(this.hmi.layout.hidenavigation)) {
+        if (_helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.Boolify(this.hmi.layout.hidenavigation)) {
           this.showNavigation = false;
         }
 
-        let nvoid = _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType[this.hmi.layout.navigation.mode];
+        let nvoid = _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType[this.hmi.layout.navigation.mode];
 
-        if (this.hmi.layout && nvoid !== _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType["void"]) {
-          if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType.over) {
+        if (this.hmi.layout && nvoid !== _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType["void"]) {
+          if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType.over) {
             this.showSidenav = 'over';
-          } else if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType.fix) {
+          } else if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType.fix) {
             this.showSidenav = 'side';
 
             if (this.matsidenav) {
               this.matsidenav.open();
             }
-          } else if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_10__.NaviModeType.push) {
+          } else if (nvoid === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.NaviModeType.push) {
             this.showSidenav = 'push';
+          } // 過濾導航項目：排除 restrictedViews 中的視圖
+
+
+          const layoutToSet = _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.clone(this.hmi.layout);
+
+          if (layoutToSet.navigation?.items && !allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+            layoutToSet.navigation.items = layoutToSet.navigation.items.filter(item => !allowedViewsResult.restrictedViews.includes(item.view) || item.view === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LinkType.alarms || item.view === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.LinkType.address);
           }
 
-          this.sidenav.setLayout(this.hmi.layout);
+          this.sidenav.setLayout(layoutToSet);
         }
 
         if (this.hmi.layout.header) {
@@ -51015,7 +51821,7 @@ let HomeComponent = class HomeComponent {
           }
 
           this.checkHeaderButton();
-          this.layoutHeader = _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.clone(this.hmi.layout.header);
+          this.layoutHeader = _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.clone(this.hmi.layout.header);
           this.changeDetector.detectChanges();
           this.loadHeaderItems();
         }
@@ -51038,12 +51844,12 @@ let HomeComponent = class HomeComponent {
   }
 
   checkZoom() {
-    if (this.hmi.layout?.zoom && _models_hmi__WEBPACK_IMPORTED_MODULE_10__.ZoomModeType[this.hmi.layout.zoom] === _models_hmi__WEBPACK_IMPORTED_MODULE_10__.ZoomModeType.enabled) {
+    if (this.hmi.layout?.zoom && _models_hmi__WEBPACK_IMPORTED_MODULE_11__.ZoomModeType[this.hmi.layout.zoom] === _models_hmi__WEBPACK_IMPORTED_MODULE_11__.ZoomModeType.enabled) {
       setTimeout(() => {
         let element = document.querySelector('#home');
 
-        if (element && (panzoom__WEBPACK_IMPORTED_MODULE_15___default())) {
-          panzoom__WEBPACK_IMPORTED_MODULE_15___default()(element, {
+        if (element && (panzoom__WEBPACK_IMPORTED_MODULE_16___default())) {
+          panzoom__WEBPACK_IMPORTED_MODULE_16___default()(element, {
             bounds: true,
             boundsPadding: 0.05
           });
@@ -51062,12 +51868,12 @@ let HomeComponent = class HomeComponent {
     }
 
     this.layoutHeader.items?.forEach(item => {
-      item.status = item.status ?? new _models_hmi__WEBPACK_IMPORTED_MODULE_10__.GaugeStatus();
+      item.status = item.status ?? new _models_hmi__WEBPACK_IMPORTED_MODULE_11__.GaugeStatus();
       item.status.onlyChange = true;
       item.status.variablesValue = {};
-      item.element = _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.findElementByIdRecursive(this.header.nativeElement, item.id);
+      item.element = _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.findElementByIdRecursive(this.header.nativeElement, item.id);
       item.text = this.languageService.getTranslation(item.property?.text) ?? item.property?.text;
-      const signalsIds = _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_16__.HtmlButtonComponent.getSignals(item.property);
+      const signalsIds = _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__.HtmlButtonComponent.getSignals(item.property);
       signalsIds.forEach(sigId => {
         if (!this.headerItemsMap.has(sigId)) {
           this.headerItemsMap.set(sigId, []);
@@ -51075,7 +51881,7 @@ let HomeComponent = class HomeComponent {
 
         this.headerItemsMap.get(sigId).push(item);
       });
-      const settingsProperty = new _models_hmi__WEBPACK_IMPORTED_MODULE_10__.GaugeSettings(null, _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_16__.HtmlButtonComponent.TypeTag);
+      const settingsProperty = new _models_hmi__WEBPACK_IMPORTED_MODULE_11__.GaugeSettings(null, _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_17__.HtmlButtonComponent.TypeTag);
       settingsProperty.property = item.property;
       this.onBindMouseEvents(item.element, settingsProperty);
     });
@@ -51084,7 +51890,7 @@ let HomeComponent = class HomeComponent {
 
   onBindMouseEvents(element, ga) {
     if (element) {
-      let clickEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_10__.GaugeEventType.click);
+      let clickEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_11__.GaugeEventType.click);
 
       if (clickEvents?.length > 0) {
         element.onclick = ev => {
@@ -51096,7 +51902,7 @@ let HomeComponent = class HomeComponent {
         };
       }
 
-      let mouseDownEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_10__.GaugeEventType.mousedown);
+      let mouseDownEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_11__.GaugeEventType.mousedown);
 
       if (mouseDownEvents?.length > 0) {
         element.onmousedown = ev => {
@@ -51104,7 +51910,7 @@ let HomeComponent = class HomeComponent {
         };
       }
 
-      let mouseUpEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_10__.GaugeEventType.mouseup);
+      let mouseUpEvents = this.gaugesManager.getBindMouseEvent(ga, _models_hmi__WEBPACK_IMPORTED_MODULE_11__.GaugeEventType.mouseup);
 
       if (mouseUpEvents?.length > 0) {
         element.onmouseup = ev => {
@@ -51139,8 +51945,8 @@ let HomeComponent = class HomeComponent {
   }
 
   checkHeaderButton() {
-    let fix = Object.keys(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType)[Object.values(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType).indexOf(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType.fix)];
-    let float = Object.keys(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType)[Object.values(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType).indexOf(_models_hmi__WEBPACK_IMPORTED_MODULE_10__.NotificationModeType.float)];
+    let fix = Object.keys(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType)[Object.values(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType).indexOf(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType.fix)];
+    let float = Object.keys(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType)[Object.values(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType).indexOf(_models_hmi__WEBPACK_IMPORTED_MODULE_11__.NotificationModeType.float)];
 
     if (this.alarms.mode === fix || this.alarms.mode === float && this.alarms.count > 0) {
       this.alarms.show = true;
@@ -51167,11 +51973,11 @@ let HomeComponent = class HomeComponent {
   checkActions(actions) {
     if (actions) {
       actions.forEach(act => {
-        if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType.popup)) {
+        if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType.popup)) {
           this.fuxaview.openDialog(null, act.params, {});
-        } else if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType.setView)) {
+        } else if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType.setView)) {
           this.onGoToPage(act.params);
-        } else if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_13__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_14__.AlarmActionsType.toastMessage)) {
+        } else if (act.type === _helpers_utils__WEBPACK_IMPORTED_MODULE_14__.Utils.getEnumKey(_models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType, _models_alarm__WEBPACK_IMPORTED_MODULE_15__.AlarmActionsType.toastMessage)) {
           var msg = act.params; // Check if the toast with the same message is already being displayed
 
           const resetOnDuplicate = true; // Reset the duplicate toast
@@ -51196,76 +52002,78 @@ let HomeComponent = class HomeComponent {
   static ctorParameters = () => [{
     type: _services_project_service__WEBPACK_IMPORTED_MODULE_7__.ProjectService
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ChangeDetectorRef
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ChangeDetectorRef
   }, {
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialog
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialog
   }, {
-    type: _angular_router__WEBPACK_IMPORTED_MODULE_35__.Router
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_36__.Router
   }, {
-    type: _angular_router__WEBPACK_IMPORTED_MODULE_35__.ActivatedRoute
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_36__.ActivatedRoute
   }, {
     type: _services_hmi_service__WEBPACK_IMPORTED_MODULE_6__.HmiService
   }, {
-    type: ngx_toastr__WEBPACK_IMPORTED_MODULE_36__.ToastrService
+    type: ngx_toastr__WEBPACK_IMPORTED_MODULE_37__.ToastrService
   }, {
-    type: _services_script_service__WEBPACK_IMPORTED_MODULE_20__.ScriptService
+    type: _services_script_service__WEBPACK_IMPORTED_MODULE_21__.ScriptService
   }, {
-    type: _services_language_service__WEBPACK_IMPORTED_MODULE_21__.LanguageService
+    type: _services_language_service__WEBPACK_IMPORTED_MODULE_22__.LanguageService
   }, {
     type: _services_auth_service__WEBPACK_IMPORTED_MODULE_8__.AuthService
   }, {
-    type: _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager
+    type: _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_9__.PlayRestrictionsService
+  }, {
+    type: _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_10__.GaugesManager
   }];
   static propDecorators = {
     sidenav: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['sidenav', {
         static: false
       }]
     }],
     matsidenav: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['matsidenav', {
         static: false
       }]
     }],
     fuxaview: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['fuxaview', {
         static: false
       }]
     }],
     cardsview: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['cardsview', {
         static: false
       }]
     }],
     alarmsview: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['alarmsview', {
         static: false
       }]
     }],
     container: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['container', {
         static: false
       }]
     }],
     header: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.ViewChild,
       args: ['header', {
         static: false
       }]
     }]
   };
 };
-HomeComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_33__.Component)({
+HomeComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_34__.Component)({
   selector: 'app-home',
   template: _home_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
   styles: [(_home_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_7__.ProjectService, _angular_core__WEBPACK_IMPORTED_MODULE_33__.ChangeDetectorRef, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialog, _angular_router__WEBPACK_IMPORTED_MODULE_35__.Router, _angular_router__WEBPACK_IMPORTED_MODULE_35__.ActivatedRoute, _services_hmi_service__WEBPACK_IMPORTED_MODULE_6__.HmiService, ngx_toastr__WEBPACK_IMPORTED_MODULE_36__.ToastrService, _services_script_service__WEBPACK_IMPORTED_MODULE_20__.ScriptService, _services_language_service__WEBPACK_IMPORTED_MODULE_21__.LanguageService, _services_auth_service__WEBPACK_IMPORTED_MODULE_8__.AuthService, _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_9__.GaugesManager])], HomeComponent);
+}), __metadata("design:paramtypes", [_services_project_service__WEBPACK_IMPORTED_MODULE_7__.ProjectService, _angular_core__WEBPACK_IMPORTED_MODULE_34__.ChangeDetectorRef, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialog, _angular_router__WEBPACK_IMPORTED_MODULE_36__.Router, _angular_router__WEBPACK_IMPORTED_MODULE_36__.ActivatedRoute, _services_hmi_service__WEBPACK_IMPORTED_MODULE_6__.HmiService, ngx_toastr__WEBPACK_IMPORTED_MODULE_37__.ToastrService, _services_script_service__WEBPACK_IMPORTED_MODULE_21__.ScriptService, _services_language_service__WEBPACK_IMPORTED_MODULE_22__.LanguageService, _services_auth_service__WEBPACK_IMPORTED_MODULE_8__.AuthService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_9__.PlayRestrictionsService, _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_10__.GaugesManager])], HomeComponent);
 
 let DialogUserInfo = class DialogUserInfo {
   dialogRef;
@@ -51281,19 +52089,19 @@ let DialogUserInfo = class DialogUserInfo {
   }
 
   static ctorParameters = () => [{
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialogRef
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialogRef
   }, {
     type: undefined,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_33__.Inject,
-      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MAT_LEGACY_DIALOG_DATA]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_34__.Inject,
+      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MAT_LEGACY_DIALOG_DATA]
     }]
   }];
 };
-DialogUserInfo = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_33__.Component)({
+DialogUserInfo = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_34__.Component)({
   selector: 'user-info',
   template: _userinfo_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_2__
-}), __metadata("design:paramtypes", [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_34__.MatLegacyDialogRef, Object])], DialogUserInfo);
+}), __metadata("design:paramtypes", [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_35__.MatLegacyDialogRef, Object])], DialogUserInfo);
 
 
 /***/ }),

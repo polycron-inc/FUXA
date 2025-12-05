@@ -9,6 +9,7 @@ import { Subject, Subscription, switchMap, takeUntil } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { ProjectService, SaveMode } from '../_services/project.service';
+import { PlayRestrictionsService } from '../_services/play-restrictions.service';
 import { Hmi, View, GaugeSettings, SelElement, LayoutSettings, ViewType, ISvgElement, GaugeProperty, DocProfile } from '../_models/hmi';
 import { WindowRef } from '../_helpers/windowref';
 import { GaugePropertyComponent, GaugeDialogType, GaugePropertyData } from '../gauges/gauge-property/gauge-property.component';
@@ -135,6 +136,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         private viewContainerRef: ViewContainerRef,
         private resolver: ComponentFactoryResolver,
         private libWidgetsService: LibWidgetsService,
+        private playRestrictionsService: PlayRestrictionsService,
         private mdIconRegistry: MatIconRegistry,
         private sanitizer: DomSanitizer) {
         mdIconRegistry.addSvgIcon('group', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/group.svg'));
@@ -406,30 +408,42 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             this.hmi.templates = [];
         }
 
+        // 取得允許的視圖列表（過濾掉用戶無權限的視圖）
+        const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+        let allowedViews = this.hmi.views || [];
+        if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+            allowedViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+        }
+
         // check new hmi
         if (!this.hmi.views || this.hmi.views.length <= 0) {
             this.hmi.views = [];
             this.addView();
             // this.selectView(this.hmi.views[0].name);
+        } else if (allowedViews.length <= 0) {
+            // 用戶沒有權限查看任何視圖
+            console.warn('No views allowed for current user');
         } else {
             let oldsel = localStorage.getItem('@frango.webeditor.currentview');
-            if (!oldsel && this.hmi.views.length) {
-                oldsel = this.hmi.views[0].name;
+            if (!oldsel && allowedViews.length) {
+                oldsel = allowedViews[0].name;
             }
-            for (let i = 0; i < this.hmi.views.length; i++) {
-                if (this.hmi.views[i].name === oldsel && this.hmi.views[i].type !== ViewType.maps) {
-                    this.onSelectView(this.hmi.views[i]);
+            // 在允許的視圖中尋找上次選擇的視圖
+            for (let i = 0; i < allowedViews.length; i++) {
+                if (allowedViews[i].name === oldsel && allowedViews[i].type !== ViewType.maps) {
+                    this.onSelectView(allowedViews[i]);
                     break;
                 }
             }
-            if (!this.currentView) {
-                this.onSelectView(this.hmi.views[0]);
+            // 如果上次選擇的視圖不在允許列表中，選擇第一個允許的視圖
+            if (!this.currentView && allowedViews.length > 0) {
+                this.onSelectView(allowedViews[0]);
             }
         }
         this.hmi.layout = <LayoutSettings>Utils.mergeDeep(new LayoutSettings(), this.hmi.layout);
 
         // check and set start page
-        if (!this.hmi.layout.start) {
+        if (!this.hmi.layout.start && this.hmi.views.length > 0) {
             this.hmi.layout.start = this.hmi.views[0].id;
         }
         this.loadPanelState();
@@ -615,10 +629,10 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 // Use the passed view object directly instead of looking up by name
                 // This prevents confusion between views and templates with the same name
                 let v = view;
-                if (v) {
+                if (v && v.svgcontent) {
                     svgcontent = v.svgcontent;
                 }
-                if (svgcontent.length <= 0) {
+                if (!svgcontent || svgcontent.length <= 0) {
                     svgcontent = '<svg id="' + view.name + '" width="' + view.profile.width + '" height="' + view.profile.height +
                         '" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">' +
                         '<filter id="blur-filter" x="-3" y="-3" width="200" height="200"><feGaussianBlur in="SourceGraphic" stdDeviation="3" /></filter>' +

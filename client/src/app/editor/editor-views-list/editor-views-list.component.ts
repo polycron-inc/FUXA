@@ -4,6 +4,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
 import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 import { ProjectService } from '../../_services/project.service';
+import { PlayRestrictionsService } from '../../_services/play-restrictions.service';
 import { ViewPropertyComponent, ViewPropertyType } from '../view-property/view-property.component';
 import * as FileSaver from 'file-saver';
 import { EditNameComponent, EditNameData } from '../../gui-helpers/edit-name/edit-name.component';
@@ -34,6 +35,7 @@ export class EditorViewsListComponent {
 
     constructor(private projectService: ProjectService,
         private translateService: TranslateService,
+        private playRestrictionsService: PlayRestrictionsService,
         public dialog: MatDialog,
     ) { }
 
@@ -49,7 +51,18 @@ export class EditorViewsListComponent {
         if (!this.views || !Array.isArray(this.views)) {
             return [];
         }
-        return this.views.sort((a, b) => {
+
+        // 過濾視圖：排除 restrictedViews 中的視圖（用戶無權限的）
+        // 只對非 template 的視圖列表進行過濾
+        let filteredViews = this.views;
+        if (!this.isTemplate) {
+            const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+            if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+                filteredViews = this.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+            }
+        }
+
+        return filteredViews.sort((a, b) => {
             // First compare by name
             if (a.name > b.name) { return 1; }
             if (a.name < b.name) { return -1; }

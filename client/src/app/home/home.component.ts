@@ -13,6 +13,7 @@ import { CardsViewComponent } from '../cards-view/cards-view.component';
 import { HmiService, ScriptOpenCard, ScriptSetView } from '../_services/hmi.service';
 import { ProjectService } from '../_services/project.service';
 import { AuthService } from '../_services/auth.service';
+import { PlayRestrictionsService } from '../_services/play-restrictions.service';
 import { GaugesManager } from '../gauges/gauges.component';
 import { Hmi, View, ViewType, NaviModeType, NotificationModeType, ZoomModeType, HeaderSettings, LinkType, HeaderItem, Variable, GaugeStatus, GaugeSettings, GaugeEventType, LoginOverlayColorType, GaugeEvent } from '../_models/hmi';
 import { LoginComponent } from '../login/login.component';
@@ -80,6 +81,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private subscriptionAlarmsStatus: Subscription;
     private subscriptiongoTo: Subscription;
     private subscriptionOpen: Subscription;
+    private subscriptionAllowedViews: Subscription;
     private destroy$ = new Subject<void>();
     loggedUser$: Observable<User>;
     language$: Observable<LanguageConfiguration>;
@@ -94,6 +96,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         private scriptService: ScriptService,
         private languageService: LanguageService,
         private authService: AuthService,
+        private playRestrictionsService: PlayRestrictionsService,
         public gaugesManager: GaugesManager) {
         this.gridOptions.draggable = { enabled: false };
         this.gridOptions.resizable = { enabled: false };
@@ -144,6 +147,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             ).subscribe(varTag => {
                 this.processValueInHeaderItem(varTag);
             });
+
+            // 訂閱播放限制變化，當限制計算完成後重新載入視圖
+            this.subscriptionAllowedViews = this.playRestrictionsService.allowedViews$.pipe(
+                filter(result => result.views.length > 0 || result.isSuperAdmin)
+            ).subscribe(() => {
+                // 如果 HMI 已載入，重新過濾視圖
+                if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+                    this.applyViewRestrictions();
+                }
+            });
         } catch (err) {
             console.error(err);
         }
@@ -176,6 +189,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             if (this.subscriptiongoTo) {
                 this.subscriptiongoTo.unsubscribe();
+            }
+            if (this.subscriptionAllowedViews) {
+                this.subscriptionAllowedViews.unsubscribe();
             }
             this.destroy$.next(null);
             this.destroy$.complete();
@@ -213,6 +229,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             this.onAlarmsShowMode('expand');
             this.checkToCloseSideNav();
         } else if (!this.homeView || viewId !== this.homeView?.id || force || this.fuxaview?.view?.id !== viewId) {
+            // 檢查用戶是否有權限訪問該視圖
+            if (!this.playRestrictionsService.isViewAllowed(viewId)) {
+                console.warn('Access denied to view:', viewId);
+                return;
+            }
             const view = this.hmi.views.find(x => x.id === viewId);
             this.setIframe();
             this.showHomeLink = false;
@@ -375,20 +396,79 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.router.navigate([destination]);//, this.ID]);
     }
 
+    /**
+     * 應用播放限制，過濾視圖和導航項目
+     * 當 allowedViews$ 變化時調用
+     *
+     * 邏輯：排除 restrictedViews 中的視圖（用戶無權限的）
+     */
+    private applyViewRestrictions() {
+        const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+        console.log('Applying view restrictions:', allowedViewsResult);
+
+        // 如果是超級管理員，不需要過濾
+        if (allowedViewsResult.isSuperAdmin) {
+            return;
+        }
+
+        // 如果沒有被限制的視圖，不需要過濾
+        if (!allowedViewsResult.restrictedViews || allowedViewsResult.restrictedViews.length === 0) {
+            return;
+        }
+
+        // 過濾視圖：排除 restrictedViews 中的視圖
+        const filteredViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+        console.log('Filtered views after restriction:', filteredViews.map(v => v.id));
+
+        // 如果當前視圖在 restrictedViews 中（無權限），切換到第一個允許的視圖
+        if (this.homeView && allowedViewsResult.restrictedViews.includes(this.homeView.id)) {
+            const allowedStartView = filteredViews.find(x => x.id === this.hmi.layout?.start);
+            this.homeView = allowedStartView || filteredViews[0];
+            if (this.homeView && this.fuxaview) {
+                this.setBackground();
+                this.fuxaview.hmi.layout = this.hmi.layout;
+                this.fuxaview.loadHmi(this.homeView);
+            }
+        }
+
+        // 重新過濾導航項目：排除 restrictedViews 中的視圖
+        if (this.hmi.layout && this.sidenav) {
+            const layoutToSet = Utils.clone(this.hmi.layout);
+            if (layoutToSet.navigation?.items) {
+                layoutToSet.navigation.items = layoutToSet.navigation.items.filter(
+                    item => !allowedViewsResult.restrictedViews.includes(item.view) || item.view === LinkType.alarms || item.view === LinkType.address
+                );
+            }
+            this.sidenav.setLayout(layoutToSet);
+        }
+
+        this.changeDetector.detectChanges();
+    }
+
     private loadHmi() {
         let hmi = this.projectService.getHmi();
         if (hmi) {
             this.hmi = hmi;
         }
         if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+            // 過濾視圖：根據播放限制排除用戶無權限的視圖
+            const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+            let filteredViews = this.hmi.views;
+
+            // 排除 restrictedViews 中的視圖（用戶無權限的）
+            if (!allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews && allowedViewsResult.restrictedViews.length > 0) {
+                filteredViews = this.hmi.views.filter(view => !allowedViewsResult.restrictedViews.includes(view.id));
+                console.log('Filtered views for home (excluded restricted):', filteredViews.map(v => v.id));
+            }
+
             let viewToShow = null;
             if (this.hmi.layout?.start) {
-                viewToShow = this.hmi.views.find(x => x.id === this.hmi.layout.start);
+                viewToShow = filteredViews.find(x => x.id === this.hmi.layout.start);
             }
-            if (!viewToShow) {
-                viewToShow = this.hmi.views[0];
+            if (!viewToShow && filteredViews.length > 0) {
+                viewToShow = filteredViews[0];
             }
-            let startView = this.hmi.views.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
+            let startView = filteredViews.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
             if (startView) {
                 viewToShow = startView;
             }
@@ -410,7 +490,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
                     } else if (nvoid === NaviModeType.push) {
                         this.showSidenav = 'push';
                     }
-                    this.sidenav.setLayout(this.hmi.layout);
+                    // 過濾導航項目：排除 restrictedViews 中的視圖
+                    const layoutToSet = Utils.clone(this.hmi.layout);
+                    if (layoutToSet.navigation?.items && !allowedViewsResult.isSuperAdmin && allowedViewsResult.restrictedViews?.length > 0) {
+                        layoutToSet.navigation.items = layoutToSet.navigation.items.filter(
+                            item => !allowedViewsResult.restrictedViews.includes(item.view) || item.view === LinkType.alarms || item.view === LinkType.address
+                        );
+                    }
+                    this.sidenav.setLayout(layoutToSet);
                 }
                 if (this.hmi.layout.header) {
                     this.title = this.hmi.layout.header.title;

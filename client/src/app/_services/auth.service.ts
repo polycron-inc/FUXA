@@ -7,6 +7,7 @@ import { environment } from '../../environments/environment';
 import { EndPointApi } from '../_helpers/endpointapi';
 import { SettingsService } from './settings.service';
 import { Utils } from '../_helpers/utils';
+import { getUserDetail, UserItem } from '../api/user';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,8 @@ export class AuthService {
 	private currentUser: UserProfile;
 	private endPointConfig: string = EndPointApi.getURL();
 	currentUser$ = new BehaviorSubject<UserProfile>(null);
+	dmsUser$ = new BehaviorSubject<UserItem>(null);
+	private dmsUser: UserItem = null;
 
 	constructor(
 		private http: HttpClient,
@@ -88,6 +91,45 @@ export class AuthService {
 		this.currentUser = null;
 		localStorage.removeItem('currentUser');
 		this.currentUser$.next(this.currentUser);
+	}
+
+	/**
+	 * 載入 DMS 使用者資訊
+	 * @param userId 使用者 ID（如果不傳則從 localStorage 取得）
+	 * @returns Promise<UserItem>
+	 */
+	async loadDmsCurrentUser(userId?: string): Promise<UserItem> {
+		try {
+			// 優先使用傳入的 userId，否則從 localStorage 取得
+			const targetUserId = userId || localStorage.getItem('userId');
+			if (!targetUserId) {
+				console.warn('No userId provided and no userId in localStorage');
+				return null;
+			}
+
+			const response = await getUserDetail(targetUserId);
+			if (response.data && response.data.detailInfo) {
+				this.dmsUser = response.data.detailInfo;
+				this.dmsUser$.next(this.dmsUser);
+                // Store roleId to localStorage for play restriction filtering
+                if (this.dmsUser.roleId) {
+                    localStorage.setItem('roleId', this.dmsUser.roleId);
+                }
+				console.log('DMS user loaded:', this.dmsUser);
+				return this.dmsUser;
+			}
+			return null;
+		} catch (error) {
+			console.error('Failed to load DMS user:', error);
+			return null;
+		}
+	}
+
+	/**
+	 * 取得 DMS 使用者資訊
+	 */
+	getDmsUser(): UserItem {
+		return this.dmsUser;
 	}
 
 	/**

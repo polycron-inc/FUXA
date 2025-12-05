@@ -87,6 +87,11 @@ module.exports = {
     //secretCode: 'frangoteam751',
     //tokenExpiresIn: '1h'  // '1h'=1hour, 60=60seconds, '1d'=1day
 
+    // Enable play restriction check
+    // When enabled, views will be filtered based on user/role restrictions
+    // Default: false
+    //playRestrictionEnabled: false,
+
     // Enable GPIO in Raspberry
     // To enable only by Raspberry Host
 

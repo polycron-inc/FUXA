@@ -71,7 +71,10 @@ function load() {
             // load views
             prjstorage.getSection(prjstorage.TableType.VIEWS).then(vrows => {
                 for (var iv = 0; iv < vrows.length; iv++) {
-                    data.hmi.views.push(JSON.parse(vrows[iv].value));
+                    var view = JSON.parse(vrows[iv].value);
+                    // Add visibility_scope from database column to view object
+                    view.visibility_scope = vrows[iv].visibility_scope || 'global';
+                    data.hmi.views.push(view);
                 }
                 // load templates
                 prjstorage.getSection(prjstorage.TableType.TEMPLATES).then(trows => {
@@ -197,6 +200,7 @@ function setProjectData(cmd, value) {
             if (cmd === ProjectDataCmdType.SetView) {
                 section.table = prjstorage.TableType.VIEWS;
                 section.name = value.id;
+                section.visibility_scope = value.visibility_scope || 'global';
                 setView(value);
             } else if (cmd === ProjectDataCmdType.AddView) {
                 // Auto-generate ID if not provided or empty
@@ -205,6 +209,7 @@ function setProjectData(cmd, value) {
                 }
                 section.table = prjstorage.TableType.VIEWS;
                 section.name = value.id;
+                section.visibility_scope = value.visibility_scope || 'global';
                 setView(value);
             } else if (cmd === ProjectDataCmdType.DelView) {
                 section.table = prjstorage.TableType.VIEWS;
@@ -847,24 +852,112 @@ function removeMapsLocation(location) {
     }
     return false;
 }
-
 /**
  * Get the project data in accordance with autorization
+ * When playRestrictionEnabled is true, views will be filtered based on user/role restrictions
+ * @param {*} userId - FUXA internal user ID
+ * @param {*} userPermission - User permission object
+ * @param {*} dmsUserId - DMS external user ID for play restriction filtering
+ * @param {*} dmsRoleId - DMS external role ID for play restriction filtering
  */
-function getProject(userId, userPermission) {
-    return new Promise(function (resolve, reject) {
-        const pdata = _filterProjectPermission(userPermission);
-        resolve(pdata);
+function getProject(userId, userPermission, dmsUserId, dmsRoleId) {
+    return new Promise(async function (resolve, reject) {
+            logger.info('project.getProject: Called with dmsUserId=' + dmsUserId + ', dmsRoleId=' + dmsRoleId + ', playRestrictionEnabled=' + settings.playRestrictionEnabled);
+        try {
+            let pdata = _filterProjectPermission(userPermission);
+
+            // Apply play restrictions filter if enabled and DMS user info is provided
+            if (settings.playRestrictionEnabled && (dmsUserId || dmsRoleId)) {
+                const allowedViewsResult = await getAllowedViewsForUser(dmsUserId, dmsRoleId);
+                if (allowedViewsResult && allowedViewsResult.views) {
+                    if (allowedViewsResult.views.length > 0) {
+                        // Filter views based on allowed views
+                        const allowedViewIds = new Set(allowedViewsResult.views);
+                        pdata.hmi.views = pdata.hmi.views.filter(view => allowedViewIds.has(view.id));
+
+                        // Also filter navigation items that reference restricted views
+                        if (pdata.hmi.layout && pdata.hmi.layout.navigation && pdata.hmi.layout.navigation.items) {
+                            pdata.hmi.layout.navigation.items = pdata.hmi.layout.navigation.items.filter(item => {
+                                // Keep items without view reference or with allowed view reference
+                                return !item.view || allowedViewIds.has(item.view);
+                            });
+                        }
+                        logger.info('project.getProject: Filtered ' + pdata.hmi.views.length + ' views for dmsUserId=' + dmsUserId + ', dmsRoleId=' + dmsRoleId);
+                    } else if (!allowedViewsResult.isSuperAdmin) {
+                        // No views allowed and not super admin - return empty views
+                        pdata.hmi.views = [];
+                        if (pdata.hmi.layout && pdata.hmi.layout.navigation) {
+                            pdata.hmi.layout.navigation.items = [];
+                        }
+                        logger.info('project.getProject: No views allowed for dmsUserId=' + dmsUserId + ', dmsRoleId=' + dmsRoleId);
+                    }
+                }
+            }
+
+            resolve(pdata);
+        } catch (err) {
+            logger.error('project.getProject failed: ' + err);
+            // Fallback to filtered permission data without play restrictions
+            const pdata = _filterProjectPermission(userPermission);
+            resolve(pdata);
+        }
     });
 }
 
 /**
  * Set the new Project, clear all from database and add the new content
+ * When playRestrictionEnabled is true, merges filtered views from client with complete views from server
  * @param {*} prjcontent
  */
 function setProject(prjcontent) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(async function (resolve, reject) {
         try {
+            // If play restriction is enabled, merge views before clearing
+            let mergedViews = null;
+            if (settings.playRestrictionEnabled && prjcontent.hmi && prjcontent.hmi.views) {
+                // Get existing views from database before clearing
+                const existingViews = await prjstorage.getSection(prjstorage.TableType.VIEWS);
+                if (existingViews && existingViews.length > 0) {
+                    // Create a map of existing views by ID
+                    const existingViewsMap = new Map();
+                    existingViews.forEach(row => {
+                        try {
+                            const view = JSON.parse(row.value);
+                            existingViewsMap.set(view.id, view);
+                        } catch (e) {
+                            logger.warn('Failed to parse existing view: ' + e);
+                        }
+                    });
+
+                    // Create a map of incoming views by ID
+                    const incomingViewsMap = new Map();
+                    prjcontent.hmi.views.forEach(view => {
+                        incomingViewsMap.set(view.id, view);
+                    });
+
+                    // Merge: update existing views with incoming, keep restricted views unchanged
+                    mergedViews = [];
+                    existingViewsMap.forEach((existingView, viewId) => {
+                        if (incomingViewsMap.has(viewId)) {
+                            // View was sent by client, use the updated version
+                            mergedViews.push(incomingViewsMap.get(viewId));
+                        } else {
+                            // View was not sent (restricted), keep the existing version
+                            mergedViews.push(existingView);
+                        }
+                    });
+
+                    // Add any new views that were not in existing (newly created by client)
+                    incomingViewsMap.forEach((view, viewId) => {
+                        if (!existingViewsMap.has(viewId)) {
+                            mergedViews.push(view);
+                        }
+                    });
+
+                    logger.info('project.setProject: Merged ' + mergedViews.length + ' views (' + incomingViewsMap.size + ' from client, ' + (existingViewsMap.size - incomingViewsMap.size) + ' restricted)');
+                }
+            }
+
             prjstorage.clearAll().then(result => {
                 var scs = [];
                 Object.keys(prjcontent).forEach((key) => {
@@ -882,10 +975,11 @@ function setProject(prjcontent) {
                         if (hmi) {
                             Object.keys(hmi).forEach((hk) => {
                                 if (hk === 'views') {
-                                    // views
-                                    if (hmi[hk] && hmi[hk].length > 0) {
-                                        for (var i = 0; i < hmi[hk].length; i++) {
-                                            var view = hmi[hk][i];
+                                    // views - use merged views if available
+                                    var viewsToSave = mergedViews || hmi[hk];
+                                    if (viewsToSave && viewsToSave.length > 0) {
+                                        for (var i = 0; i < viewsToSave.length; i++) {
+                                            var view = viewsToSave[i];
                                             scs.push({ table: prjstorage.TableType.VIEWS, name: view.id, value: view });
                                         }
                                     }
@@ -959,17 +1053,18 @@ function setProject(prjcontent) {
                     }
                 });
                 prjstorage.setSections(scs).then(() => {
-                    logger.info(`project.prjstorage.set-project successfull!`, true);
+                    logger.info('project.prjstorage.set-project successfull!', true);
                     resolve(true);
                 }).catch(function (err) {
                     reject(err);
                 });
             }).catch(function (err) {
-                logger.error(`project.prjstorage.clear failed! '${err}'`);
+                logger.error('project.prjstorage.clear failed! ' + err);
                 reject(err);
             });
         } catch (err) {
-            reject();
+            logger.error('project.setProject failed: ' + err);
+            reject(err);
         }
     });
 }
@@ -1526,6 +1621,135 @@ function importTemplate(templateData, newName) {
     return importedTemplate;
 }
 
+/**
+ * Get play restrictions
+ * @param {*} viewId - Optional view ID to filter restrictions
+ */
+function getPlayRestrictions(viewId) {
+    return prjstorage.getPlayRestrictions(viewId);
+}
+
+/**
+ * Set play restriction
+ * @param {*} restriction - Restriction object
+ */
+function setPlayRestriction(restriction) {
+    return prjstorage.setPlayRestriction(restriction);
+}
+
+/**
+ * Delete play restriction
+ * @param {*} id - Restriction ID
+ */
+function deletePlayRestriction(id) {
+    return prjstorage.deletePlayRestriction(id);
+}
+
+/**
+ * Get default view restrictions
+ * @param {*} filters - Optional filters {type, user_id, role_id, enabled}
+ */
+function getDefaultViewRestrictions(filters) {
+    return prjstorage.getDefaultViewRestrictions(filters);
+}
+
+/**
+ * Get default view for a specific user/role
+ * Priority: user > role > default
+ * @param {*} userId - User ID
+ * @param {*} roleId - Role ID
+ */
+function getDefaultViewForUser(userId, roleId) {
+    return prjstorage.getDefaultViewForUser(userId, roleId);
+}
+
+/**
+ * Set default view restriction
+ * @param {*} restriction - Restriction object {type, user_id, role_id, default_view_id, priority, enabled, creator}
+ */
+function setDefaultViewRestriction(restriction) {
+    return prjstorage.setDefaultViewRestriction(restriction);
+}
+
+/**
+ * Delete default view restriction
+ * @param {*} id - Restriction ID
+ */
+function deleteDefaultViewRestriction(id) {
+    return prjstorage.deleteDefaultViewRestriction(id);
+}
+
+/**
+ * Get allowed views for user based on play restrictions
+ * Priority: userId match first, then roleId match
+ * @param {*} dmsUserId - DMS external user ID
+ * @param {*} dmsRoleId - DMS external role ID
+ */
+function getAllowedViewsForUser(dmsUserId, dmsRoleId) {
+    return new Promise(function (resolve, reject) {
+        // Check if play restriction is enabled
+        if (!settings.playRestrictionEnabled) {
+            // If disabled, return all views
+            const allViews = data.hmi.views.map(v => v.id);
+            resolve({ allowed: true, views: allViews, isSuperAdmin: false });
+            return;
+        }
+
+        // Super admin check (roleId = '1')
+        if (dmsRoleId === '1') {
+            const allViews = data.hmi.views.map(v => v.id);
+            logger.info('project.getAllowedViewsForUser: Super admin detected (roleId=1), allowing all views');
+            resolve({ allowed: true, views: allViews, isSuperAdmin: true });
+            return;
+        }
+
+        // Get all play restrictions
+        prjstorage.getPlayRestrictions().then(restrictions => {
+            if (!restrictions || restrictions.length === 0) {
+                // No restrictions defined - allow all views
+                const allViews = data.hmi.views.map(v => v.id);
+                logger.info('project.getAllowedViewsForUser: No play restrictions defined, allowing all views');
+                resolve({ allowed: true, views: allViews, isSuperAdmin: false });
+                return;
+            }
+
+            // Build allowed views set
+            // Priority: userId match first, then roleId match
+            const allowedViewIds = new Set();
+            const restrictedViewIds = new Set(restrictions.map(r => r.view_id));
+
+            restrictions.forEach(restriction => {
+                // Check userId match first (higher priority)
+                if (restriction.user_id && restriction.user_id === dmsUserId) {
+                    allowedViewIds.add(restriction.view_id);
+                    return;
+                }
+
+                // Check roleId match
+                if (restriction.role_id && restriction.role_id === dmsRoleId) {
+                    allowedViewIds.add(restriction.view_id);
+                    return;
+                }
+
+                // Check visibility_scope for additional logic
+                if (restriction.visibility_scope === 'global') {
+                    allowedViewIds.add(restriction.view_id);
+                }
+            });
+
+            // Views that have no restrictions are available to everyone
+            data.hmi.views.forEach(view => {
+                if (!restrictedViewIds.has(view.id)) {
+                    allowedViewIds.add(view.id);
+                }
+            });
+
+            logger.info('project.getAllowedViewsForUser: Found ' + allowedViewIds.size + ' allowed views for dmsUserId=' + dmsUserId + ', dmsRoleId=' + dmsRoleId);
+            resolve({ allowed: allowedViewIds.size > 0, views: Array.from(allowedViewIds), isSuperAdmin: false });
+        }).catch(reject);
+    });
+}
+
 const ProjectDataCmdType = {
     SetDevice: 'set-device',
     DelDevice: 'del-device',
@@ -1581,5 +1805,13 @@ module.exports = {
     removeTemplate: removeTemplate,
     getTemplates: getTemplates,
     convertTemplateToView: convertTemplateToView,
+    getPlayRestrictions: getPlayRestrictions,
+    setPlayRestriction: setPlayRestriction,
+    deletePlayRestriction: deletePlayRestriction,
+    getAllowedViewsForUser: getAllowedViewsForUser,
+    getDefaultViewRestrictions: getDefaultViewRestrictions,
+    getDefaultViewForUser: getDefaultViewForUser,
+    setDefaultViewRestriction: setDefaultViewRestriction,
+    deleteDefaultViewRestriction: deleteDefaultViewRestriction,
     ProjectDataCmdType, ProjectDataCmdType,
 };

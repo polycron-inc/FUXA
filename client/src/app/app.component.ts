@@ -11,6 +11,8 @@ import { SettingsService } from './_services/settings.service';
 import { UserGroups } from './_models/user';
 import { AppService } from './_services/app.service';
 import { HeartbeatService } from './_services/heartbeat.service';
+import { AuthService } from './_services/auth.service';
+import { PlayRestrictionsService } from './_services/play-restrictions.service';
 
 @Component({
 	selector: 'app-root',
@@ -36,6 +38,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		private settingsService: SettingsService,
 		private translateService: TranslateService,
 		private heartbeatService: HeartbeatService,
+		private authService: AuthService,
+		private playRestrictionsService: PlayRestrictionsService,
 		private cdr: ChangeDetectorRef,
 		location: Location
 	) {
@@ -45,6 +49,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 	ngOnInit() {
 		console.log(`BACCO iFMS v${environment.version}`);
 		this.heartbeatService.startHeartbeatPolling();
+
+		// 載入 DMS 當前使用者和播放限制
+		this.loadInitialData();
 
 		// capture events for the token refresh
 		const inactivityDuration = 1 * 60 * 1000;
@@ -58,6 +65,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		).subscribe(() => {
 			this.heartbeatService.setActivity(false);
 		});
+	}
+
+	/**
+	 * 載入初始資料：DMS 當前使用者和播放限制
+	 */
+	private async loadInitialData() {
+		try {
+			// 先載入 DMS 當前使用者
+			const dmsUser = await this.authService.loadDmsCurrentUser();
+			console.log('DMS User loaded:', dmsUser);
+
+			// 載入播放限制規則
+			const playRestrictions = await this.playRestrictionsService.loadPlayRestrictions();
+			console.log('Play restrictions loaded:', playRestrictions);
+
+			// 根據 dmsUser 的 roleId 和 userId 計算允許的 views
+			// roleId = 1 為超級管理員，全部顯示
+			const allowedViews = this.playRestrictionsService.calculateAllowedViews(dmsUser);
+			console.log('Allowed views calculated:', allowedViews);
+			// 重新載入 project 以套用播放限制過濾
+			// 因為 localStorage 中的 userId 和 roleId 已經設定好了
+			console.log('Reloading project with play restrictions...');
+			this.projectService.reload();
+		} catch (error) {
+			console.error('Failed to load initial data:', error);
+		}
 	}
 
 	ngAfterViewInit() {

@@ -8,6 +8,8 @@ var morgan = require('morgan');
 var bodyParser = require('body-parser');
 const authJwt = require('./jwt-helper');
 const rateLimit = require("express-rate-limit");
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('../swagger');
 
 var prjApi = require('./projects');
 var authApi = require('./auth');
@@ -19,6 +21,8 @@ var scriptsApi = require('./scripts');
 var resourcesApi = require('./resources');
 var daqApi = require('./daq');
 var commandApi = require('./command');
+var playRestrictionsApi = require('./playrestrictions');
+var defaultViewRestrictionsApi = require('./defaultViewRestrictions');
 const reports = require('../dist/reports.service');
 const reportsApi = new reports.ReportsApiService();
 
@@ -60,6 +64,10 @@ function init(_server, _runtime) {
             apiApp.use(resourcesApi.app());
             commandApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(commandApi.app());
+            playRestrictionsApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(playRestrictionsApi.app());
+            defaultViewRestrictionsApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(defaultViewRestrictionsApi.app());
             reportsApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(reportsApi.app());
 
@@ -70,6 +78,23 @@ function init(_server, _runtime) {
 
             //  apply to all requests
             apiApp.use(limiter);
+
+            /**
+             * Swagger API Documentation
+             */
+            apiApp.use('/api-docs', swaggerUi.serve);
+            apiApp.get('/api-docs', swaggerUi.setup(swaggerSpec, {
+                customCss: '.swagger-ui .topbar { display: none }',
+                customSiteTitle: 'FUXA API Documentation'
+            }));
+
+            /**
+             * Swagger JSON endpoint
+             */
+            apiApp.get('/api-docs.json', function(req, res) {
+                res.setHeader('Content-Type', 'application/json');
+                res.send(swaggerSpec);
+            });
 
             /**
              * GET Server setting data
