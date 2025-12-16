@@ -24,6 +24,11 @@ var commandApi = require('./command');
 var playRestrictionsApi = require('./playrestrictions');
 var defaultViewRestrictionsApi = require('./defaultViewRestrictions');
 var userPreferencesApi = require('./userpreferences');
+var deviceTemplatesApi = require('./deviceTemplates');
+var dataPointsApi = require('./dataPoints');
+var dataPointGroupsApi = require('./dataPointGroups');
+var commandLibraryApi = require('./commandLibrary');
+var dropdownApi = require('./dropdown');
 const reports = require('../dist/reports.service');
 const reportsApi = new reports.ReportsApiService();
 
@@ -71,6 +76,16 @@ function init(_server, _runtime) {
             apiApp.use(defaultViewRestrictionsApi.app());
             userPreferencesApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(userPreferencesApi.app());
+            deviceTemplatesApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(deviceTemplatesApi.app());
+            dataPointsApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(dataPointsApi.app());
+            dataPointGroupsApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(dataPointGroupsApi.app());
+            commandLibraryApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(commandLibraryApi.app());
+            dropdownApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(dropdownApi.app());
             reportsApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(reportsApi.app());
 

@@ -49,6 +49,7 @@
     "sqlite3": "5.1.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "uuid": "^8.3.2",
     "winston": "3.7.2",
     "ws": "8.18.0"
   },
