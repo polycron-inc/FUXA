@@ -1680,6 +1680,30 @@ function deleteDefaultViewRestriction(id) {
 }
 
 /**
+ * Get user preference by DMS user ID
+ * @param {string} dmsUserId - DMS user ID
+ */
+function getUserPreference(dmsUserId) {
+    return prjstorage.getUserPreference(dmsUserId);
+}
+
+/**
+ * Set user preference (create or update)
+ * @param {object} preference - {dms_user_id, start_view_id, preferences}
+ */
+function setUserPreference(preference) {
+    return prjstorage.setUserPreference(preference);
+}
+
+/**
+ * Delete user preference by DMS user ID
+ * @param {string} dmsUserId - DMS user ID
+ */
+function deleteUserPreference(dmsUserId) {
+    return prjstorage.deleteUserPreference(dmsUserId);
+}
+
+/**
  * Get allowed views for user based on play restrictions
  * Priority: userId match first, then roleId match
  * @param {*} dmsUserId - DMS external user ID
@@ -1813,5 +1837,8 @@ module.exports = {
     getDefaultViewForUser: getDefaultViewForUser,
     setDefaultViewRestriction: setDefaultViewRestriction,
     deleteDefaultViewRestriction: deleteDefaultViewRestriction,
+    getUserPreference: getUserPreference,
+    setUserPreference: setUserPreference,
+    deleteUserPreference: deleteUserPreference,
     ProjectDataCmdType, ProjectDataCmdType,
 };

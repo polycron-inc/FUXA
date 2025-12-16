@@ -1434,7 +1434,7 @@ mat-toolbar-row {
     padding-top: 10px;
 }
 .my-form-field .mat-checkbox-inner-container{
-    height: 20px !important;
+    height: 25px !important;
 }
 .mat-tab-body-wrapper .my-form-field input {
     width: 85% !important;

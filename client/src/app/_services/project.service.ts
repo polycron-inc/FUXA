@@ -121,6 +121,13 @@ export class ProjectService {
                 this.notifyToLoadHmi();
             } else {
                 this.projectData = prj;
+                // Debug: check if views have svgcontent
+                if (prj?.hmi?.views) {
+                    console.log('Project loaded - views count:', prj.hmi.views.length);
+                    prj.hmi.views.forEach((v: any) => {
+                        console.log('View:', v.id, v.name, 'svgcontent length:', v.svgcontent?.length || 0);
+                    });
+                }
                 // copy to check before save
                 this.projectOld = JSON.parse(JSON.stringify(this.projectData));
                 this.ready = true;

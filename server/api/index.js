@@ -23,6 +23,7 @@ var daqApi = require('./daq');
 var commandApi = require('./command');
 var playRestrictionsApi = require('./playrestrictions');
 var defaultViewRestrictionsApi = require('./defaultViewRestrictions');
+var userPreferencesApi = require('./userpreferences');
 const reports = require('../dist/reports.service');
 const reportsApi = new reports.ReportsApiService();
 
@@ -68,6 +69,8 @@ function init(_server, _runtime) {
             apiApp.use(playRestrictionsApi.app());
             defaultViewRestrictionsApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(defaultViewRestrictionsApi.app());
+            userPreferencesApi.init(runtime, authJwt.verifyToken, verifyGroups);
+            apiApp.use(userPreferencesApi.app());
             reportsApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(reportsApi.app());
 
