@@ -13,6 +13,7 @@ import { AppService } from './_services/app.service';
 import { HeartbeatService } from './_services/heartbeat.service';
 import { AuthService } from './_services/auth.service';
 import { PlayRestrictionsService } from './_services/play-restrictions.service';
+import { UserPreferencesService } from './_services/user-preferences.service';
 
 @Component({
 	selector: 'app-root',
@@ -40,6 +41,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		private heartbeatService: HeartbeatService,
 		private authService: AuthService,
 		private playRestrictionsService: PlayRestrictionsService,
+		private userPreferencesService: UserPreferencesService,
 		private cdr: ChangeDetectorRef,
 		location: Location
 	) {
@@ -68,7 +70,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	/**
-	 * 載入初始資料：DMS 當前使用者和播放限制
+	 * 載入初始資料：DMS 當前使用者、播放限制、使用者偏好設定
 	 */
 	private async loadInitialData() {
 		try {
@@ -84,6 +86,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 			// roleId = 1 為超級管理員，全部顯示
 			const allowedViews = this.playRestrictionsService.calculateAllowedViews(dmsUser);
 			console.log('Allowed views calculated:', allowedViews);
+
+			// 載入使用者偏好設定（包含 start view）
+			if (dmsUser?.id) {
+				const userPreference = await this.userPreferencesService.loadUserPreference(dmsUser.id);
+				console.log('User preference loaded:', userPreference);
+			}
+
 			// 重新載入 project 以套用播放限制過濾
 			// 因為 localStorage 中的 userId 和 roleId 已經設定好了
 			console.log('Reloading project with play restrictions...');

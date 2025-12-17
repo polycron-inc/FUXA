@@ -3,8 +3,12 @@ import { environment } from '../../environments/environment';
 // 取得環境變數
 const secretKey = 'da6e6728-b51c-11ea-ac59-00ff7ae2c9c8'
 export const requester = 'admin'
-let userToken = environment.dmsToken;
 export const baseUrl = environment.dmsApiEndpoint;
+
+// 取得用戶 token
+function getUserToken() {
+  return localStorage.getItem('token') || '';
+}
 
 export const provider = axios.create({
   baseURL: baseUrl,
@@ -17,6 +21,7 @@ export const provider = axios.create({
 // 建立一個方法來呼叫簽名 API
 async function getSignData({ url, method, params, data }) {
   try {
+    const userToken = getUserToken();
     const _header = {
       Authorization: `Bearer ${userToken}`,
       'Content-Type': 'application/json;charset=utf-8',
@@ -35,9 +40,11 @@ async function getSignData({ url, method, params, data }) {
       }
     );
     // console.log('sign api response.data', response.data);
-    if ([1005,1006].includes(response.data.code)) {
+    if ([1005, 1006].includes(response.data.code)) {
       console.log('sign api response.data.code === 1005');
-      // 重新取得token
+      // 登出，清除token
+      localStorage.removeItem('token');
+      window.location.href = '/';
       throw new Error(response.data.message);
     }
     return response.data; // 預期返回 { sign, t }
@@ -48,8 +55,7 @@ async function getSignData({ url, method, params, data }) {
 }
 provider.interceptors.request.use(
   async (config) => {
-    // token = await getAdminToken();
-    // Query stringt 須排除
+    // Query string 須排除
     const relativeUrl = config.url?.startsWith('http')
       ? new URL(config.url).pathname.split('?')[0]
       : config.url?.split('?')[0];
@@ -75,8 +81,7 @@ provider.interceptors.request.use(
       }
     }
 
-    
-    if(relativeUrl !== '/schideron/openApi/auth/login'){
+    if (relativeUrl !== '/schideron/openApi/auth/login') {
       // 呼叫簽名 API
       const signData = await getSignData({
         url: relativeUrl,
@@ -89,7 +94,8 @@ provider.interceptors.request.use(
       config.headers['sign'] = signData.sign;
       config.headers['t'] = signData.t;
 
-      // console.log('relativeUrl', relativeUrl, userToken)
+      // 取得最新的 userToken
+      const userToken = getUserToken();
       config.headers['authorization'] = `Bearer ${userToken}`;
     }
     return config;

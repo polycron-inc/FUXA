@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { EndPointApi } from '../_helpers/endpointapi';
 import { environment } from '../../environments/environment';
-import { UserItem } from '../api/user';
+import { UserDetailInfo } from '../api/user';
 
 // 可見範圍類型
 export type VisibilityScope = 'global' | 'role' | 'user' | 'owner';
@@ -12,8 +12,11 @@ export interface PlayRestriction {
     id: number;
     type: 'user' | 'role';
     view_id: string;
+    view_name: string | null;
     user_id: string | null;
+    user_name: string | null;
     role_id: string | null;
+    role_name: string | null;
     owner_id: string | null;
     visibility_scope: VisibilityScope;
     creator: string;
@@ -25,6 +28,7 @@ export interface AllowedViewsResponse {
     views: string[];
     restrictedViews: string[];  // 被限制的 view IDs（用戶無權限的）
     isSuperAdmin?: boolean;
+    isCalculated?: boolean;  // 標記是否已經計算過
 }
 
 // 超級管理員 roleId
@@ -143,11 +147,11 @@ export class PlayRestrictionsService {
      * @param dmsUser DMS 使用者資訊
      * @returns AllowedViewsResponse
      */
-    calculateAllowedViews(dmsUser: UserItem): AllowedViewsResponse {
+    calculateAllowedViews(dmsUser: UserDetailInfo): AllowedViewsResponse {
         // 如果沒有使用者資訊，預設全部允許
         if (!dmsUser) {
             console.warn('No DMS user info, allowing all views');
-            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false, isCalculated: true };
             this.allowedViews$.next(result);
             return result;
         }
@@ -161,7 +165,7 @@ export class PlayRestrictionsService {
             this.isSuperAdmin = true;
             this.isAllowed = true;
             this.allowedViews = [];
-            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: true };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: true, isCalculated: true };
             this.allowedViews$.next(result);
             return result;
         }
@@ -173,7 +177,7 @@ export class PlayRestrictionsService {
             console.log('No play restrictions, allowing all views');
             this.isAllowed = true;
             this.allowedViews = [];
-            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false };
+            const result = { allowed: true, views: [], restrictedViews: [], isSuperAdmin: false, isCalculated: true };
             this.allowedViews$.next(result);
             return result;
         }
@@ -213,7 +217,8 @@ export class PlayRestrictionsService {
             allowed: this.isAllowed,
             views: this.allowedViews,
             restrictedViews: restrictedViews,
-            isSuperAdmin: false
+            isSuperAdmin: false,
+            isCalculated: true
         };
         this.allowedViews$.next(result);
         return result;
@@ -308,5 +313,43 @@ export class PlayRestrictionsService {
      */
     getCachedAllowedViews(): string[] {
         return this.allowedViews;
+    }
+
+    /**
+     * 根據播放限制取得起始視圖 ID
+     * 優先順序：
+     * 1. 檢查 DMS user.id 是否有符合 playRestrictions 中的紀錄
+     * 2. 檢查 DMS user.roleId 是否有符合 playRestrictions 中的紀錄
+     * 3. 返回 null（使用預設視圖）
+     *
+     * @param userId DMS user ID
+     * @param roleId DMS role ID
+     * @returns 起始視圖 ID 或 null
+     */
+    getStartViewFromRestrictions(userId: string, roleId: string): string | null {
+        if (!this.playRestrictions || this.playRestrictions.length === 0) {
+            return null;
+        }
+
+        // 1. 優先檢查 user_id 匹配
+        const userRestriction = this.playRestrictions.find(
+            r => r.type === 'user' && r.user_id === userId
+        );
+        if (userRestriction) {
+            console.log('Start view from user restriction:', userRestriction.view_id);
+            return userRestriction.view_id;
+        }
+
+        // 2. 再檢查 role_id 匹配
+        const roleRestriction = this.playRestrictions.find(
+            r => r.type === 'role' && r.role_id === roleId
+        );
+        if (roleRestriction) {
+            console.log('Start view from role restriction:', roleRestriction.view_id);
+            return roleRestriction.view_id;
+        }
+
+        // 3. 沒有匹配，返回 null
+        return null;
     }
 }

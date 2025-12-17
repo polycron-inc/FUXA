@@ -7808,7 +7808,7 @@ let AuthService = class AuthService {
   /**
    * 載入 DMS 使用者資訊
    * @param userId 使用者 ID（如果不傳則從 localStorage 取得）
-   * @returns Promise<UserItem>
+   * @returns Promise<UserDetailInfo>
    */
 
 
@@ -7825,12 +7825,17 @@ let AuthService = class AuthService {
           return null;
         }
 
-        const response = yield (0,_api_user__WEBPACK_IMPORTED_MODULE_6__.getUserDetail)(targetUserId);
+        const response = yield (0,_api_user__WEBPACK_IMPORTED_MODULE_6__.getProfile)(targetUserId);
 
         if (response.data && response.data.detailInfo) {
           _this.dmsUser = response.data.detailInfo;
 
-          _this.dmsUser$.next(_this.dmsUser);
+          _this.dmsUser$.next(_this.dmsUser); // Store roleId to localStorage for play restriction filtering
+
+
+          if (_this.dmsUser.roleId) {
+            localStorage.setItem('roleId', _this.dmsUser.roleId);
+          }
 
           console.log('DMS user loaded:', _this.dmsUser);
           return _this.dmsUser;
@@ -9639,7 +9644,8 @@ let PlayRestrictionsService = class PlayRestrictionsService {
         allowed: true,
         views: [],
         restrictedViews: [],
-        isSuperAdmin: false
+        isSuperAdmin: false,
+        isCalculated: true
       };
       this.allowedViews$.next(result);
       return result;
@@ -9657,7 +9663,8 @@ let PlayRestrictionsService = class PlayRestrictionsService {
         allowed: true,
         views: [],
         restrictedViews: [],
-        isSuperAdmin: true
+        isSuperAdmin: true,
+        isCalculated: true
       };
       this.allowedViews$.next(result);
       return result;
@@ -9673,7 +9680,8 @@ let PlayRestrictionsService = class PlayRestrictionsService {
         allowed: true,
         views: [],
         restrictedViews: [],
-        isSuperAdmin: false
+        isSuperAdmin: false,
+        isCalculated: true
       };
       this.allowedViews$.next(result);
       return result;
@@ -9717,7 +9725,8 @@ let PlayRestrictionsService = class PlayRestrictionsService {
       allowed: this.isAllowed,
       views: this.allowedViews,
       restrictedViews: restrictedViews,
-      isSuperAdmin: false
+      isSuperAdmin: false,
+      isCalculated: true
     };
     this.allowedViews$.next(result);
     return result;
@@ -9819,6 +9828,43 @@ let PlayRestrictionsService = class PlayRestrictionsService {
 
   getCachedAllowedViews() {
     return this.allowedViews;
+  }
+  /**
+   * 根據播放限制取得起始視圖 ID
+   * 優先順序：
+   * 1. 檢查 DMS user.id 是否有符合 playRestrictions 中的紀錄
+   * 2. 檢查 DMS user.roleId 是否有符合 playRestrictions 中的紀錄
+   * 3. 返回 null（使用預設視圖）
+   *
+   * @param userId DMS user ID
+   * @param roleId DMS role ID
+   * @returns 起始視圖 ID 或 null
+   */
+
+
+  getStartViewFromRestrictions(userId, roleId) {
+    if (!this.playRestrictions || this.playRestrictions.length === 0) {
+      return null;
+    } // 1. 優先檢查 user_id 匹配
+
+
+    const userRestriction = this.playRestrictions.find(r => r.type === 'user' && r.user_id === userId);
+
+    if (userRestriction) {
+      console.log('Start view from user restriction:', userRestriction.view_id);
+      return userRestriction.view_id;
+    } // 2. 再檢查 role_id 匹配
+
+
+    const roleRestriction = this.playRestrictions.find(r => r.type === 'role' && r.role_id === roleId);
+
+    if (roleRestriction) {
+      console.log('Start view from role restriction:', roleRestriction.view_id);
+      return roleRestriction.view_id;
+    } // 3. 沒有匹配，返回 null
+
+
+    return null;
   }
 
   static ctorParameters = () => [{
@@ -10107,7 +10153,15 @@ let ProjectService = class ProjectService {
         this.ready = true;
         this.notifyToLoadHmi();
       } else {
-        this.projectData = prj; // copy to check before save
+        this.projectData = prj; // Debug: check if views have svgcontent
+
+        if (prj?.hmi?.views) {
+          console.log('Project loaded - views count:', prj.hmi.views.length);
+          prj.hmi.views.forEach(v => {
+            console.log('View:', v.id, v.name, 'svgcontent length:', v.svgcontent?.length || 0);
+          });
+        } // copy to check before save
+
 
         this.projectOld = JSON.parse(JSON.stringify(this.projectData));
         this.ready = true;
@@ -12399,7 +12453,23 @@ let ResWebApiService = class ResWebApiService {
   }
 
   getStorageProject() {
-    return this.http.get(this.endPointConfig + '/api/project', {});
+    // Get DMS user info from localStorage for play restriction filtering
+    const dmsUserId = localStorage.getItem('userId') || '';
+    const dmsRoleId = localStorage.getItem('roleId') || '';
+    const params = {};
+
+    if (dmsUserId) {
+      params.dmsUserId = dmsUserId;
+    }
+
+    if (dmsRoleId) {
+      params.dmsRoleId = dmsRoleId;
+    }
+
+    console.log('getStorageProject: Requesting /api/project with params:', params);
+    return this.http.get(this.endPointConfig + '/api/project', {
+      params
+    });
   }
 
   setServerProject(prj) {
@@ -13652,6 +13722,214 @@ ToastNotifierService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_2__
 
 /***/ }),
 
+/***/ 39540:
+/*!*******************************************************!*\
+  !*** ./src/app/_services/user-preferences.service.ts ***!
+  \*******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UserPreferencesService": () => (/* binding */ UserPreferencesService)
+/* harmony export */ });
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/common/http */ 58987);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 76317);
+/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../_helpers/endpointapi */ 70049);
+/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../environments/environment */ 92340);
+
+
+var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+  var c = arguments.length,
+      r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+      d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+var __metadata = undefined && undefined.__metadata || function (k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+
+
+let UserPreferencesService = class UserPreferencesService {
+  http;
+  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_1__.EndPointApi.getURL();
+  userPreference = null;
+  userPreference$ = new rxjs__WEBPACK_IMPORTED_MODULE_3__.BehaviorSubject(null);
+
+  constructor(http) {
+    this.http = http;
+  }
+  /**
+   * 取得使用者偏好設定
+   * @param dmsUserId DMS 使用者 ID
+   * @returns Observable<UserPreference>
+   */
+
+
+  getUserPreference(dmsUserId) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.get(this.endPointConfig + '/api/userpreferences/' + dmsUserId, {
+      headers: header
+    });
+  }
+  /**
+   * 載入使用者偏好設定並快取
+   * @param dmsUserId DMS 使用者 ID
+   * @returns Promise<UserPreference | null>
+   */
+
+
+  loadUserPreference(dmsUserId) {
+    var _this = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      if (!_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.serverEnabled || !dmsUserId) {
+        return null;
+      }
+
+      try {
+        const result = yield _this.getUserPreference(dmsUserId).toPromise();
+        _this.userPreference = result;
+
+        _this.userPreference$.next(_this.userPreference);
+
+        console.log('User preference loaded:', _this.userPreference);
+        return _this.userPreference;
+      } catch (error) {
+        // 404 表示還沒有設定，不是錯誤
+        if (error.status === 404) {
+          console.log('No user preference found for:', dmsUserId);
+          _this.userPreference = null;
+
+          _this.userPreference$.next(null);
+
+          return null;
+        }
+
+        console.error('Failed to load user preference:', error);
+        return null;
+      }
+    })();
+  }
+  /**
+   * 儲存使用者偏好設定
+   * @param preference 使用者偏好設定
+   * @returns Observable<any>
+   */
+
+
+  setUserPreference(preference) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.post(this.endPointConfig + '/api/userpreferences', preference, {
+      headers: header
+    });
+  }
+  /**
+   * 儲存使用者偏好設定並更新快取
+   * @param preference 使用者偏好設定
+   * @returns Promise<boolean>
+   */
+
+
+  saveUserPreference(preference) {
+    var _this2 = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      if (!_environments_environment__WEBPACK_IMPORTED_MODULE_2__.environment.serverEnabled) {
+        return false;
+      }
+
+      try {
+        yield _this2.setUserPreference(preference).toPromise();
+        _this2.userPreference = preference;
+
+        _this2.userPreference$.next(_this2.userPreference);
+
+        console.log('User preference saved:', _this2.userPreference);
+        return true;
+      } catch (error) {
+        console.error('Failed to save user preference:', error);
+        return false;
+      }
+    })();
+  }
+  /**
+   * 設定起始視圖
+   * @param dmsUserId DMS 使用者 ID
+   * @param startViewId 起始視圖 ID
+   * @returns Promise<boolean>
+   */
+
+
+  setStartView(dmsUserId, startViewId) {
+    var _this3 = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      const preference = {
+        dms_user_id: dmsUserId,
+        start_view_id: startViewId,
+        preferences: _this3.userPreference?.preferences || {}
+      };
+      return _this3.saveUserPreference(preference);
+    })();
+  }
+  /**
+   * 取得起始視圖 ID
+   * @returns string | null
+   */
+
+
+  getStartViewId() {
+    return this.userPreference?.start_view_id || null;
+  }
+  /**
+   * 刪除使用者偏好設定
+   * @param dmsUserId DMS 使用者 ID
+   * @returns Observable<any>
+   */
+
+
+  deleteUserPreference(dmsUserId) {
+    let header = new _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+    return this.http.delete(this.endPointConfig + '/api/userpreferences/' + dmsUserId, {
+      headers: header
+    });
+  }
+  /**
+   * 取得快取的使用者偏好設定
+   * @returns UserPreference | null
+   */
+
+
+  getCachedUserPreference() {
+    return this.userPreference;
+  }
+
+  static ctorParameters = () => [{
+    type: _angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpClient
+  }];
+};
+UserPreferencesService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_5__.Injectable)({
+  providedIn: 'root'
+}), __metadata("design:paramtypes", [_angular_common_http__WEBPACK_IMPORTED_MODULE_4__.HttpClient])], UserPreferencesService);
+
+
+/***/ }),
+
 /***/ 55089:
 /*!*******************************************!*\
   !*** ./src/app/_services/user.service.ts ***!
@@ -14639,8 +14917,12 @@ __webpack_require__.r(__webpack_exports__);
 
 const secretKey = 'da6e6728-b51c-11ea-ac59-00ff7ae2c9c8';
 const requester = 'admin';
-let userToken = _environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.dmsToken;
-const baseUrl = _environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.dmsApiEndpoint;
+const baseUrl = _environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.dmsApiEndpoint; // 取得用戶 token
+
+function getUserToken() {
+  return localStorage.getItem('token') || '';
+}
+
 const provider = axios__WEBPACK_IMPORTED_MODULE_2__["default"].create({
   baseURL: baseUrl,
   headers: {
@@ -14661,6 +14943,7 @@ function _getSignData() {
     data
   }) {
     try {
+      const userToken = getUserToken();
       const _header = {
         Authorization: `Bearer ${userToken}`,
         'Content-Type': 'application/json;charset=utf-8',
@@ -14676,8 +14959,10 @@ function _getSignData() {
       }); // console.log('sign api response.data', response.data);
 
       if ([1005, 1006].includes(response.data.code)) {
-        console.log('sign api response.data.code === 1005'); // 重新取得token
+        console.log('sign api response.data.code === 1005'); // 登出，清除token
 
+        localStorage.removeItem('token');
+        window.location.href = '/';
         throw new Error(response.data.message);
       }
 
@@ -14692,8 +14977,7 @@ function _getSignData() {
 
 provider.interceptors.request.use( /*#__PURE__*/function () {
   var _ref = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (config) {
-    // token = await getAdminToken();
-    // Query stringt 須排除
+    // Query string 須排除
     const relativeUrl = config.url?.startsWith('http') ? new URL(config.url).pathname.split('?')[0] : config.url?.split('?')[0]; // 收集目前 API 的參數
 
     const method = (config.method || 'GET').toUpperCase();
@@ -14723,8 +15007,9 @@ provider.interceptors.request.use( /*#__PURE__*/function () {
       }); // 將 sign 和 t 加入 header
 
       config.headers['sign'] = signData.sign;
-      config.headers['t'] = signData.t; // console.log('relativeUrl', relativeUrl, userToken)
+      config.headers['t'] = signData.t; // 取得最新的 userToken
 
+      const userToken = getUserToken();
       config.headers['authorization'] = `Bearer ${userToken}`;
     }
 
@@ -14903,30 +15188,38 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "addUser": () => (/* binding */ addUser),
 /* harmony export */   "deleteUser": () => (/* binding */ deleteUser),
-/* harmony export */   "editUser": () => (/* binding */ editUser),
-/* harmony export */   "getCurrentUser": () => (/* binding */ getCurrentUser),
-/* harmony export */   "getUserDetail": () => (/* binding */ getUserDetail),
+/* harmony export */   "getProfile": () => (/* binding */ getProfile),
 /* harmony export */   "getUserList": () => (/* binding */ getUserList),
 /* harmony export */   "getUserSelectOptions": () => (/* binding */ getUserSelectOptions),
-/* harmony export */   "resetPassword": () => (/* binding */ resetPassword)
+/* harmony export */   "resetPassword": () => (/* binding */ resetPassword),
+/* harmony export */   "updatePassword": () => (/* binding */ updatePassword),
+/* harmony export */   "updateUser": () => (/* binding */ updateUser),
+/* harmony export */   "updateUserStatus": () => (/* binding */ updateUserStatus)
 /* harmony export */ });
 /* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
 /* harmony import */ var ___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! . */ 39354);
 
+ // Mock user data
 
+const mockUserData = {
+  detailInfo: {
+    id: '6e01b808-6841-11f0-94bb-5254008c2c02',
+    username: 'admin',
+    roleId: 'fb509ca6-7bf0-11ea-b5b2-0a002700000e',
+    roleName: '管理員',
+    phone: '15862589286',
+    email: '666@qq.com',
+    createTime: '2025-07-24'
+  }
+};
 /**
- * 取得使用者列表
- * @param params 查詢參數
- * @returns Promise<UserListResponse>
+ * 取得用戶列表
  */
 
 const getUserList = /*#__PURE__*/function () {
-  var _ref = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (params) {
+  var _ref = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
     return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/schideron/openApi/user/list', {
-      params: {
-        page: params?.page || 1,
-        pageSize: params?.pageSize || 10,
-        username: params?.username || '',
+      params: { ...payload,
         requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
       }
     });
@@ -14937,86 +15230,82 @@ const getUserList = /*#__PURE__*/function () {
   };
 }();
 /**
- * 取得目前登入使用者資訊
- * @returns Promise<UserDetailResponse>
+ * 取得用戶選項
  */
 
-const getCurrentUser = /*#__PURE__*/function () {
-  var _ref2 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/schideron/openApi/user/me', {
-      params: {
-        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
-      }
+const getUserSelectOptions = payload => {
+  return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/api/users/getUserSelectOptions', {
+    params: payload
+  }).then(res => res.data);
+};
+/**
+ * 更新密碼
+ */
+
+const updatePassword = /*#__PURE__*/function () {
+  var _ref2 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post(`/schideron/openApi/user/resetPassword/${payload.id}`, {
+      defaultPassword: payload.newPassword,
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
     });
   });
 
-  return function getCurrentUser() {
+  return function updatePassword(_x2) {
     return _ref2.apply(this, arguments);
   };
 }();
 /**
- * 取得使用者詳細資訊
- * @param userId 使用者 ID
- * @returns Promise<UserDetailResponse>
+ * 更新用戶狀態
  */
 
-const getUserDetail = /*#__PURE__*/function () {
-  var _ref3 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get(`/schideron/openApi/user/detail/${userId}`, {
-      params: {
-        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
-      }
-    });
+const updateUserStatus = /*#__PURE__*/function () {
+  var _ref3 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post('/api/users/updateStatus', payload);
   });
 
-  return function getUserDetail(_x2) {
+  return function updateUserStatus(_x3) {
     return _ref3.apply(this, arguments);
   };
 }();
 /**
- * 新增使用者
- * @param data 使用者資料
- * @returns Promise<ApiResponse>
+ * 重設密碼
  */
 
-const addUser = /*#__PURE__*/function () {
-  var _ref4 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (data) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post('/schideron/openApi/user/add', { ...data,
-      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
-    });
+const resetPassword = /*#__PURE__*/function () {
+  var _ref4 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post('/api/users/resetPassword', payload);
   });
 
-  return function addUser(_x3) {
+  return function resetPassword(_x4) {
     return _ref4.apply(this, arguments);
   };
 }();
 /**
- * 編輯使用者
- * @param userId 使用者 ID
- * @param data 使用者資料
- * @returns Promise<ApiResponse>
+ * 更新用戶資料
  */
 
-const editUser = /*#__PURE__*/function () {
-  var _ref5 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId, data) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.put(`/schideron/openApi/user/edit/${userId}`, { ...data,
-      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+const updateUser = /*#__PURE__*/function () {
+  var _ref5 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.put(`/schideron/openApi/user/edit/${payload.id}`, {
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester,
+      username: payload.username,
+      roleId: payload.roleId,
+      phone: payload.phone,
+      email: payload.email
     });
   });
 
-  return function editUser(_x4, _x5) {
+  return function updateUser(_x5) {
     return _ref5.apply(this, arguments);
   };
 }();
 /**
- * 刪除使用者
- * @param userId 使用者 ID
- * @returns Promise<ApiResponse>
+ * 刪除用戶
  */
 
 const deleteUser = /*#__PURE__*/function () {
-  var _ref6 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider["delete"](`/schideron/openApi/user/delete/${userId}`, {
+  var _ref6 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider["delete"](`/schideron/openApi/user/delete/${payload.id}`, {
       data: {
         requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
       }
@@ -15028,40 +15317,42 @@ const deleteUser = /*#__PURE__*/function () {
   };
 }();
 /**
- * 重設使用者密碼
- * @param userId 使用者 ID
- * @param defaultPassword 新密碼 (已加密)
- * @returns Promise<ApiResponse>
+ * 新增用戶
  */
 
-const resetPassword = /*#__PURE__*/function () {
-  var _ref7 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId, defaultPassword) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post(`/schideron/openApi/user/resetPassword/${userId}`, {
-      defaultPassword,
-      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
+const addUser = /*#__PURE__*/function () {
+  var _ref7 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (payload) {
+    return ___WEBPACK_IMPORTED_MODULE_1__.provider.post('/schideron/openApi/user/add', {
+      requester: ___WEBPACK_IMPORTED_MODULE_1__.requester,
+      ...payload
     });
   });
 
-  return function resetPassword(_x7, _x8) {
+  return function addUser(_x7) {
     return _ref7.apply(this, arguments);
   };
 }();
 /**
- * 取得使用者選項列表 (用於下拉選單)
- * @param params 查詢參數
- * @returns Promise<UserSelectOption[]>
+ * 取得用戶詳細資料
  */
 
-const getUserSelectOptions = /*#__PURE__*/function () {
-  var _ref8 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (params) {
-    return ___WEBPACK_IMPORTED_MODULE_1__.provider.get('/api/users/getUserSelectOptions', {
-      params: { ...params,
-        requester: ___WEBPACK_IMPORTED_MODULE_1__.requester
-      }
-    });
+const getProfile = /*#__PURE__*/function () {
+  var _ref8 = (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* (userId) {
+    try {
+      const response = yield ___WEBPACK_IMPORTED_MODULE_1__.provider.get(`/schideron/openApi/user/detail/${userId}?requester=${___WEBPACK_IMPORTED_MODULE_1__.requester}`);
+      console.log('getProfile', response);
+      return response;
+    } catch (error) {
+      console.warn('Backend API unavailable, using mock data:', error); // Return mock data
+
+      return {
+        result: 'success',
+        data: mockUserData
+      };
+    }
   });
 
-  return function getUserSelectOptions(_x9) {
+  return function getProfile(_x8) {
     return _ref8.apply(this, arguments);
   };
 }();
@@ -15083,15 +15374,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./app.component.html?ngResource */ 33383);
 /* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./app.component.css?ngResource */ 56715);
 /* harmony import */ var _app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! @angular/common */ 94666);
-/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! @angular/router */ 60124);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 36646);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs */ 23280);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 19337);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 32673);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs */ 28653);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! @angular/common */ 94666);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! @angular/router */ 60124);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs */ 36646);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 23280);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 19337);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs */ 32673);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs */ 28653);
 /* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../environments/environment */ 92340);
 /* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_services/project.service */ 47848);
 /* harmony import */ var _services_settings_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_services/settings.service */ 63157);
@@ -15100,6 +15391,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./_services/heartbeat.service */ 98284);
 /* harmony import */ var _services_auth_service__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./_services/auth.service */ 88368);
 /* harmony import */ var _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./_services/play-restrictions.service */ 2482);
+/* harmony import */ var _services_user_preferences_service__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./_services/user-preferences.service */ 39540);
 
 
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
@@ -15129,6 +15421,7 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let AppComponent = class AppComponent {
   document;
   router;
@@ -15139,6 +15432,7 @@ let AppComponent = class AppComponent {
   heartbeatService;
   authService;
   playRestrictionsService;
+  userPreferencesService;
   cdr;
   title = 'app';
   location;
@@ -15148,7 +15442,7 @@ let AppComponent = class AppComponent {
   subscriptionLoad;
   subscriptionShowLoading;
 
-  constructor(document, router, appService, projectService, settingsService, translateService, heartbeatService, authService, playRestrictionsService, cdr, location) {
+  constructor(document, router, appService, projectService, settingsService, translateService, heartbeatService, authService, playRestrictionsService, userPreferencesService, cdr, location) {
     this.document = document;
     this.router = router;
     this.appService = appService;
@@ -15158,6 +15452,7 @@ let AppComponent = class AppComponent {
     this.heartbeatService = heartbeatService;
     this.authService = authService;
     this.playRestrictionsService = playRestrictionsService;
+    this.userPreferencesService = userPreferencesService;
     this.cdr = cdr;
     this.location = location;
   }
@@ -15169,13 +15464,13 @@ let AppComponent = class AppComponent {
     this.loadInitialData(); // capture events for the token refresh
 
     const inactivityDuration = 1 * 60 * 1000;
-    const activity$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_11__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_12__.fromEvent)(document, 'click'), (0,rxjs__WEBPACK_IMPORTED_MODULE_12__.fromEvent)(document, 'touchstart'));
-    activity$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.tap)(() => this.heartbeatService.setActivity(true)), (0,rxjs__WEBPACK_IMPORTED_MODULE_14__.switchMap)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_15__.interval)(inactivityDuration))).subscribe(() => {
+    const activity$ = (0,rxjs__WEBPACK_IMPORTED_MODULE_12__.merge)((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.fromEvent)(document, 'click'), (0,rxjs__WEBPACK_IMPORTED_MODULE_13__.fromEvent)(document, 'touchstart'));
+    activity$.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_14__.tap)(() => this.heartbeatService.setActivity(true)), (0,rxjs__WEBPACK_IMPORTED_MODULE_15__.switchMap)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_16__.interval)(inactivityDuration))).subscribe(() => {
       this.heartbeatService.setActivity(false);
     });
   }
   /**
-   * 載入初始資料：DMS 當前使用者和播放限制
+   * 載入初始資料：DMS 當前使用者、播放限制、使用者偏好設定
    */
 
 
@@ -15194,7 +15489,18 @@ let AppComponent = class AppComponent {
 
         const allowedViews = _this.playRestrictionsService.calculateAllowedViews(dmsUser);
 
-        console.log('Allowed views calculated:', allowedViews);
+        console.log('Allowed views calculated:', allowedViews); // 載入使用者偏好設定（包含 start view）
+
+        if (dmsUser?.id) {
+          const userPreference = yield _this.userPreferencesService.loadUserPreference(dmsUser.id);
+          console.log('User preference loaded:', userPreference);
+        } // 重新載入 project 以套用播放限制過濾
+        // 因為 localStorage 中的 userId 和 roleId 已經設定好了
+
+
+        console.log('Reloading project with play restrictions...');
+
+        _this.projectService.reload();
       } catch (error) {
         console.error('Failed to load initial data:', error);
       }
@@ -15318,11 +15624,11 @@ let AppComponent = class AppComponent {
   static ctorParameters = () => [{
     type: Document,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.Inject,
-      args: [_angular_common__WEBPACK_IMPORTED_MODULE_17__.DOCUMENT]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.Inject,
+      args: [_angular_common__WEBPACK_IMPORTED_MODULE_18__.DOCUMENT]
     }]
   }, {
-    type: _angular_router__WEBPACK_IMPORTED_MODULE_18__.Router
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_19__.Router
   }, {
     type: _services_app_service__WEBPACK_IMPORTED_MODULE_7__.AppService
   }, {
@@ -15330,7 +15636,7 @@ let AppComponent = class AppComponent {
   }, {
     type: _services_settings_service__WEBPACK_IMPORTED_MODULE_5__.SettingsService
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_20__.TranslateService
   }, {
     type: _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__.HeartbeatService
   }, {
@@ -15338,24 +15644,26 @@ let AppComponent = class AppComponent {
   }, {
     type: _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__.PlayRestrictionsService
   }, {
-    type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.ChangeDetectorRef
+    type: _services_user_preferences_service__WEBPACK_IMPORTED_MODULE_11__.UserPreferencesService
   }, {
-    type: _angular_common__WEBPACK_IMPORTED_MODULE_17__.Location
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.ChangeDetectorRef
+  }, {
+    type: _angular_common__WEBPACK_IMPORTED_MODULE_18__.Location
   }];
   static propDecorators = {
     fabmenu: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_16__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.ViewChild,
       args: ['fabmenu', {
         static: false
       }]
     }]
   };
 };
-AppComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_16__.Component)({
+AppComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_17__.Component)({
   selector: 'app-root',
   template: _app_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__,
   styles: [(_app_component_css_ngResource__WEBPACK_IMPORTED_MODULE_2___default())]
-}), __metadata("design:paramtypes", [Document, _angular_router__WEBPACK_IMPORTED_MODULE_18__.Router, _services_app_service__WEBPACK_IMPORTED_MODULE_7__.AppService, _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _services_settings_service__WEBPACK_IMPORTED_MODULE_5__.SettingsService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_19__.TranslateService, _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__.HeartbeatService, _services_auth_service__WEBPACK_IMPORTED_MODULE_9__.AuthService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__.PlayRestrictionsService, _angular_core__WEBPACK_IMPORTED_MODULE_16__.ChangeDetectorRef, _angular_common__WEBPACK_IMPORTED_MODULE_17__.Location])], AppComponent);
+}), __metadata("design:paramtypes", [Document, _angular_router__WEBPACK_IMPORTED_MODULE_19__.Router, _services_app_service__WEBPACK_IMPORTED_MODULE_7__.AppService, _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _services_settings_service__WEBPACK_IMPORTED_MODULE_5__.SettingsService, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_20__.TranslateService, _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_8__.HeartbeatService, _services_auth_service__WEBPACK_IMPORTED_MODULE_9__.AuthService, _services_play_restrictions_service__WEBPACK_IMPORTED_MODULE_10__.PlayRestrictionsService, _services_user_preferences_service__WEBPACK_IMPORTED_MODULE_11__.UserPreferencesService, _angular_core__WEBPACK_IMPORTED_MODULE_17__.ChangeDetectorRef, _angular_common__WEBPACK_IMPORTED_MODULE_18__.Location])], AppComponent);
 
 
 /***/ }),
@@ -15373,18 +15681,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "createTranslateLoader": () => (/* binding */ createTranslateLoader),
 /* harmony export */   "myCustomTooltipDefaults": () => (/* binding */ myCustomTooltipDefaults)
 /* harmony export */ });
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_194__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_195__ = __webpack_require__(/*! @angular/platform-browser */ 34497);
-/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_196__ = __webpack_require__(/*! @angular/forms */ 2508);
-/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_197__ = __webpack_require__(/*! @angular/common/http */ 58987);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_195__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_196__ = __webpack_require__(/*! @angular/platform-browser */ 34497);
+/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_197__ = __webpack_require__(/*! @angular/forms */ 2508);
+/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_198__ = __webpack_require__(/*! @angular/common/http */ 58987);
 /* harmony import */ var _material_module__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./material.module */ 63806);
-/* harmony import */ var _angular_platform_browser_animations__WEBPACK_IMPORTED_MODULE_198__ = __webpack_require__(/*! @angular/platform-browser/animations */ 37146);
-/* harmony import */ var ngx_color_picker__WEBPACK_IMPORTED_MODULE_199__ = __webpack_require__(/*! ngx-color-picker */ 60743);
-/* harmony import */ var ngx_toastr__WEBPACK_IMPORTED_MODULE_201__ = __webpack_require__(/*! ngx-toastr */ 94817);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_202__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
-/* harmony import */ var _ngx_translate_http_loader__WEBPACK_IMPORTED_MODULE_193__ = __webpack_require__(/*! @ngx-translate/http-loader */ 58319);
-/* harmony import */ var angular2_draggable__WEBPACK_IMPORTED_MODULE_200__ = __webpack_require__(/*! angular2-draggable */ 74150);
-/* harmony import */ var _ctrl_ngx_codemirror__WEBPACK_IMPORTED_MODULE_205__ = __webpack_require__(/*! @ctrl/ngx-codemirror */ 5489);
+/* harmony import */ var _angular_platform_browser_animations__WEBPACK_IMPORTED_MODULE_199__ = __webpack_require__(/*! @angular/platform-browser/animations */ 37146);
+/* harmony import */ var ngx_color_picker__WEBPACK_IMPORTED_MODULE_200__ = __webpack_require__(/*! ngx-color-picker */ 60743);
+/* harmony import */ var ngx_toastr__WEBPACK_IMPORTED_MODULE_202__ = __webpack_require__(/*! ngx-toastr */ 94817);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_203__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var _ngx_translate_http_loader__WEBPACK_IMPORTED_MODULE_194__ = __webpack_require__(/*! @ngx-translate/http-loader */ 58319);
+/* harmony import */ var angular2_draggable__WEBPACK_IMPORTED_MODULE_201__ = __webpack_require__(/*! angular2-draggable */ 74150);
+/* harmony import */ var _ctrl_ngx_codemirror__WEBPACK_IMPORTED_MODULE_206__ = __webpack_require__(/*! @ctrl/ngx-codemirror */ 5489);
 /* harmony import */ var _gui_helpers_daterangepicker__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./gui-helpers/daterangepicker */ 78288);
 /* harmony import */ var _app_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./app.component */ 55041);
 /* harmony import */ var _app_routing__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./app.routing */ 76738);
@@ -15499,13 +15807,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_112__ = __webpack_require__(/*! ./gauges/controls/html-switch/html-switch-property/html-switch-property.component */ 89154);
 /* harmony import */ var _gui_helpers_ngx_uplot_ngx_uplot_component__WEBPACK_IMPORTED_MODULE_113__ = __webpack_require__(/*! ./gui-helpers/ngx-uplot/ngx-uplot.component */ 6042);
 /* harmony import */ var _gauges_controls_html_chart_chart_uplot_chart_uplot_component__WEBPACK_IMPORTED_MODULE_114__ = __webpack_require__(/*! ./gauges/controls/html-chart/chart-uplot/chart-uplot.component */ 14193);
-/* harmony import */ var angular_gridster2__WEBPACK_IMPORTED_MODULE_203__ = __webpack_require__(/*! angular-gridster2 */ 45008);
+/* harmony import */ var angular_gridster2__WEBPACK_IMPORTED_MODULE_204__ = __webpack_require__(/*! angular-gridster2 */ 45008);
 /* harmony import */ var _helpers_auth_interceptor__WEBPACK_IMPORTED_MODULE_115__ = __webpack_require__(/*! ./_helpers/auth-interceptor */ 74158);
 /* harmony import */ var _gauges_controls_html_graph_graph_bar_graph_bar_component__WEBPACK_IMPORTED_MODULE_116__ = __webpack_require__(/*! ./gauges/controls/html-graph/graph-bar/graph-bar.component */ 97506);
 /* harmony import */ var _gauges_controls_html_graph_graph_pie_graph_pie_component__WEBPACK_IMPORTED_MODULE_117__ = __webpack_require__(/*! ./gauges/controls/html-graph/graph-pie/graph-pie.component */ 78613);
 /* harmony import */ var _gauges_controls_html_graph_graph_property_graph_property_component__WEBPACK_IMPORTED_MODULE_118__ = __webpack_require__(/*! ./gauges/controls/html-graph/graph-property/graph-property.component */ 38403);
 /* harmony import */ var _gauges_controls_html_graph_graph_base_graph_base_component__WEBPACK_IMPORTED_MODULE_119__ = __webpack_require__(/*! ./gauges/controls/html-graph/graph-base/graph-base.component */ 96669);
-/* harmony import */ var ng2_charts__WEBPACK_IMPORTED_MODULE_204__ = __webpack_require__(/*! ng2-charts */ 31208);
+/* harmony import */ var ng2_charts__WEBPACK_IMPORTED_MODULE_205__ = __webpack_require__(/*! ng2-charts */ 31208);
 /* harmony import */ var _gauges_controls_html_iframe_iframe_property_iframe_property_component__WEBPACK_IMPORTED_MODULE_120__ = __webpack_require__(/*! ./gauges/controls/html-iframe/iframe-property/iframe-property.component */ 10708);
 /* harmony import */ var _gauges_controls_html_table_table_property_table_property_component__WEBPACK_IMPORTED_MODULE_121__ = __webpack_require__(/*! ./gauges/controls/html-table/table-property/table-property.component */ 41100);
 /* harmony import */ var _gauges_controls_html_table_table_customizer_table_customizer_component__WEBPACK_IMPORTED_MODULE_122__ = __webpack_require__(/*! ./gauges/controls/html-table/table-customizer/table-customizer.component */ 10631);
@@ -15528,7 +15836,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_toast_notifier_service__WEBPACK_IMPORTED_MODULE_139__ = __webpack_require__(/*! ./_services/toast-notifier.service */ 84918);
 /* harmony import */ var _services_my_file_service__WEBPACK_IMPORTED_MODULE_140__ = __webpack_require__(/*! ./_services/my-file.service */ 22938);
 /* harmony import */ var _editor_tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_141__ = __webpack_require__(/*! ./editor/tags-ids-config/tags-ids-config.component */ 75644);
-/* harmony import */ var _angular_material_legacy_tooltip__WEBPACK_IMPORTED_MODULE_206__ = __webpack_require__(/*! @angular/material/legacy-tooltip */ 6896);
+/* harmony import */ var _angular_material_legacy_tooltip__WEBPACK_IMPORTED_MODULE_207__ = __webpack_require__(/*! @angular/material/legacy-tooltip */ 6896);
 /* harmony import */ var _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_142__ = __webpack_require__(/*! ./gauges/controls/html-image/html-image.component */ 81961);
 /* harmony import */ var _gui_helpers_ngx_scheduler_ngx_scheduler_component__WEBPACK_IMPORTED_MODULE_143__ = __webpack_require__(/*! ./gui-helpers/ngx-scheduler/ngx-scheduler.component */ 69591);
 /* harmony import */ var _gauges_gauge_property_flex_device_tag_flex_device_tag_component__WEBPACK_IMPORTED_MODULE_144__ = __webpack_require__(/*! ./gauges/gauge-property/flex-device-tag/flex-device-tag.component */ 67718);
@@ -15580,6 +15888,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_language_service__WEBPACK_IMPORTED_MODULE_190__ = __webpack_require__(/*! ./_services/language.service */ 38543);
 /* harmony import */ var _resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_191__ = __webpack_require__(/*! ./resources/kiosk-widgets/kiosk-widgets.component */ 77284);
 /* harmony import */ var _editor_client_script_access_client_script_access_component__WEBPACK_IMPORTED_MODULE_192__ = __webpack_require__(/*! ./editor/client-script-access/client-script-access.component */ 59219);
+/* harmony import */ var _token_receiver_token_receiver_component__WEBPACK_IMPORTED_MODULE_193__ = __webpack_require__(/*! ./token-receiver/token-receiver.component */ 48057);
 // the start/root module that tells Angular how to assemble the application.
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
@@ -15797,8 +16106,9 @@ var __decorate = undefined && undefined.__decorate || function (decorators, targ
 
 
 
+
 function createTranslateLoader(http) {
-  return new _ngx_translate_http_loader__WEBPACK_IMPORTED_MODULE_193__.TranslateHttpLoader(http, './assets/i18n/', '.json');
+  return new _ngx_translate_http_loader__WEBPACK_IMPORTED_MODULE_194__.TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
 const myCustomTooltipDefaults = {
   showDelay: 200,
@@ -15806,22 +16116,22 @@ const myCustomTooltipDefaults = {
   touchendHideDelay: 200
 };
 let AppModule = class AppModule {};
-AppModule = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_194__.NgModule)({
-  declarations: [_home_home_component__WEBPACK_IMPORTED_MODULE_5__.HomeComponent, _editor_editor_component__WEBPACK_IMPORTED_MODULE_11__.EditorComponent, _header_header_component__WEBPACK_IMPORTED_MODULE_6__.HeaderComponent, _sidenav_sidenav_component__WEBPACK_IMPORTED_MODULE_10__.SidenavComponent, _iframe_iframe_component__WEBPACK_IMPORTED_MODULE_7__.IframeComponent, _app_component__WEBPACK_IMPORTED_MODULE_2__.AppComponent, _lab_lab_component__WEBPACK_IMPORTED_MODULE_29__.LabComponent, _device_device_component__WEBPACK_IMPORTED_MODULE_30__.DeviceComponent, _device_device_tag_selection_device_tag_selection_component__WEBPACK_IMPORTED_MODULE_149__.DeviceTagSelectionComponent, _device_tag_property_tag_property_edit_s7_tag_property_edit_s7_component__WEBPACK_IMPORTED_MODULE_153__.TagPropertyEditS7Component, _device_tag_property_tag_property_edit_server_tag_property_edit_server_component__WEBPACK_IMPORTED_MODULE_154__.TagPropertyEditServerComponent, _device_tag_property_tag_property_edit_modbus_tag_property_edit_modbus_component__WEBPACK_IMPORTED_MODULE_155__.TagPropertyEditModbusComponent, _device_tag_property_tag_property_edit_internal_tag_property_edit_internal_component__WEBPACK_IMPORTED_MODULE_156__.TagPropertyEditInternalComponent, _device_tag_property_tag_property_edit_opcua_tag_property_edit_opcua_component__WEBPACK_IMPORTED_MODULE_157__.TagPropertyEditOpcuaComponent, _device_tag_property_tag_property_edit_bacnet_tag_property_edit_bacnet_component__WEBPACK_IMPORTED_MODULE_158__.TagPropertyEditBacnetComponent, _device_tag_property_tag_property_edit_webapi_tag_property_edit_webapi_component__WEBPACK_IMPORTED_MODULE_159__.TagPropertyEditWebapiComponent, _device_tag_property_tag_property_edit_ethernetip_tag_property_edit_ethernetip_component__WEBPACK_IMPORTED_MODULE_160__.TagPropertyEditEthernetipComponent, _device_tag_property_tag_property_edit_adsclient_tag_property_edit_adsclient_component__WEBPACK_IMPORTED_MODULE_186__.TagPropertyEditADSclientComponent, _device_tag_property_tag_property_edit_gpio_tag_property_edit_gpio_component__WEBPACK_IMPORTED_MODULE_187__.TagPropertyEditGpioComponent, _device_tag_options_tag_options_component__WEBPACK_IMPORTED_MODULE_32__.TagOptionsComponent, _device_topic_property_topic_property_component__WEBPACK_IMPORTED_MODULE_33__.TopicPropertyComponent, _device_device_property_device_property_component__WEBPACK_IMPORTED_MODULE_31__.DevicePropertyComponent, _device_device_map_device_webapi_property_dialog_device_webapi_property_dialog_component__WEBPACK_IMPORTED_MODULE_133__.DeviceWebapiPropertyDialogComponent, _editor_layout_property_layout_property_component__WEBPACK_IMPORTED_MODULE_12__.LayoutPropertyComponent, _editor_tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_141__.TagsIdsConfigComponent, _editor_plugins_plugins_component__WEBPACK_IMPORTED_MODULE_13__.PluginsComponent, _editor_app_settings_app_settings_component__WEBPACK_IMPORTED_MODULE_14__.AppSettingsComponent, _editor_setup_setup_component__WEBPACK_IMPORTED_MODULE_15__.SetupComponent, _editor_layout_property_layout_menu_item_property_layout_menu_item_property_component__WEBPACK_IMPORTED_MODULE_173__.LayoutMenuItemPropertyComponent, _editor_layout_property_layout_header_item_property_layout_header_item_property_component__WEBPACK_IMPORTED_MODULE_174__.LayoutHeaderItemPropertyComponent, _device_device_list_device_list_component__WEBPACK_IMPORTED_MODULE_34__.DeviceListComponent, _device_device_map_device_map_component__WEBPACK_IMPORTED_MODULE_35__.DeviceMapComponent, _fuxa_view_fuxa_view_component__WEBPACK_IMPORTED_MODULE_36__.FuxaViewComponent, _fuxa_view_fuxa_view_dialog_fuxa_view_dialog_component__WEBPACK_IMPORTED_MODULE_148__.FuxaViewDialogComponent, _editor_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_161__.ViewPropertyComponent, _editor_editor_component__WEBPACK_IMPORTED_MODULE_11__.DialogLinkProperty, _gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_65__.EditNameComponent, _gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_62__.ConfirmDialogComponent, _header_header_component__WEBPACK_IMPORTED_MODULE_6__.DialogInfo, _gui_helpers_daterange_dialog_daterange_dialog_component__WEBPACK_IMPORTED_MODULE_66__.DaterangeDialogComponent, _gauges_gauge_base_gauge_base_component__WEBPACK_IMPORTED_MODULE_76__.GaugeBaseComponent, _gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_89__.HtmlInputComponent, _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_90__.HtmlButtonComponent, _gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_91__.HtmlSelectComponent, _gauges_controls_html_chart_html_chart_component__WEBPACK_IMPORTED_MODULE_92__.HtmlChartComponent, _gauges_controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_93__.HtmlGraphComponent, _gauges_controls_html_iframe_html_iframe_component__WEBPACK_IMPORTED_MODULE_94__.HtmlIframeComponent, _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_142__.HtmlImageComponent, _gauges_controls_html_bag_html_bag_component__WEBPACK_IMPORTED_MODULE_95__.HtmlBagComponent, _gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_98__.GaugeProgressComponent, _gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_99__.GaugeSemaphoreComponent, _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_80__.GaugePropertyComponent, _gauges_gauge_property_permission_dialog_permission_dialog_component__WEBPACK_IMPORTED_MODULE_175__.PermissionDialogComponent, _gauges_gauge_property_action_properties_dialog_action_properties_dialog_component__WEBPACK_IMPORTED_MODULE_178__.ActionPropertiesDialogComponent, _editor_svg_selector_svg_selector_component__WEBPACK_IMPORTED_MODULE_134__.SvgSelectorComponent, _gauges_controls_html_chart_chart_property_chart_property_component__WEBPACK_IMPORTED_MODULE_81__.ChartPropertyComponent, _gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_107__.BagPropertyComponent, _gauges_controls_pipe_pipe_property_pipe_property_component__WEBPACK_IMPORTED_MODULE_108__.PipePropertyComponent, _gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_111__.SliderPropertyComponent, _gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_112__.HtmlSwitchPropertyComponent, _gauges_shapes_shapes_component__WEBPACK_IMPORTED_MODULE_102__.ShapesComponent, _gauges_shapes_proc_eng_proc_eng_component__WEBPACK_IMPORTED_MODULE_103__.ProcEngComponent, _gauges_shapes_ape_shapes_ape_shapes_component__WEBPACK_IMPORTED_MODULE_104__.ApeShapesComponent, _tester_tester_component__WEBPACK_IMPORTED_MODULE_38__.TesterComponent, _help_tutorial_tutorial_component__WEBPACK_IMPORTED_MODULE_53__.TutorialComponent, _gauges_gauge_property_flex_input_flex_input_component__WEBPACK_IMPORTED_MODULE_82__.FlexInputComponent, _gauges_gauge_property_flex_device_tag_flex_device_tag_component__WEBPACK_IMPORTED_MODULE_144__.FlexDeviceTagComponent, _gauges_gauge_property_flex_auth_flex_auth_component__WEBPACK_IMPORTED_MODULE_83__.FlexAuthComponent, _gauges_gauge_property_flex_head_flex_head_component__WEBPACK_IMPORTED_MODULE_84__.FlexHeadComponent, _gauges_gauge_property_flex_event_flex_event_component__WEBPACK_IMPORTED_MODULE_85__.FlexEventComponent, _gauges_gauge_property_flex_action_flex_action_component__WEBPACK_IMPORTED_MODULE_86__.FlexActionComponent, _gauges_gauge_property_flex_variable_flex_variable_component__WEBPACK_IMPORTED_MODULE_87__.FlexVariableComponent, _gauges_gauge_property_flex_variables_mapping_flex_variables_mapping_component__WEBPACK_IMPORTED_MODULE_78__.FlexVariablesMappingComponent, _gauges_gauge_property_flex_variable_map_flex_variable_map_component__WEBPACK_IMPORTED_MODULE_79__.FlexVariableMapComponent, _gauges_gauge_property_flex_widget_property_flex_widget_property_component__WEBPACK_IMPORTED_MODULE_165__.FlexWidgetPropertyComponent, _gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_77__.ValueComponent, _directives_dialog_draggable_directive__WEBPACK_IMPORTED_MODULE_70__.DialogDraggableDirective, _helpers_utils__WEBPACK_IMPORTED_MODULE_55__.EnumToArrayPipe, _helpers_utils__WEBPACK_IMPORTED_MODULE_55__.EscapeHtmlPipe, _directives_ngx_draggable_directive__WEBPACK_IMPORTED_MODULE_72__.DraggableDirective, _directives_number_directive__WEBPACK_IMPORTED_MODULE_73__.NumberOnlyDirective, _directives_stop_input_propagation_directive__WEBPACK_IMPORTED_MODULE_136__.StopInputPropagationDirective, _directives_number_directive__WEBPACK_IMPORTED_MODULE_73__.NumberOrNullOnlyDirective, _gui_helpers_fab_button_ngx_fab_button_component__WEBPACK_IMPORTED_MODULE_59__.NgxFabButtonComponent, _gui_helpers_fab_button_ngx_fab_item_button_component__WEBPACK_IMPORTED_MODULE_60__.NgxFabItemButtonComponent, _gui_helpers_treetable_treetable_component__WEBPACK_IMPORTED_MODULE_61__.TreetableComponent, _gui_helpers_bitmask_bitmask_component__WEBPACK_IMPORTED_MODULE_67__.BitmaskComponent, _gui_helpers_sel_options_sel_options_component__WEBPACK_IMPORTED_MODULE_63__.SelOptionsComponent, _directives_lazyFor_directive__WEBPACK_IMPORTED_MODULE_74__.LazyForDirective, _gui_helpers_ngx_switch_ngx_switch_component__WEBPACK_IMPORTED_MODULE_64__.NgxSwitchComponent, _editor_chart_config_chart_config_component__WEBPACK_IMPORTED_MODULE_16__.ChartConfigComponent, _editor_graph_config_graph_config_component__WEBPACK_IMPORTED_MODULE_17__.GraphConfigComponent, _editor_card_config_card_config_component__WEBPACK_IMPORTED_MODULE_18__.CardConfigComponent, _alarms_alarm_list_alarm_list_component__WEBPACK_IMPORTED_MODULE_20__.AlarmListComponent, _alarms_alarm_view_alarm_view_component__WEBPACK_IMPORTED_MODULE_19__.AlarmViewComponent, _alarms_alarm_property_alarm_property_component__WEBPACK_IMPORTED_MODULE_21__.AlarmPropertyComponent, _notifications_notification_list_notification_list_component__WEBPACK_IMPORTED_MODULE_22__.NotificationListComponent, _notifications_notification_property_notification_property_component__WEBPACK_IMPORTED_MODULE_23__.NotificationPropertyComponent, _scripts_script_list_script_list_component__WEBPACK_IMPORTED_MODULE_24__.ScriptListComponent, _scripts_script_editor_script_editor_component__WEBPACK_IMPORTED_MODULE_25__.ScriptEditorComponent, _scripts_script_scheduling_script_scheduling_component__WEBPACK_IMPORTED_MODULE_26__.ScriptSchedulingComponent, _scripts_script_permission_script_permission_component__WEBPACK_IMPORTED_MODULE_27__.ScriptPermissionComponent, _scripts_script_mode_script_mode_component__WEBPACK_IMPORTED_MODULE_132__.ScriptModeComponent, _reports_report_list_report_list_component__WEBPACK_IMPORTED_MODULE_124__.ReportListComponent, _reports_report_editor_report_editor_component__WEBPACK_IMPORTED_MODULE_125__.ReportEditorComponent, _scripts_script_editor_script_editor_param_script_editor_param_component__WEBPACK_IMPORTED_MODULE_152__.ScriptEditorParamComponent, _language_language_text_list_language_text_list_component__WEBPACK_IMPORTED_MODULE_28__.LanguageTextListComponent, _logs_view_logs_view_component__WEBPACK_IMPORTED_MODULE_9__.LogsViewComponent, _gui_helpers_ngx_gauge_ngx_gauge_component__WEBPACK_IMPORTED_MODULE_105__.NgxGaugeComponent, _gui_helpers_ngx_nouislider_ngx_nouislider_component__WEBPACK_IMPORTED_MODULE_106__.NgxNouisliderComponent, _gui_helpers_ngx_scheduler_ngx_scheduler_component__WEBPACK_IMPORTED_MODULE_143__.NgxSchedulerComponent, _editor_chart_config_chart_line_property_chart_line_property_component__WEBPACK_IMPORTED_MODULE_172__.ChartLinePropertyComponent, _editor_graph_config_graph_source_edit_graph_source_edit_component__WEBPACK_IMPORTED_MODULE_166__.GraphSourceEditComponent, _users_users_component__WEBPACK_IMPORTED_MODULE_100__.UsersComponent, _users_users_roles_users_roles_component__WEBPACK_IMPORTED_MODULE_177__.UsersRolesComponent, _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_147__.UserEditComponent, _users_users_role_edit_users_role_edit_component__WEBPACK_IMPORTED_MODULE_176__.UsersRoleEditComponent, _login_login_component__WEBPACK_IMPORTED_MODULE_101__.LoginComponent, _home_home_component__WEBPACK_IMPORTED_MODULE_5__.DialogUserInfo, _view_view_component__WEBPACK_IMPORTED_MODULE_8__.ViewComponent, _gui_helpers_ngx_uplot_ngx_uplot_component__WEBPACK_IMPORTED_MODULE_113__.NgxUplotComponent, _gauges_controls_html_chart_chart_uplot_chart_uplot_component__WEBPACK_IMPORTED_MODULE_114__.ChartUplotComponent, _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_37__.CardsViewComponent, _gauges_controls_html_graph_graph_bar_graph_bar_component__WEBPACK_IMPORTED_MODULE_116__.GraphBarComponent, _gauges_controls_html_graph_graph_pie_graph_pie_component__WEBPACK_IMPORTED_MODULE_117__.GraphPieComponent, _gauges_controls_html_graph_graph_property_graph_property_component__WEBPACK_IMPORTED_MODULE_118__.GraphPropertyComponent, _gauges_controls_html_graph_graph_base_graph_base_component__WEBPACK_IMPORTED_MODULE_119__.GraphBaseComponent, _gauges_controls_html_iframe_iframe_property_iframe_property_component__WEBPACK_IMPORTED_MODULE_120__.IframePropertyComponent, _gauges_controls_html_table_table_property_table_property_component__WEBPACK_IMPORTED_MODULE_121__.TablePropertyComponent, _gauges_controls_html_table_table_customizer_table_customizer_component__WEBPACK_IMPORTED_MODULE_122__.TableCustomizerComponent, _gauges_controls_html_table_table_customizer_table_customizer_cell_edit_table_customizer_cell_edit_component__WEBPACK_IMPORTED_MODULE_168__.TableCustomizerCellEditComponent, _gauges_controls_html_table_table_alarms_table_alarms_component__WEBPACK_IMPORTED_MODULE_169__.TableAlarmsComponent, _gauges_controls_html_table_table_reports_table_reports_component__WEBPACK_IMPORTED_MODULE_170__.TableReportsComponent, _gauges_controls_html_table_data_table_data_table_component__WEBPACK_IMPORTED_MODULE_123__.DataTableComponent, _gui_helpers_range_number_range_number_component__WEBPACK_IMPORTED_MODULE_68__.RangeNumberComponent, _resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_69__.LibImagesComponent, _resources_lib_widgets_lib_widgets_component__WEBPACK_IMPORTED_MODULE_167__.LibWidgetsComponent, _resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_191__.KioskWidgetsComponent, _reports_report_editor_report_item_text_report_item_text_component__WEBPACK_IMPORTED_MODULE_127__.ReportItemTextComponent, _reports_report_editor_report_item_table_report_item_table_component__WEBPACK_IMPORTED_MODULE_128__.ReportItemTableComponent, _reports_report_editor_report_item_alarms_report_item_alarms_component__WEBPACK_IMPORTED_MODULE_130__.ReportItemAlarmsComponent, _reports_report_editor_report_item_chart_report_item_chart_component__WEBPACK_IMPORTED_MODULE_131__.ReportItemChartComponent, _gauges_controls_panel_panel_component__WEBPACK_IMPORTED_MODULE_145__.PanelComponent, _gauges_controls_panel_panel_property_panel_property_component__WEBPACK_IMPORTED_MODULE_146__.PanelPropertyComponent, _gui_helpers_webcam_player_webcam_player_component__WEBPACK_IMPORTED_MODULE_150__.WebcamPlayerComponent, _gui_helpers_webcam_player_webcam_player_dialog_webcam_player_dialog_component__WEBPACK_IMPORTED_MODULE_151__.WebcamPlayerDialogComponent, _directives_resize_directive__WEBPACK_IMPORTED_MODULE_162__.ResizeDirective, _editor_editor_views_list_editor_views_list_component__WEBPACK_IMPORTED_MODULE_163__.EditorViewsListComponent, _maps_maps_location_list_maps_location_list_component__WEBPACK_IMPORTED_MODULE_180__.MapsLocationListComponent, _maps_maps_location_property_maps_location_property_component__WEBPACK_IMPORTED_MODULE_182__.MapsLocationPropertyComponent, _maps_maps_view_maps_view_component__WEBPACK_IMPORTED_MODULE_183__.MapsViewComponent, _maps_maps_location_import_maps_location_import_component__WEBPACK_IMPORTED_MODULE_184__.MapsLocationImportComponent, _maps_maps_view_maps_fab_button_menu_maps_fab_button_menu_component__WEBPACK_IMPORTED_MODULE_185__.MapsFabButtonMenuComponent, _language_language_type_property_language_type_property_component__WEBPACK_IMPORTED_MODULE_188__.LanguageTypePropertyComponent, _language_language_text_property_language_text_property_component__WEBPACK_IMPORTED_MODULE_189__.LanguageTextPropertyComponent, _language_language_text_list_language_text_list_component__WEBPACK_IMPORTED_MODULE_28__.LanguageTextListComponent, _editor_client_script_access_client_script_access_component__WEBPACK_IMPORTED_MODULE_192__.ClientScriptAccessComponent],
-  imports: [_angular_platform_browser__WEBPACK_IMPORTED_MODULE_195__.BrowserModule, _angular_forms__WEBPACK_IMPORTED_MODULE_196__.FormsModule, _angular_forms__WEBPACK_IMPORTED_MODULE_196__.ReactiveFormsModule, _angular_common_http__WEBPACK_IMPORTED_MODULE_197__.HttpClientModule, _app_routing__WEBPACK_IMPORTED_MODULE_3__.routing, _material_module__WEBPACK_IMPORTED_MODULE_0__.MaterialModule, _angular_platform_browser_animations__WEBPACK_IMPORTED_MODULE_198__.BrowserAnimationsModule, ngx_color_picker__WEBPACK_IMPORTED_MODULE_199__.ColorPickerModule, angular2_draggable__WEBPACK_IMPORTED_MODULE_200__.AngularDraggableModule, _gui_helpers_mat_select_search_mat_select_search_module__WEBPACK_IMPORTED_MODULE_88__.MatSelectSearchModule, ngx_toastr__WEBPACK_IMPORTED_MODULE_201__.ToastrModule.forRoot({
+AppModule = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_195__.NgModule)({
+  declarations: [_home_home_component__WEBPACK_IMPORTED_MODULE_5__.HomeComponent, _editor_editor_component__WEBPACK_IMPORTED_MODULE_11__.EditorComponent, _header_header_component__WEBPACK_IMPORTED_MODULE_6__.HeaderComponent, _sidenav_sidenav_component__WEBPACK_IMPORTED_MODULE_10__.SidenavComponent, _iframe_iframe_component__WEBPACK_IMPORTED_MODULE_7__.IframeComponent, _app_component__WEBPACK_IMPORTED_MODULE_2__.AppComponent, _lab_lab_component__WEBPACK_IMPORTED_MODULE_29__.LabComponent, _device_device_component__WEBPACK_IMPORTED_MODULE_30__.DeviceComponent, _device_device_tag_selection_device_tag_selection_component__WEBPACK_IMPORTED_MODULE_149__.DeviceTagSelectionComponent, _device_tag_property_tag_property_edit_s7_tag_property_edit_s7_component__WEBPACK_IMPORTED_MODULE_153__.TagPropertyEditS7Component, _device_tag_property_tag_property_edit_server_tag_property_edit_server_component__WEBPACK_IMPORTED_MODULE_154__.TagPropertyEditServerComponent, _device_tag_property_tag_property_edit_modbus_tag_property_edit_modbus_component__WEBPACK_IMPORTED_MODULE_155__.TagPropertyEditModbusComponent, _device_tag_property_tag_property_edit_internal_tag_property_edit_internal_component__WEBPACK_IMPORTED_MODULE_156__.TagPropertyEditInternalComponent, _device_tag_property_tag_property_edit_opcua_tag_property_edit_opcua_component__WEBPACK_IMPORTED_MODULE_157__.TagPropertyEditOpcuaComponent, _device_tag_property_tag_property_edit_bacnet_tag_property_edit_bacnet_component__WEBPACK_IMPORTED_MODULE_158__.TagPropertyEditBacnetComponent, _device_tag_property_tag_property_edit_webapi_tag_property_edit_webapi_component__WEBPACK_IMPORTED_MODULE_159__.TagPropertyEditWebapiComponent, _device_tag_property_tag_property_edit_ethernetip_tag_property_edit_ethernetip_component__WEBPACK_IMPORTED_MODULE_160__.TagPropertyEditEthernetipComponent, _device_tag_property_tag_property_edit_adsclient_tag_property_edit_adsclient_component__WEBPACK_IMPORTED_MODULE_186__.TagPropertyEditADSclientComponent, _device_tag_property_tag_property_edit_gpio_tag_property_edit_gpio_component__WEBPACK_IMPORTED_MODULE_187__.TagPropertyEditGpioComponent, _device_tag_options_tag_options_component__WEBPACK_IMPORTED_MODULE_32__.TagOptionsComponent, _device_topic_property_topic_property_component__WEBPACK_IMPORTED_MODULE_33__.TopicPropertyComponent, _device_device_property_device_property_component__WEBPACK_IMPORTED_MODULE_31__.DevicePropertyComponent, _device_device_map_device_webapi_property_dialog_device_webapi_property_dialog_component__WEBPACK_IMPORTED_MODULE_133__.DeviceWebapiPropertyDialogComponent, _editor_layout_property_layout_property_component__WEBPACK_IMPORTED_MODULE_12__.LayoutPropertyComponent, _editor_tags_ids_config_tags_ids_config_component__WEBPACK_IMPORTED_MODULE_141__.TagsIdsConfigComponent, _editor_plugins_plugins_component__WEBPACK_IMPORTED_MODULE_13__.PluginsComponent, _editor_app_settings_app_settings_component__WEBPACK_IMPORTED_MODULE_14__.AppSettingsComponent, _editor_setup_setup_component__WEBPACK_IMPORTED_MODULE_15__.SetupComponent, _editor_layout_property_layout_menu_item_property_layout_menu_item_property_component__WEBPACK_IMPORTED_MODULE_173__.LayoutMenuItemPropertyComponent, _editor_layout_property_layout_header_item_property_layout_header_item_property_component__WEBPACK_IMPORTED_MODULE_174__.LayoutHeaderItemPropertyComponent, _device_device_list_device_list_component__WEBPACK_IMPORTED_MODULE_34__.DeviceListComponent, _device_device_map_device_map_component__WEBPACK_IMPORTED_MODULE_35__.DeviceMapComponent, _fuxa_view_fuxa_view_component__WEBPACK_IMPORTED_MODULE_36__.FuxaViewComponent, _fuxa_view_fuxa_view_dialog_fuxa_view_dialog_component__WEBPACK_IMPORTED_MODULE_148__.FuxaViewDialogComponent, _editor_view_property_view_property_component__WEBPACK_IMPORTED_MODULE_161__.ViewPropertyComponent, _editor_editor_component__WEBPACK_IMPORTED_MODULE_11__.DialogLinkProperty, _gui_helpers_edit_name_edit_name_component__WEBPACK_IMPORTED_MODULE_65__.EditNameComponent, _gui_helpers_confirm_dialog_confirm_dialog_component__WEBPACK_IMPORTED_MODULE_62__.ConfirmDialogComponent, _header_header_component__WEBPACK_IMPORTED_MODULE_6__.DialogInfo, _gui_helpers_daterange_dialog_daterange_dialog_component__WEBPACK_IMPORTED_MODULE_66__.DaterangeDialogComponent, _gauges_gauge_base_gauge_base_component__WEBPACK_IMPORTED_MODULE_76__.GaugeBaseComponent, _gauges_controls_html_input_html_input_component__WEBPACK_IMPORTED_MODULE_89__.HtmlInputComponent, _gauges_controls_html_button_html_button_component__WEBPACK_IMPORTED_MODULE_90__.HtmlButtonComponent, _gauges_controls_html_select_html_select_component__WEBPACK_IMPORTED_MODULE_91__.HtmlSelectComponent, _gauges_controls_html_chart_html_chart_component__WEBPACK_IMPORTED_MODULE_92__.HtmlChartComponent, _gauges_controls_html_graph_html_graph_component__WEBPACK_IMPORTED_MODULE_93__.HtmlGraphComponent, _gauges_controls_html_iframe_html_iframe_component__WEBPACK_IMPORTED_MODULE_94__.HtmlIframeComponent, _gauges_controls_html_image_html_image_component__WEBPACK_IMPORTED_MODULE_142__.HtmlImageComponent, _gauges_controls_html_bag_html_bag_component__WEBPACK_IMPORTED_MODULE_95__.HtmlBagComponent, _gauges_controls_gauge_progress_gauge_progress_component__WEBPACK_IMPORTED_MODULE_98__.GaugeProgressComponent, _gauges_controls_gauge_semaphore_gauge_semaphore_component__WEBPACK_IMPORTED_MODULE_99__.GaugeSemaphoreComponent, _gauges_gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_80__.GaugePropertyComponent, _gauges_gauge_property_permission_dialog_permission_dialog_component__WEBPACK_IMPORTED_MODULE_175__.PermissionDialogComponent, _gauges_gauge_property_action_properties_dialog_action_properties_dialog_component__WEBPACK_IMPORTED_MODULE_178__.ActionPropertiesDialogComponent, _editor_svg_selector_svg_selector_component__WEBPACK_IMPORTED_MODULE_134__.SvgSelectorComponent, _gauges_controls_html_chart_chart_property_chart_property_component__WEBPACK_IMPORTED_MODULE_81__.ChartPropertyComponent, _gauges_controls_html_bag_bag_property_bag_property_component__WEBPACK_IMPORTED_MODULE_107__.BagPropertyComponent, _gauges_controls_pipe_pipe_property_pipe_property_component__WEBPACK_IMPORTED_MODULE_108__.PipePropertyComponent, _gauges_controls_slider_slider_property_slider_property_component__WEBPACK_IMPORTED_MODULE_111__.SliderPropertyComponent, _gauges_controls_html_switch_html_switch_property_html_switch_property_component__WEBPACK_IMPORTED_MODULE_112__.HtmlSwitchPropertyComponent, _gauges_shapes_shapes_component__WEBPACK_IMPORTED_MODULE_102__.ShapesComponent, _gauges_shapes_proc_eng_proc_eng_component__WEBPACK_IMPORTED_MODULE_103__.ProcEngComponent, _gauges_shapes_ape_shapes_ape_shapes_component__WEBPACK_IMPORTED_MODULE_104__.ApeShapesComponent, _tester_tester_component__WEBPACK_IMPORTED_MODULE_38__.TesterComponent, _help_tutorial_tutorial_component__WEBPACK_IMPORTED_MODULE_53__.TutorialComponent, _gauges_gauge_property_flex_input_flex_input_component__WEBPACK_IMPORTED_MODULE_82__.FlexInputComponent, _gauges_gauge_property_flex_device_tag_flex_device_tag_component__WEBPACK_IMPORTED_MODULE_144__.FlexDeviceTagComponent, _gauges_gauge_property_flex_auth_flex_auth_component__WEBPACK_IMPORTED_MODULE_83__.FlexAuthComponent, _gauges_gauge_property_flex_head_flex_head_component__WEBPACK_IMPORTED_MODULE_84__.FlexHeadComponent, _gauges_gauge_property_flex_event_flex_event_component__WEBPACK_IMPORTED_MODULE_85__.FlexEventComponent, _gauges_gauge_property_flex_action_flex_action_component__WEBPACK_IMPORTED_MODULE_86__.FlexActionComponent, _gauges_gauge_property_flex_variable_flex_variable_component__WEBPACK_IMPORTED_MODULE_87__.FlexVariableComponent, _gauges_gauge_property_flex_variables_mapping_flex_variables_mapping_component__WEBPACK_IMPORTED_MODULE_78__.FlexVariablesMappingComponent, _gauges_gauge_property_flex_variable_map_flex_variable_map_component__WEBPACK_IMPORTED_MODULE_79__.FlexVariableMapComponent, _gauges_gauge_property_flex_widget_property_flex_widget_property_component__WEBPACK_IMPORTED_MODULE_165__.FlexWidgetPropertyComponent, _gauges_controls_value_value_component__WEBPACK_IMPORTED_MODULE_77__.ValueComponent, _directives_dialog_draggable_directive__WEBPACK_IMPORTED_MODULE_70__.DialogDraggableDirective, _helpers_utils__WEBPACK_IMPORTED_MODULE_55__.EnumToArrayPipe, _helpers_utils__WEBPACK_IMPORTED_MODULE_55__.EscapeHtmlPipe, _directives_ngx_draggable_directive__WEBPACK_IMPORTED_MODULE_72__.DraggableDirective, _directives_number_directive__WEBPACK_IMPORTED_MODULE_73__.NumberOnlyDirective, _directives_stop_input_propagation_directive__WEBPACK_IMPORTED_MODULE_136__.StopInputPropagationDirective, _directives_number_directive__WEBPACK_IMPORTED_MODULE_73__.NumberOrNullOnlyDirective, _gui_helpers_fab_button_ngx_fab_button_component__WEBPACK_IMPORTED_MODULE_59__.NgxFabButtonComponent, _gui_helpers_fab_button_ngx_fab_item_button_component__WEBPACK_IMPORTED_MODULE_60__.NgxFabItemButtonComponent, _gui_helpers_treetable_treetable_component__WEBPACK_IMPORTED_MODULE_61__.TreetableComponent, _gui_helpers_bitmask_bitmask_component__WEBPACK_IMPORTED_MODULE_67__.BitmaskComponent, _gui_helpers_sel_options_sel_options_component__WEBPACK_IMPORTED_MODULE_63__.SelOptionsComponent, _directives_lazyFor_directive__WEBPACK_IMPORTED_MODULE_74__.LazyForDirective, _gui_helpers_ngx_switch_ngx_switch_component__WEBPACK_IMPORTED_MODULE_64__.NgxSwitchComponent, _editor_chart_config_chart_config_component__WEBPACK_IMPORTED_MODULE_16__.ChartConfigComponent, _editor_graph_config_graph_config_component__WEBPACK_IMPORTED_MODULE_17__.GraphConfigComponent, _editor_card_config_card_config_component__WEBPACK_IMPORTED_MODULE_18__.CardConfigComponent, _alarms_alarm_list_alarm_list_component__WEBPACK_IMPORTED_MODULE_20__.AlarmListComponent, _alarms_alarm_view_alarm_view_component__WEBPACK_IMPORTED_MODULE_19__.AlarmViewComponent, _alarms_alarm_property_alarm_property_component__WEBPACK_IMPORTED_MODULE_21__.AlarmPropertyComponent, _notifications_notification_list_notification_list_component__WEBPACK_IMPORTED_MODULE_22__.NotificationListComponent, _notifications_notification_property_notification_property_component__WEBPACK_IMPORTED_MODULE_23__.NotificationPropertyComponent, _scripts_script_list_script_list_component__WEBPACK_IMPORTED_MODULE_24__.ScriptListComponent, _scripts_script_editor_script_editor_component__WEBPACK_IMPORTED_MODULE_25__.ScriptEditorComponent, _scripts_script_scheduling_script_scheduling_component__WEBPACK_IMPORTED_MODULE_26__.ScriptSchedulingComponent, _scripts_script_permission_script_permission_component__WEBPACK_IMPORTED_MODULE_27__.ScriptPermissionComponent, _scripts_script_mode_script_mode_component__WEBPACK_IMPORTED_MODULE_132__.ScriptModeComponent, _reports_report_list_report_list_component__WEBPACK_IMPORTED_MODULE_124__.ReportListComponent, _reports_report_editor_report_editor_component__WEBPACK_IMPORTED_MODULE_125__.ReportEditorComponent, _scripts_script_editor_script_editor_param_script_editor_param_component__WEBPACK_IMPORTED_MODULE_152__.ScriptEditorParamComponent, _language_language_text_list_language_text_list_component__WEBPACK_IMPORTED_MODULE_28__.LanguageTextListComponent, _logs_view_logs_view_component__WEBPACK_IMPORTED_MODULE_9__.LogsViewComponent, _gui_helpers_ngx_gauge_ngx_gauge_component__WEBPACK_IMPORTED_MODULE_105__.NgxGaugeComponent, _gui_helpers_ngx_nouislider_ngx_nouislider_component__WEBPACK_IMPORTED_MODULE_106__.NgxNouisliderComponent, _gui_helpers_ngx_scheduler_ngx_scheduler_component__WEBPACK_IMPORTED_MODULE_143__.NgxSchedulerComponent, _editor_chart_config_chart_line_property_chart_line_property_component__WEBPACK_IMPORTED_MODULE_172__.ChartLinePropertyComponent, _editor_graph_config_graph_source_edit_graph_source_edit_component__WEBPACK_IMPORTED_MODULE_166__.GraphSourceEditComponent, _users_users_component__WEBPACK_IMPORTED_MODULE_100__.UsersComponent, _users_users_roles_users_roles_component__WEBPACK_IMPORTED_MODULE_177__.UsersRolesComponent, _users_user_edit_user_edit_component__WEBPACK_IMPORTED_MODULE_147__.UserEditComponent, _users_users_role_edit_users_role_edit_component__WEBPACK_IMPORTED_MODULE_176__.UsersRoleEditComponent, _login_login_component__WEBPACK_IMPORTED_MODULE_101__.LoginComponent, _home_home_component__WEBPACK_IMPORTED_MODULE_5__.DialogUserInfo, _view_view_component__WEBPACK_IMPORTED_MODULE_8__.ViewComponent, _gui_helpers_ngx_uplot_ngx_uplot_component__WEBPACK_IMPORTED_MODULE_113__.NgxUplotComponent, _gauges_controls_html_chart_chart_uplot_chart_uplot_component__WEBPACK_IMPORTED_MODULE_114__.ChartUplotComponent, _cards_view_cards_view_component__WEBPACK_IMPORTED_MODULE_37__.CardsViewComponent, _gauges_controls_html_graph_graph_bar_graph_bar_component__WEBPACK_IMPORTED_MODULE_116__.GraphBarComponent, _gauges_controls_html_graph_graph_pie_graph_pie_component__WEBPACK_IMPORTED_MODULE_117__.GraphPieComponent, _gauges_controls_html_graph_graph_property_graph_property_component__WEBPACK_IMPORTED_MODULE_118__.GraphPropertyComponent, _gauges_controls_html_graph_graph_base_graph_base_component__WEBPACK_IMPORTED_MODULE_119__.GraphBaseComponent, _gauges_controls_html_iframe_iframe_property_iframe_property_component__WEBPACK_IMPORTED_MODULE_120__.IframePropertyComponent, _gauges_controls_html_table_table_property_table_property_component__WEBPACK_IMPORTED_MODULE_121__.TablePropertyComponent, _gauges_controls_html_table_table_customizer_table_customizer_component__WEBPACK_IMPORTED_MODULE_122__.TableCustomizerComponent, _gauges_controls_html_table_table_customizer_table_customizer_cell_edit_table_customizer_cell_edit_component__WEBPACK_IMPORTED_MODULE_168__.TableCustomizerCellEditComponent, _gauges_controls_html_table_table_alarms_table_alarms_component__WEBPACK_IMPORTED_MODULE_169__.TableAlarmsComponent, _gauges_controls_html_table_table_reports_table_reports_component__WEBPACK_IMPORTED_MODULE_170__.TableReportsComponent, _gauges_controls_html_table_data_table_data_table_component__WEBPACK_IMPORTED_MODULE_123__.DataTableComponent, _gui_helpers_range_number_range_number_component__WEBPACK_IMPORTED_MODULE_68__.RangeNumberComponent, _resources_lib_images_lib_images_component__WEBPACK_IMPORTED_MODULE_69__.LibImagesComponent, _resources_lib_widgets_lib_widgets_component__WEBPACK_IMPORTED_MODULE_167__.LibWidgetsComponent, _resources_kiosk_widgets_kiosk_widgets_component__WEBPACK_IMPORTED_MODULE_191__.KioskWidgetsComponent, _reports_report_editor_report_item_text_report_item_text_component__WEBPACK_IMPORTED_MODULE_127__.ReportItemTextComponent, _reports_report_editor_report_item_table_report_item_table_component__WEBPACK_IMPORTED_MODULE_128__.ReportItemTableComponent, _reports_report_editor_report_item_alarms_report_item_alarms_component__WEBPACK_IMPORTED_MODULE_130__.ReportItemAlarmsComponent, _reports_report_editor_report_item_chart_report_item_chart_component__WEBPACK_IMPORTED_MODULE_131__.ReportItemChartComponent, _gauges_controls_panel_panel_component__WEBPACK_IMPORTED_MODULE_145__.PanelComponent, _gauges_controls_panel_panel_property_panel_property_component__WEBPACK_IMPORTED_MODULE_146__.PanelPropertyComponent, _gui_helpers_webcam_player_webcam_player_component__WEBPACK_IMPORTED_MODULE_150__.WebcamPlayerComponent, _gui_helpers_webcam_player_webcam_player_dialog_webcam_player_dialog_component__WEBPACK_IMPORTED_MODULE_151__.WebcamPlayerDialogComponent, _directives_resize_directive__WEBPACK_IMPORTED_MODULE_162__.ResizeDirective, _editor_editor_views_list_editor_views_list_component__WEBPACK_IMPORTED_MODULE_163__.EditorViewsListComponent, _maps_maps_location_list_maps_location_list_component__WEBPACK_IMPORTED_MODULE_180__.MapsLocationListComponent, _maps_maps_location_property_maps_location_property_component__WEBPACK_IMPORTED_MODULE_182__.MapsLocationPropertyComponent, _maps_maps_view_maps_view_component__WEBPACK_IMPORTED_MODULE_183__.MapsViewComponent, _maps_maps_location_import_maps_location_import_component__WEBPACK_IMPORTED_MODULE_184__.MapsLocationImportComponent, _maps_maps_view_maps_fab_button_menu_maps_fab_button_menu_component__WEBPACK_IMPORTED_MODULE_185__.MapsFabButtonMenuComponent, _language_language_type_property_language_type_property_component__WEBPACK_IMPORTED_MODULE_188__.LanguageTypePropertyComponent, _language_language_text_property_language_text_property_component__WEBPACK_IMPORTED_MODULE_189__.LanguageTextPropertyComponent, _language_language_text_list_language_text_list_component__WEBPACK_IMPORTED_MODULE_28__.LanguageTextListComponent, _editor_client_script_access_client_script_access_component__WEBPACK_IMPORTED_MODULE_192__.ClientScriptAccessComponent, _token_receiver_token_receiver_component__WEBPACK_IMPORTED_MODULE_193__.TokenReceiverComponent],
+  imports: [_angular_platform_browser__WEBPACK_IMPORTED_MODULE_196__.BrowserModule, _angular_forms__WEBPACK_IMPORTED_MODULE_197__.FormsModule, _angular_forms__WEBPACK_IMPORTED_MODULE_197__.ReactiveFormsModule, _angular_common_http__WEBPACK_IMPORTED_MODULE_198__.HttpClientModule, _app_routing__WEBPACK_IMPORTED_MODULE_3__.routing, _material_module__WEBPACK_IMPORTED_MODULE_0__.MaterialModule, _angular_platform_browser_animations__WEBPACK_IMPORTED_MODULE_199__.BrowserAnimationsModule, ngx_color_picker__WEBPACK_IMPORTED_MODULE_200__.ColorPickerModule, angular2_draggable__WEBPACK_IMPORTED_MODULE_201__.AngularDraggableModule, _gui_helpers_mat_select_search_mat_select_search_module__WEBPACK_IMPORTED_MODULE_88__.MatSelectSearchModule, ngx_toastr__WEBPACK_IMPORTED_MODULE_202__.ToastrModule.forRoot({
     timeOut: 3000,
     positionClass: 'toast-bottom-right',
     preventDuplicates: false
-  }), _ngx_translate_core__WEBPACK_IMPORTED_MODULE_202__.TranslateModule.forRoot({
+  }), _ngx_translate_core__WEBPACK_IMPORTED_MODULE_203__.TranslateModule.forRoot({
     loader: {
-      provide: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_202__.TranslateLoader,
+      provide: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_203__.TranslateLoader,
       useFactory: createTranslateLoader,
-      deps: [_angular_common_http__WEBPACK_IMPORTED_MODULE_197__.HttpClient]
+      deps: [_angular_common_http__WEBPACK_IMPORTED_MODULE_198__.HttpClient]
     }
-  }), angular_gridster2__WEBPACK_IMPORTED_MODULE_203__.GridsterModule, ng2_charts__WEBPACK_IMPORTED_MODULE_204__.NgChartsModule, _ctrl_ngx_codemirror__WEBPACK_IMPORTED_MODULE_205__.CodemirrorModule, _gui_helpers_daterangepicker__WEBPACK_IMPORTED_MODULE_1__.NgxDaterangepickerMd.forRoot(), _framework_framework_module__WEBPACK_IMPORTED_MODULE_135__.FrameworkModule],
+  }), angular_gridster2__WEBPACK_IMPORTED_MODULE_204__.GridsterModule, ng2_charts__WEBPACK_IMPORTED_MODULE_205__.NgChartsModule, _ctrl_ngx_codemirror__WEBPACK_IMPORTED_MODULE_206__.CodemirrorModule, _gui_helpers_daterangepicker__WEBPACK_IMPORTED_MODULE_1__.NgxDaterangepickerMd.forRoot(), _framework_framework_module__WEBPACK_IMPORTED_MODULE_135__.FrameworkModule],
   providers: [// providersResourceService,
   _services_rcgi_resclient_service__WEBPACK_IMPORTED_MODULE_49__.ResClientService, _services_rcgi_reswebapi_service__WEBPACK_IMPORTED_MODULE_47__.ResWebApiService, _services_rcgi_resdemo_service__WEBPACK_IMPORTED_MODULE_48__.ResDemoService, _services_hmi_service__WEBPACK_IMPORTED_MODULE_51__.HmiService, _services_rcgi_rcgi_service__WEBPACK_IMPORTED_MODULE_138__.RcgiService, _services_app_service__WEBPACK_IMPORTED_MODULE_52__.AppService, _services_project_service__WEBPACK_IMPORTED_MODULE_50__.ProjectService, _services_user_service__WEBPACK_IMPORTED_MODULE_40__.UserService, _services_diagnose_service__WEBPACK_IMPORTED_MODULE_44__.DiagnoseService, _services_command_service__WEBPACK_IMPORTED_MODULE_129__.CommandService, _services_heartbeat_service__WEBPACK_IMPORTED_MODULE_137__.HeartbeatService, _services_data_converter_service__WEBPACK_IMPORTED_MODULE_126__.DataConverterService, _services_script_service__WEBPACK_IMPORTED_MODULE_45__.ScriptService, _services_resources_service__WEBPACK_IMPORTED_MODULE_46__.ResourcesService, _services_plugin_service__WEBPACK_IMPORTED_MODULE_42__.PluginService, _services_settings_service__WEBPACK_IMPORTED_MODULE_41__.SettingsService, _tester_tester_service__WEBPACK_IMPORTED_MODULE_39__.TesterService, _helpers_auth_interceptor__WEBPACK_IMPORTED_MODULE_115__.httpInterceptorProviders, _services_auth_service__WEBPACK_IMPORTED_MODULE_43__.AuthService, _gauges_gauges_component__WEBPACK_IMPORTED_MODULE_75__.GaugesManager, _helpers_windowref__WEBPACK_IMPORTED_MODULE_54__.WindowRef, _helpers_utils__WEBPACK_IMPORTED_MODULE_55__.Utils, _helpers_svg_utils__WEBPACK_IMPORTED_MODULE_164__.SvgUtils, _helpers_calc__WEBPACK_IMPORTED_MODULE_56__.Calc, _gauges_controls_html_switch_html_switch_component__WEBPACK_IMPORTED_MODULE_97__.HtmlSwitchComponent, _gauges_controls_pipe_pipe_component__WEBPACK_IMPORTED_MODULE_109__.PipeComponent, _gauges_controls_slider_slider_component__WEBPACK_IMPORTED_MODULE_110__.SliderComponent, _gauges_controls_html_table_html_table_component__WEBPACK_IMPORTED_MODULE_96__.HtmlTableComponent, _helpers_dictionary__WEBPACK_IMPORTED_MODULE_58__.Dictionary, _directives_modal_position_cache__WEBPACK_IMPORTED_MODULE_71__.ModalPositionCache, _helpers_define__WEBPACK_IMPORTED_MODULE_57__.Define, _auth_guard__WEBPACK_IMPORTED_MODULE_4__.AuthGuard, _services_toast_notifier_service__WEBPACK_IMPORTED_MODULE_139__.ToastNotifierService, _services_my_file_service__WEBPACK_IMPORTED_MODULE_140__.MyFileService, _services_reports_service__WEBPACK_IMPORTED_MODULE_171__.ReportsService, _gauges_gauge_property_action_properties_dialog_action_property_service__WEBPACK_IMPORTED_MODULE_179__.ActionPropertyService, _services_maps_locations_service__WEBPACK_IMPORTED_MODULE_181__.MapsLocationsService, _services_language_service__WEBPACK_IMPORTED_MODULE_190__.LanguageService, {
-    provide: _angular_material_legacy_tooltip__WEBPACK_IMPORTED_MODULE_206__.MAT_TOOLTIP_DEFAULT_OPTIONS,
+    provide: _angular_material_legacy_tooltip__WEBPACK_IMPORTED_MODULE_207__.MAT_TOOLTIP_DEFAULT_OPTIONS,
     useValue: myCustomTooltipDefaults
   }],
   bootstrap: [_app_component__WEBPACK_IMPORTED_MODULE_2__.AppComponent]
@@ -15841,7 +16151,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "routing": () => (/* binding */ routing)
 /* harmony export */ });
-/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! @angular/router */ 60124);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! @angular/router */ 60124);
 /* harmony import */ var _auth_guard__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./auth.guard */ 22993);
 /* harmony import */ var _home_home_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./home/home.component */ 45067);
 /* harmony import */ var _editor_editor_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./editor/editor.component */ 71486);
@@ -15859,6 +16169,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _users_users_roles_users_roles_component__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./users/users-roles/users-roles.component */ 65694);
 /* harmony import */ var _maps_maps_location_list_maps_location_list_component__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./maps/maps-location-list/maps-location-list.component */ 76018);
 /* harmony import */ var _language_language_text_list_language_text_list_component__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ./language/language-text-list/language-text-list.component */ 45702);
+/* harmony import */ var _token_receiver_token_receiver_component__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ./token-receiver/token-receiver.component */ 48057);
+
 
 
 
@@ -15949,12 +16261,15 @@ const appRoutes = [{
   path: 'mapsLocations',
   component: _maps_maps_location_list_maps_location_list_component__WEBPACK_IMPORTED_MODULE_15__.MapsLocationListComponent,
   canActivate: [_auth_guard__WEBPACK_IMPORTED_MODULE_0__.AuthGuard]
+}, {
+  path: 'auth/token',
+  component: _token_receiver_token_receiver_component__WEBPACK_IMPORTED_MODULE_17__.TokenReceiverComponent
 }, // otherwise redirect to home
 {
   path: '**',
   redirectTo: ''
 }];
-const routing = _angular_router__WEBPACK_IMPORTED_MODULE_17__.RouterModule.forRoot(appRoutes, {});
+const routing = _angular_router__WEBPACK_IMPORTED_MODULE_18__.RouterModule.forRoot(appRoutes, {});
 
 /***/ }),
 
@@ -28052,23 +28367,27 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "ViewPropertyComponent": () => (/* binding */ ViewPropertyComponent)
 /* harmony export */ });
-/* harmony import */ var _view_property_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./view-property.component.html?ngResource */ 22565);
-/* harmony import */ var _view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./view-property.component.scss?ngResource */ 84616);
-/* harmony import */ var _view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! @angular/core */ 22560);
-/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../_helpers/utils */ 28257);
-/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../_models/hmi */ 72830);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
-/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
-/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @angular/forms */ 2508);
-/* harmony import */ var angular_gridster2__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! angular-gridster2 */ 45008);
-/* harmony import */ var _gauges_gauge_property_flex_event_flex_event_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../gauges/gauge-property/flex-event/flex-event.component */ 30820);
-/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../_services/project.service */ 47848);
-/* harmony import */ var _services_user_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../_services/user.service */ 55089);
-/* harmony import */ var _services_auth_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../_services/auth.service */ 88368);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs */ 80228);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 68951);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs */ 44874);
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js */ 71670);
+/* harmony import */ var _view_property_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./view-property.component.html?ngResource */ 22565);
+/* harmony import */ var _view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./view-property.component.scss?ngResource */ 84616);
+/* harmony import */ var _view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../_helpers/utils */ 28257);
+/* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../_models/hmi */ 72830);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! @ngx-translate/core */ 38699);
+/* harmony import */ var _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! @angular/material/legacy-dialog */ 58446);
+/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @angular/forms */ 2508);
+/* harmony import */ var angular_gridster2__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! angular-gridster2 */ 45008);
+/* harmony import */ var _gauges_gauge_property_flex_event_flex_event_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../gauges/gauge-property/flex-event/flex-event.component */ 30820);
+/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../_services/project.service */ 47848);
+/* harmony import */ var _services_user_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../_services/user.service */ 55089);
+/* harmony import */ var _services_auth_service__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../_services/auth.service */ 88368);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 80228);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 68951);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 44874);
+/* harmony import */ var _api_user__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../api/user */ 56592);
+
+
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
       r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -28096,6 +28415,7 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let ViewPropertyComponent = class ViewPropertyComponent {
   fb;
   translateService;
@@ -28104,13 +28424,13 @@ let ViewPropertyComponent = class ViewPropertyComponent {
   authService;
   dialogRef;
   data;
-  defaultColor = _helpers_utils__WEBPACK_IMPORTED_MODULE_2__.Utils.defaultColor;
-  viewType = _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType;
-  alignType = _models_hmi__WEBPACK_IMPORTED_MODULE_3__.DocAlignType;
+  defaultColor = _helpers_utils__WEBPACK_IMPORTED_MODULE_3__.Utils.defaultColor;
+  viewType = _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType;
+  alignType = _models_hmi__WEBPACK_IMPORTED_MODULE_4__.DocAlignType;
   formGroup;
-  gridType = angular_gridster2__WEBPACK_IMPORTED_MODULE_8__.GridType;
+  gridType = angular_gridster2__WEBPACK_IMPORTED_MODULE_10__.GridType;
   scripts;
-  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_9__.Subject(); // Tags management
+  destroy$ = new rxjs__WEBPACK_IMPORTED_MODULE_11__.Subject(); // Tags management
 
   viewTags = [];
   newTagInput = '';
@@ -28189,21 +28509,48 @@ let ViewPropertyComponent = class ViewPropertyComponent {
     } // Get current user
 
 
-    this.currentUser = this.authService.getUser(); // Load users list (no admin permission required)
+    this.currentUser = this.authService.getUser(); // Load users list from API
 
-    this.userService.getUsersList().subscribe(result => {
-      if (result && result.users) {
-        this.users = result.users;
-      }
-    }, error => {
-      console.error('Failed to load users list:', error); // If failed to load users, at least show current user
+    this.loadUsersList();
+  }
 
-      if (this.currentUser) {
-        this.users = [{
-          username: this.currentUser.username
-        }];
+  loadUsersList() {
+    var _this = this;
+
+    return (0,C_Users_alish_Documents_FUXA_client_node_modules_babel_runtime_helpers_esm_asyncToGenerator_js__WEBPACK_IMPORTED_MODULE_0__["default"])(function* () {
+      try {
+        const response = yield (0,_api_user__WEBPACK_IMPORTED_MODULE_9__.getUserList)({
+          pageNum: '1',
+          limit: '100'
+        });
+
+        if (response && response.data && response.data.pageInfo && response.data.pageInfo.list) {
+          // Map API response to user format with username
+          _this.users = response.data.pageInfo.list.map(user => ({
+            username: user.username,
+            id: user.id,
+            email: user.email,
+            phone: user.phone
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load users list:', error); // Fallback to old method if API fails
+
+        _this.userService.getUsersList().subscribe(result => {
+          if (result && result.users) {
+            _this.users = result.users;
+          }
+        }, err => {
+          console.error('Fallback also failed:', err); // If both methods fail, at least show current user
+
+          if (_this.currentUser) {
+            _this.users = [{
+              username: _this.currentUser.username
+            }];
+          }
+        });
       }
-    });
+    })();
   }
 
   ngOnInit() {
@@ -28211,7 +28558,7 @@ let ViewPropertyComponent = class ViewPropertyComponent {
       name: [{
         value: this.data.name,
         disabled: this.data.name
-      }, _angular_forms__WEBPACK_IMPORTED_MODULE_10__.Validators.required],
+      }, _angular_forms__WEBPACK_IMPORTED_MODULE_12__.Validators.required],
       type: [{
         value: this.data.type,
         disabled: this.data.name
@@ -28223,9 +28570,9 @@ let ViewPropertyComponent = class ViewPropertyComponent {
       gridType: [this.data.profile.gridType]
     });
 
-    if (this.data.type !== _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType.cards && this.data.type !== _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType.maps) {
-      this.formGroup.controls.width.setValidators(_angular_forms__WEBPACK_IMPORTED_MODULE_10__.Validators.required);
-      this.formGroup.controls.height.setValidators(_angular_forms__WEBPACK_IMPORTED_MODULE_10__.Validators.required);
+    if (this.data.type !== _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType.cards && this.data.type !== _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType.maps) {
+      this.formGroup.controls.width.setValidators(_angular_forms__WEBPACK_IMPORTED_MODULE_12__.Validators.required);
+      this.formGroup.controls.height.setValidators(_angular_forms__WEBPACK_IMPORTED_MODULE_12__.Validators.required);
     }
 
     if (!this.data.name) {
@@ -28233,10 +28580,10 @@ let ViewPropertyComponent = class ViewPropertyComponent {
     }
 
     this.formGroup.updateValueAndValidity();
-    this.formGroup.controls.type.valueChanges.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_11__.takeUntil)(this.destroy$), (0,rxjs__WEBPACK_IMPORTED_MODULE_12__.startWith)(this.formGroup.controls.type.value)).subscribe(type => {
-      this.tabEvents.disabled = type === _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType.cards || type === _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType.maps;
+    this.formGroup.controls.type.valueChanges.pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.takeUntil)(this.destroy$), (0,rxjs__WEBPACK_IMPORTED_MODULE_14__.startWith)(this.formGroup.controls.type.value)).subscribe(type => {
+      this.tabEvents.disabled = type === _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType.cards || type === _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType.maps;
 
-      if (type === _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewType.cards && this.data.newView && this.data.profile.bkcolor === '#ffffffff') {
+      if (type === _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewType.cards && this.data.newView && this.data.profile.bkcolor === '#ffffffff') {
         this.data.profile.bkcolor = '#E6E6E6';
       }
     }); // Initialize tags
@@ -28253,7 +28600,7 @@ let ViewPropertyComponent = class ViewPropertyComponent {
     this.allExistingTags = Array.from(tagsSet).sort(); // Initialize permissions
 
     if (!this.data.property) {
-      this.data.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewProperty();
+      this.data.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewProperty();
     } // Set creator for new views (default to current user)
 
 
@@ -28296,7 +28643,7 @@ let ViewPropertyComponent = class ViewPropertyComponent {
     this.data.profile.gridType = this.formGroup.controls.gridType.value;
 
     if (!this.data.property) {
-      this.data.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_3__.ViewProperty();
+      this.data.property = new _models_hmi__WEBPACK_IMPORTED_MODULE_4__.ViewProperty();
     }
 
     this.data.property.events = this.flexEvent.getEvents(); // Save tags
@@ -28415,44 +28762,44 @@ let ViewPropertyComponent = class ViewPropertyComponent {
   }
 
   static ctorParameters = () => [{
-    type: _angular_forms__WEBPACK_IMPORTED_MODULE_10__.UntypedFormBuilder
+    type: _angular_forms__WEBPACK_IMPORTED_MODULE_12__.UntypedFormBuilder
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_15__.TranslateService
   }, {
-    type: _services_project_service__WEBPACK_IMPORTED_MODULE_5__.ProjectService
+    type: _services_project_service__WEBPACK_IMPORTED_MODULE_6__.ProjectService
   }, {
-    type: _services_user_service__WEBPACK_IMPORTED_MODULE_6__.UserService
+    type: _services_user_service__WEBPACK_IMPORTED_MODULE_7__.UserService
   }, {
-    type: _services_auth_service__WEBPACK_IMPORTED_MODULE_7__.AuthService
+    type: _services_auth_service__WEBPACK_IMPORTED_MODULE_8__.AuthService
   }, {
-    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_14__.MatLegacyDialogRef
+    type: _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_16__.MatLegacyDialogRef
   }, {
     type: undefined,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_15__.Inject,
-      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_14__.MAT_LEGACY_DIALOG_DATA]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.Inject,
+      args: [_angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_16__.MAT_LEGACY_DIALOG_DATA]
     }]
   }];
   static propDecorators = {
     flexEvent: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_15__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.ViewChild,
       args: ['flexevent', {
         static: false
       }]
     }],
     tabEvents: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_15__.ViewChild,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_17__.ViewChild,
       args: ['tabEvents', {
         static: true
       }]
     }]
   };
 };
-ViewPropertyComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_15__.Component)({
+ViewPropertyComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_17__.Component)({
   selector: 'app-view-property',
-  template: _view_property_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
-  styles: [(_view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [_angular_forms__WEBPACK_IMPORTED_MODULE_10__.UntypedFormBuilder, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__.TranslateService, _services_project_service__WEBPACK_IMPORTED_MODULE_5__.ProjectService, _services_user_service__WEBPACK_IMPORTED_MODULE_6__.UserService, _services_auth_service__WEBPACK_IMPORTED_MODULE_7__.AuthService, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_14__.MatLegacyDialogRef, Object])], ViewPropertyComponent);
+  template: _view_property_component_html_ngResource__WEBPACK_IMPORTED_MODULE_1__,
+  styles: [(_view_property_component_scss_ngResource__WEBPACK_IMPORTED_MODULE_2___default())]
+}), __metadata("design:paramtypes", [_angular_forms__WEBPACK_IMPORTED_MODULE_12__.UntypedFormBuilder, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_15__.TranslateService, _services_project_service__WEBPACK_IMPORTED_MODULE_6__.ProjectService, _services_user_service__WEBPACK_IMPORTED_MODULE_7__.UserService, _services_auth_service__WEBPACK_IMPORTED_MODULE_8__.AuthService, _angular_material_legacy_dialog__WEBPACK_IMPORTED_MODULE_16__.MatLegacyDialogRef, Object])], ViewPropertyComponent);
 
 
 /***/ }),
@@ -30316,7 +30663,7 @@ let FuxaViewComponent = FuxaViewComponent_1 = class FuxaViewComponent {
         this.ongoto.emit(view.id);
         return;
       } else {
-        this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
+        this.dataContainer.nativeElement.innerHTML = (view.svgcontent || '').replace('<title>Layer 1</title>', '');
       }
 
       if (view.profile.bkimage) {
@@ -51437,7 +51784,7 @@ let HomeComponent = class HomeComponent {
         this.processValueInHeaderItem(varTag);
       }); // 訂閱播放限制變化，當限制計算完成後重新載入視圖
 
-      this.subscriptionAllowedViews = this.playRestrictionsService.allowedViews$.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_32__.filter)(result => result.views.length > 0 || result.isSuperAdmin)).subscribe(() => {
+      this.subscriptionAllowedViews = this.playRestrictionsService.allowedViews$.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_32__.filter)(result => result.isCalculated === true)).subscribe(() => {
         // 如果 HMI 已載入，重新過濾視圖
         if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
           this.applyViewRestrictions();
@@ -51701,9 +52048,11 @@ let HomeComponent = class HomeComponent {
 
   applyViewRestrictions() {
     const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
-    console.log('Applying view restrictions:', allowedViewsResult); // 如果是超級管理員，不需要過濾
+    console.log('Applying view restrictions:', allowedViewsResult);
+    console.log('Current homeView:', this.homeView?.id, this.homeView?.name); // 如果是超級管理員，不需要過濾
 
     if (allowedViewsResult.isSuperAdmin) {
+      console.log('Super admin detected, skipping view restrictions');
       return;
     } // 如果沒有被限制的視圖，不需要過濾
 
@@ -51758,20 +52107,44 @@ let HomeComponent = class HomeComponent {
         console.log('Filtered views for home (excluded restricted):', filteredViews.map(v => v.id));
       }
 
-      let viewToShow = null;
+      let viewToShow = null; // 取得 DMS user 資訊
 
-      if (this.hmi.layout?.start) {
+      const dmsUser = this.authService.getDmsUser();
+      const userId = dmsUser?.id || '';
+      const roleId = dmsUser?.roleId || ''; // 優先順序：
+      // 1. 檢查 DMS user.id 是否有符合 playRestrictions 中的紀錄
+      // 2. 檢查 DMS user.roleId 是否有符合 playRestrictions 中的紀錄
+      // 3. 載入預設 view
+
+      const startViewId = this.playRestrictionsService.getStartViewFromRestrictions(userId, roleId);
+
+      if (startViewId) {
+        viewToShow = filteredViews.find(x => x.id === startViewId);
+
+        if (viewToShow) {
+          console.log('Using start view from playRestrictions:', startViewId);
+        }
+      } // 如果 playRestrictions 沒有匹配，使用專案預設
+
+
+      if (!viewToShow && this.hmi.layout?.start) {
         viewToShow = filteredViews.find(x => x.id === this.hmi.layout.start);
-      }
+      } // 如果都沒有，使用第一個視圖
+
 
       if (!viewToShow && filteredViews.length > 0) {
         viewToShow = filteredViews[0];
-      }
+      } // URL 參數可以覆蓋以上設定
 
-      let startView = filteredViews.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
 
-      if (startView) {
-        viewToShow = startView;
+      const urlViewName = this.route.snapshot.queryParamMap.get('viewName')?.trim();
+
+      if (urlViewName) {
+        const urlView = filteredViews.find(x => x.name === urlViewName);
+
+        if (urlView) {
+          viewToShow = urlView;
+        }
       }
 
       this.homeView = viewToShow;
@@ -51831,6 +52204,7 @@ let HomeComponent = class HomeComponent {
     }
 
     if (this.homeView && this.fuxaview) {
+      console.log('Loading homeView:', this.homeView?.id, 'svgcontent length:', this.homeView?.svgcontent?.length || 0);
       this.fuxaview.hmi.layout = this.hmi.layout;
       this.fuxaview.loadHmi(this.homeView);
     }
@@ -58042,6 +58416,83 @@ TesterService = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.Inject
 
 /***/ }),
 
+/***/ 48057:
+/*!************************************************************!*\
+  !*** ./src/app/token-receiver/token-receiver.component.ts ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "TokenReceiverComponent": () => (/* binding */ TokenReceiverComponent)
+/* harmony export */ });
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts_css_ngResource_C_Users_alish_Documents_FUXA_client_node_modules_ngtools_webpack_src_loaders_inline_resource_js_data_CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg_C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./src/app/token-receiver/token-receiver.component.ts.css?ngResource!=!./node_modules/@ngtools/webpack/src/loaders/inline-resource.js?data=CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg!./src/app/token-receiver/token-receiver.component.ts */ 32653);
+/* harmony import */ var C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts_css_ngResource_C_Users_alish_Documents_FUXA_client_node_modules_ngtools_webpack_src_loaders_inline_resource_js_data_CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg_C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts_css_ngResource_C_Users_alish_Documents_FUXA_client_node_modules_ngtools_webpack_src_loaders_inline_resource_js_data_CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg_C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/core */ 22560);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/router */ 60124);
+var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+  var c = arguments.length,
+      r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+      d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+var __metadata = undefined && undefined.__metadata || function (k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+let TokenReceiverComponent = class TokenReceiverComponent {
+  route;
+  router;
+
+  constructor(route, router) {
+    this.route = route;
+    this.router = router;
+  }
+
+  ngOnInit() {
+    // 從 query parameters 取得 token
+    this.route.queryParams.subscribe(params => {
+      const token = params['token'];
+
+      if (token) {
+        // 將 token 存入 localStorage
+        localStorage.setItem('token', token);
+        console.log('Token received and stored successfully'); // 重新導向到首頁或其他頁面
+
+        this.router.navigate(['/home']);
+      } else {
+        console.error('No token provided'); // 如果沒有 token，可以重導到登入頁或顯示錯誤
+
+        this.router.navigate(['/']);
+      }
+    });
+  }
+
+  static ctorParameters = () => [{
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_1__.ActivatedRoute
+  }, {
+    type: _angular_router__WEBPACK_IMPORTED_MODULE_1__.Router
+  }];
+};
+TokenReceiverComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_2__.Component)({
+  selector: 'app-token-receiver',
+  template: `
+    <div class="token-receiver-container">
+      <p>正在處理認證...</p>
+    </div>
+  `,
+  styles: [(C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts_css_ngResource_C_Users_alish_Documents_FUXA_client_node_modules_ngtools_webpack_src_loaders_inline_resource_js_data_CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg_C_Users_alish_Documents_FUXA_client_src_app_token_receiver_token_receiver_component_ts__WEBPACK_IMPORTED_MODULE_0___default())]
+}), __metadata("design:paramtypes", [_angular_router__WEBPACK_IMPORTED_MODULE_1__.ActivatedRoute, _angular_router__WEBPACK_IMPORTED_MODULE_1__.Router])], TokenReceiverComponent);
+
+
+/***/ }),
+
 /***/ 41923:
 /*!********************************************************!*\
   !*** ./src/app/users/user-edit/user-edit.component.ts ***!
@@ -59054,6 +59505,24 @@ if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.productio
 }
 
 (0,_angular_platform_browser_dynamic__WEBPACK_IMPORTED_MODULE_6__.platformBrowserDynamic)().bootstrapModule(_app_app_module__WEBPACK_IMPORTED_MODULE_0__.AppModule).catch(err => console.log(err));
+
+/***/ }),
+
+/***/ 32653:
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./src/app/token-receiver/token-receiver.component.ts.css?ngResource!=!./node_modules/@ngtools/webpack/src/loaders/inline-resource.js?data=CiAgICAudG9rZW4tcmVjZWl2ZXItY29udGFpbmVyIHsKICAgICAgZGlzcGxheTogZmxleDsKICAgICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7CiAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgIGhlaWdodDogMTAwdmg7CiAgICAgIGZvbnQtc2l6ZTogMTZweDsKICAgICAgY29sb3I6ICM2NjY7CiAgICB9CiAg!./src/app/token-receiver/token-receiver.component.ts ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+// Imports
+var ___CSS_LOADER_API_SOURCEMAP_IMPORT___ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ 49579);
+var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/api.js */ 60931);
+var ___CSS_LOADER_EXPORT___ = ___CSS_LOADER_API_IMPORT___(___CSS_LOADER_API_SOURCEMAP_IMPORT___);
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n    .token-receiver-container {\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      height: 100vh;\n      font-size: 16px;\n      color: #666;\n    }\n  ", "",{"version":3,"sources":["webpack://./src/app/token-receiver/token-receiver.component.ts"],"names":[],"mappings":";IACI;MACE,aAAa;MACb,uBAAuB;MACvB,mBAAmB;MACnB,aAAa;MACb,eAAe;MACf,WAAW;IACb","sourcesContent":["\n    .token-receiver-container {\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      height: 100vh;\n      font-size: 16px;\n      color: #666;\n    }\n  "],"sourceRoot":""}]);
+// Exports
+module.exports = ___CSS_LOADER_EXPORT___.toString();
+
 
 /***/ }),
 

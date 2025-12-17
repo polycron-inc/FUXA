@@ -52,8 +52,9 @@ function _bind() {
         sql += "CREATE TABLE if not exists reports (name TEXT PRIMARY KEY, value TEXT);";
         sql += "CREATE TABLE if not exists locations (name TEXT PRIMARY KEY, value TEXT);";
         sql += "CREATE TABLE if not exists constParameters (name TEXT PRIMARY KEY, value TEXT, visibility_scope TEXT, creator TEXT, created_at INTEGER, updated_at INTEGER);";
-        sql += "CREATE TABLE if not exists playRestrictions (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, view_id TEXT, user_id TEXT, role_id TEXT, creator TEXT, created_at INTEGER, updated_at INTEGER);";
+        sql += "CREATE TABLE if not exists playRestrictions (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, view_id TEXT, view_name TEXT, user_id TEXT, user_name TEXT, role_id TEXT, role_name TEXT, creator TEXT, created_at INTEGER, updated_at INTEGER);";
         sql += "CREATE TABLE if not exists defaultViewRestrictions (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, user_id TEXT, role_id TEXT, default_view_id TEXT NOT NULL, priority INTEGER DEFAULT 0, enabled INTEGER DEFAULT 1, creator TEXT, created_at INTEGER, updated_at INTEGER);";
+        sql += "CREATE TABLE if not exists userPreferences (id INTEGER PRIMARY KEY AUTOINCREMENT, dms_user_id TEXT NOT NULL UNIQUE, start_view_id TEXT, preferences TEXT, created_at INTEGER, updated_at INTEGER);";
         db_prj.exec(sql, function (err) {
             if (err) {
                 logger.error(`prjstorage.bind failed! ${err}`);
@@ -97,8 +98,76 @@ function _checkUpdate() {
                     } else {
                         logger.info('prjstorage: visibility_scope column added successfully');
                     }
-                    resolve();
+                    _checkPlayRestrictionsColumns().then(resolve).catch(reject);
                 });
+            } else {
+                _checkPlayRestrictionsColumns().then(resolve).catch(reject);
+            }
+        });
+    });
+}
+
+/**
+ * Check and add new columns to playRestrictions table
+ */
+function _checkPlayRestrictionsColumns() {
+    return new Promise(function (resolve, reject) {
+        db_prj.all("PRAGMA table_info(playRestrictions)", function (err, columns) {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            var hasUserName = columns.some(col => col.name === 'user_name');
+            var hasViewName = columns.some(col => col.name === 'view_name');
+            var hasRoleName = columns.some(col => col.name === 'role_name');
+
+            var alterPromises = [];
+
+            if (!hasUserName) {
+                alterPromises.push(new Promise((res, rej) => {
+                    logger.info('prjstorage: Adding user_name column to playRestrictions table');
+                    db_prj.run("ALTER TABLE playRestrictions ADD COLUMN user_name TEXT", function (err) {
+                        if (err && err.message.indexOf('duplicate column name') === -1) {
+                            logger.error(`prjstorage: Failed to add user_name column: ${err}`);
+                        } else {
+                            logger.info('prjstorage: user_name column added successfully');
+                        }
+                        res();
+                    });
+                }));
+            }
+
+            if (!hasViewName) {
+                alterPromises.push(new Promise((res, rej) => {
+                    logger.info('prjstorage: Adding view_name column to playRestrictions table');
+                    db_prj.run("ALTER TABLE playRestrictions ADD COLUMN view_name TEXT", function (err) {
+                        if (err && err.message.indexOf('duplicate column name') === -1) {
+                            logger.error(`prjstorage: Failed to add view_name column: ${err}`);
+                        } else {
+                            logger.info('prjstorage: view_name column added successfully');
+                        }
+                        res();
+                    });
+                }));
+            }
+
+            if (!hasRoleName) {
+                alterPromises.push(new Promise((res, rej) => {
+                    logger.info('prjstorage: Adding role_name column to playRestrictions table');
+                    db_prj.run("ALTER TABLE playRestrictions ADD COLUMN role_name TEXT", function (err) {
+                        if (err && err.message.indexOf('duplicate column name') === -1) {
+                            logger.error(`prjstorage: Failed to add role_name column: ${err}`);
+                        } else {
+                            logger.info('prjstorage: role_name column added successfully');
+                        }
+                        res();
+                    });
+                }));
+            }
+
+            if (alterPromises.length > 0) {
+                Promise.all(alterPromises).then(resolve).catch(reject);
             } else {
                 resolve();
             }
@@ -253,8 +322,8 @@ function setPlayRestriction(restriction) {
         const now = Date.now();
         if (restriction.id) {
             // Update existing
-            var sql = "UPDATE playRestrictions SET type = ?, view_id = ?, user_id = ?, role_id = ?, updated_at = ? WHERE id = ?";
-            db_prj.run(sql, [restriction.type, restriction.view_id, restriction.user_id, restriction.role_id, now, restriction.id], function (err) {
+            var sql = "UPDATE playRestrictions SET type = ?, view_id = ?, view_name = ?, user_id = ?, user_name = ?, role_id = ?, role_name = ?, updated_at = ? WHERE id = ?";
+            db_prj.run(sql, [restriction.type, restriction.view_id, restriction.view_name, restriction.user_id, restriction.user_name, restriction.role_id, restriction.role_name, now, restriction.id], function (err) {
                 if (err) {
                     reject(err);
                 } else {
@@ -263,8 +332,8 @@ function setPlayRestriction(restriction) {
             });
         } else {
             // Insert new
-            var sql = "INSERT INTO playRestrictions (type, view_id, user_id, role_id, creator, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            db_prj.run(sql, [restriction.type, restriction.view_id, restriction.user_id, restriction.role_id, restriction.creator, now, now], function (err) {
+            var sql = "INSERT INTO playRestrictions (type, view_id, view_name, user_id, user_name, role_id, role_name, creator, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            db_prj.run(sql, [restriction.type, restriction.view_id, restriction.view_name, restriction.user_id, restriction.user_name, restriction.role_id, restriction.role_name, restriction.creator, now, now], function (err) {
                 if (err) {
                     reject(err);
                 } else {
@@ -484,6 +553,65 @@ function clearAll() {
 }
 
 /**
+ * Get user preference by DMS user ID
+ * @param {string} dmsUserId - DMS user ID
+ */
+function getUserPreference(dmsUserId) {
+    return new Promise(function (resolve, reject) {
+        var sql = "SELECT * FROM userPreferences WHERE dms_user_id = ?";
+        db_prj.get(sql, [dmsUserId], function (err, row) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+/**
+ * Set user preference (create or update)
+ * @param {object} preference - {dms_user_id, start_view_id, preferences}
+ */
+function setUserPreference(preference) {
+    return new Promise(function (resolve, reject) {
+        const now = Date.now();
+        // Use INSERT OR REPLACE to handle upsert
+        var sql = `INSERT INTO userPreferences (dms_user_id, start_view_id, preferences, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(dms_user_id) DO UPDATE SET
+                   start_view_id = excluded.start_view_id,
+                   preferences = excluded.preferences,
+                   updated_at = excluded.updated_at`;
+        var preferencesJson = preference.preferences ? JSON.stringify(preference.preferences) : null;
+        db_prj.run(sql, [preference.dms_user_id, preference.start_view_id, preferencesJson, now, now], function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve({ dms_user_id: preference.dms_user_id });
+            }
+        });
+    });
+}
+
+/**
+ * Delete user preference by DMS user ID
+ * @param {string} dmsUserId - DMS user ID
+ */
+function deleteUserPreference(dmsUserId) {
+    return new Promise(function (resolve, reject) {
+        var sql = "DELETE FROM userPreferences WHERE dms_user_id = ?";
+        db_prj.run(sql, [dmsUserId], function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+/**
  * Database Table
  */
 const TableType = {
@@ -501,6 +629,7 @@ const TableType = {
     CONSTPARAMETERS: 'constParameters',
     PLAYRESTRICTIONS: 'playRestrictions',
     DEFAULTVIEWRESTRICTIONS: 'defaultViewRestrictions',
+    USERPREFERENCES: 'userPreferences',
 }
 
 module.exports = {
@@ -519,5 +648,8 @@ module.exports = {
     getDefaultViewForUser: getDefaultViewForUser,
     setDefaultViewRestriction: setDefaultViewRestriction,
     deleteDefaultViewRestriction: deleteDefaultViewRestriction,
+    getUserPreference: getUserPreference,
+    setUserPreference: setUserPreference,
+    deleteUserPreference: deleteUserPreference,
     TableType: TableType,
 };

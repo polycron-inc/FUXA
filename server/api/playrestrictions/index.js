@@ -152,8 +152,11 @@ module.exports = {
                         id: item.id,
                         type: item.type,
                         view_id: item.view_id,
+                        view_name: item.view_name,
                         user_id: item.user_id,
+                        user_name: item.user_name,
                         role_id: item.role_id,
+                        role_name: item.role_name,
                         creator: req.userId || 'admin'
                     }));
 
@@ -171,8 +174,11 @@ module.exports = {
                         id: req.body.id,
                         type: req.body.type,
                         view_id: req.body.view_id,
+                        view_name: req.body.view_name,
                         user_id: req.body.user_id,
+                        user_name: req.body.user_name,
                         role_id: req.body.role_id,
+                        role_name: req.body.role_name,
                         creator: req.userId || 'admin'
                     };
                     runtime.project.setPlayRestriction(restriction).then(result => {

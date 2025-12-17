@@ -13,7 +13,7 @@ import { CardsViewComponent } from '../cards-view/cards-view.component';
 import { HmiService, ScriptOpenCard, ScriptSetView } from '../_services/hmi.service';
 import { ProjectService } from '../_services/project.service';
 import { AuthService } from '../_services/auth.service';
-import { PlayRestrictionsService } from '../_services/play-restrictions.service';
+import { PlayRestrictionsService, AllowedViewsResponse } from '../_services/play-restrictions.service';
 import { GaugesManager } from '../gauges/gauges.component';
 import { Hmi, View, ViewType, NaviModeType, NotificationModeType, ZoomModeType, HeaderSettings, LinkType, HeaderItem, Variable, GaugeStatus, GaugeSettings, GaugeEventType, LoginOverlayColorType, GaugeEvent } from '../_models/hmi';
 import { LoginComponent } from '../login/login.component';
@@ -150,7 +150,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
             // 訂閱播放限制變化，當限制計算完成後重新載入視圖
             this.subscriptionAllowedViews = this.playRestrictionsService.allowedViews$.pipe(
-                filter(result => result.views.length > 0 || result.isSuperAdmin)
+                filter((result: AllowedViewsResponse) => result.isCalculated === true)
             ).subscribe(() => {
                 // 如果 HMI 已載入，重新過濾視圖
                 if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
@@ -405,9 +405,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private applyViewRestrictions() {
         const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
         console.log('Applying view restrictions:', allowedViewsResult);
+        console.log('Current homeView:', this.homeView?.id, this.homeView?.name);
 
         // 如果是超級管理員，不需要過濾
         if (allowedViewsResult.isSuperAdmin) {
+            console.log('Super admin detected, skipping view restrictions');
             return;
         }
 
@@ -462,15 +464,41 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             }
 
             let viewToShow = null;
-            if (this.hmi.layout?.start) {
+
+            // 取得 DMS user 資訊
+            const dmsUser = this.authService.getDmsUser();
+            const userId = dmsUser?.id || '';
+            const roleId = dmsUser?.roleId || '';
+
+            // 優先順序：
+            // 1. 檢查 DMS user.id 是否有符合 playRestrictions 中的紀錄
+            // 2. 檢查 DMS user.roleId 是否有符合 playRestrictions 中的紀錄
+            // 3. 載入預設 view
+            const startViewId = this.playRestrictionsService.getStartViewFromRestrictions(userId, roleId);
+            if (startViewId) {
+                viewToShow = filteredViews.find(x => x.id === startViewId);
+                if (viewToShow) {
+                    console.log('Using start view from playRestrictions:', startViewId);
+                }
+            }
+
+            // 如果 playRestrictions 沒有匹配，使用專案預設
+            if (!viewToShow && this.hmi.layout?.start) {
                 viewToShow = filteredViews.find(x => x.id === this.hmi.layout.start);
             }
+
+            // 如果都沒有，使用第一個視圖
             if (!viewToShow && filteredViews.length > 0) {
                 viewToShow = filteredViews[0];
             }
-            let startView = filteredViews.find(x => x.name === this.route.snapshot.queryParamMap.get('viewName')?.trim());
-            if (startView) {
-                viewToShow = startView;
+
+            // URL 參數可以覆蓋以上設定
+            const urlViewName = this.route.snapshot.queryParamMap.get('viewName')?.trim();
+            if (urlViewName) {
+                const urlView = filteredViews.find(x => x.name === urlViewName);
+                if (urlView) {
+                    viewToShow = urlView;
+                }
             }
             this.homeView = viewToShow;
             this.setBackground();
@@ -516,6 +544,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         }
         if (this.homeView && this.fuxaview) {
+            console.log('Loading homeView:', this.homeView?.id, 'svgcontent length:', this.homeView?.svgcontent?.length || 0);
             this.fuxaview.hmi.layout = this.hmi.layout;
             this.fuxaview.loadHmi(this.homeView);
         }
