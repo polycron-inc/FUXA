@@ -4,6 +4,7 @@
 
 var express = require("express");
 const { v4: uuidv4 } = require('uuid');
+var dataPointsApi = require('../dataPoints');
 
 var runtime;
 var secureFnc;
@@ -432,12 +433,20 @@ module.exports = {
 
                 const existingPointIds = groupPoints[groupId] || [];
 
-                // Mock available points (in production, filter from actual dataPoints)
-                let availablePoints = [
-                    { id: 'avail-1', name: 'Available Point 1', code: 'AP1', deviceName: 'Device 1', pointType: 'physical', dataType: 'float' },
-                    { id: 'avail-2', name: 'Available Point 2', code: 'AP2', deviceName: 'Device 2', pointType: 'virtual', dataType: 'int' },
-                    { id: 'avail-3', name: 'Available Point 3', code: 'AP3', deviceName: 'Device 1', pointType: 'physical', dataType: 'boolean' }
-                ].filter(p => !existingPointIds.includes(p.id));
+                // Get real data points from dataPoints module
+                const allDataPoints = dataPointsApi.getDataPoints();
+
+                // Filter out points that are already in the group and map to required format
+                let availablePoints = allDataPoints
+                    .filter(p => !existingPointIds.includes(p.id))
+                    .map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        code: p.code,
+                        deviceName: p.deviceName || '-',
+                        pointType: p.pointType,
+                        dataType: p.dataType
+                    }));
 
                 // Apply filters
                 if (keyword) {
@@ -445,7 +454,7 @@ module.exports = {
                     availablePoints = availablePoints.filter(p =>
                         p.name.toLowerCase().includes(kw) ||
                         p.code.toLowerCase().includes(kw) ||
-                        p.deviceName.toLowerCase().includes(kw)
+                        (p.deviceName && p.deviceName.toLowerCase().includes(kw))
                     );
                 }
                 if (pointType) {
