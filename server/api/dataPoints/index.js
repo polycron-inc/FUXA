@@ -40,6 +40,14 @@ module.exports = {
         secureFnc = _secureFnc;
         checkGroupsFnc = _checkGroupsFnc;
     },
+    // Export function to get all data points (for use by other modules)
+    getDataPoints: function() {
+        return dataPoints;
+    },
+    // Export function to get pending data points (for use by other modules)
+    getPendingDataPoints: function() {
+        return pendingDataPoints;
+    },
     app: function () {
         var dpApp = express();
         dpApp.use(function(req, res, next) {
