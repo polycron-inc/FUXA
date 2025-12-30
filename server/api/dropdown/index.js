@@ -1,8 +1,10 @@
 /**
  * 'api/dropdown': Dropdown API for providing dropdown options
+ * Uses SQLite database for persistent storage with static fallbacks
  */
 
 var express = require("express");
+const prjstorage = require('../../runtime/project/prjstorage');
 
 var runtime;
 var secureFnc;
@@ -17,7 +19,7 @@ function createResponse(code, message, data = null) {
     return response;
 }
 
-// Static dropdown data
+// Static dropdown data (fallback if database is empty)
 const BRANDS = [
     { label: 'Siemens', value: 'siemens' },
     { label: 'ABB', value: 'abb' },
@@ -79,26 +81,18 @@ const COMMAND_TYPES = [
     { label: 'Mode', value: 'mode' }
 ];
 
-// Mock controllers and devices (in production, these would come from database)
-let mockControllers = [
-    { id: 'ctrl-1', name: 'Central Controller 1', ip: '192.168.1.100' },
-    { id: 'ctrl-2', name: 'Central Controller 2', ip: '192.168.1.101' },
-    { id: 'ctrl-3', name: 'Gateway Controller', ip: '192.168.1.102' }
-];
-
-let mockDevices = [
-    { id: 'dev-1', name: 'Temperature Sensor 1', controllerId: 'ctrl-1' },
-    { id: 'dev-2', name: 'Humidity Sensor 1', controllerId: 'ctrl-1' },
-    { id: 'dev-3', name: 'Power Meter 1', controllerId: 'ctrl-2' },
-    { id: 'dev-4', name: 'Air Quality Monitor', controllerId: 'ctrl-2' },
-    { id: 'dev-5', name: 'Water Flow Sensor', controllerId: 'ctrl-3' }
-];
-
-let mockDeviceTemplates = [
-    { id: 'tmpl-1', name: 'Generic Temperature Sensor', modelNumber: 'GTS-100' },
-    { id: 'tmpl-2', name: 'Power Meter Template', modelNumber: 'PMT-200' },
-    { id: 'tmpl-3', name: 'Air Quality Template', modelNumber: 'AQT-300' }
-];
+// Helper function to get dropdown options from database or fallback to static
+async function getDropdownByCategory(category, staticFallback) {
+    try {
+        const rows = await prjstorage.getDropdownOptions(category);
+        if (rows && rows.length > 0) {
+            return rows.map(r => ({ label: r.label, value: r.value }));
+        }
+    } catch (err) {
+        // Fall back to static data
+    }
+    return staticFallback;
+}
 
 module.exports = {
     init: function (_runtime, _secureFnc, _checkGroupsFnc) {
@@ -124,13 +118,11 @@ module.exports = {
          *   get:
          *     summary: Get brand list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Brand list
          */
-        ddApp.get("/api/dropdown/brands", function(req, res) {
+        ddApp.get("/api/dropdown/brands", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", BRANDS));
+                const data = await getDropdownByCategory('brands', BRANDS);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/brands: " + (err.message || err));
@@ -143,13 +135,11 @@ module.exports = {
          *   get:
          *     summary: Get communication types list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Communication types list
          */
-        ddApp.get("/api/dropdown/communication-types", function(req, res) {
+        ddApp.get("/api/dropdown/communication-types", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", COMMUNICATION_TYPES));
+                const data = await getDropdownByCategory('communication_types', COMMUNICATION_TYPES);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/communication-types: " + (err.message || err));
@@ -162,13 +152,11 @@ module.exports = {
          *   get:
          *     summary: Get connection types list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Connection types list
          */
-        ddApp.get("/api/dropdown/connection-types", function(req, res) {
+        ddApp.get("/api/dropdown/connection-types", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", CONNECTION_TYPES));
+                const data = await getDropdownByCategory('connection_types', CONNECTION_TYPES);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/connection-types: " + (err.message || err));
@@ -181,13 +169,11 @@ module.exports = {
          *   get:
          *     summary: Get data types list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Data types list
          */
-        ddApp.get("/api/dropdown/data-types", function(req, res) {
+        ddApp.get("/api/dropdown/data-types", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", DATA_TYPES));
+                const data = await getDropdownByCategory('data_types', DATA_TYPES);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/data-types: " + (err.message || err));
@@ -200,13 +186,11 @@ module.exports = {
          *   get:
          *     summary: Get usage categories list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Usage categories list
          */
-        ddApp.get("/api/dropdown/usage-categories", function(req, res) {
+        ddApp.get("/api/dropdown/usage-categories", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", USAGE_CATEGORIES));
+                const data = await getDropdownByCategory('usage_categories', USAGE_CATEGORIES);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/usage-categories: " + (err.message || err));
@@ -219,13 +203,11 @@ module.exports = {
          *   get:
          *     summary: Get command types list
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Command types list
          */
-        ddApp.get("/api/dropdown/command-types", function(req, res) {
+        ddApp.get("/api/dropdown/command-types", async function(req, res) {
             try {
-                res.json(createResponse(200, "success", COMMAND_TYPES));
+                const data = await getDropdownByCategory('command_types', COMMAND_TYPES);
+                res.json(createResponse(200, "success", data));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/command-types: " + (err.message || err));
@@ -238,16 +220,11 @@ module.exports = {
          *   get:
          *     summary: Get controllers list (for dropdown)
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Controllers list
          */
-        ddApp.get("/api/dropdown/controllers", function(req, res) {
+        ddApp.get("/api/dropdown/controllers", async function(req, res) {
             try {
-                const controllers = mockControllers.map(c => ({
-                    label: c.name,
-                    value: c.id
-                }));
+                // TODO: Get from actual controllers in database
+                const controllers = [];
                 res.json(createResponse(200, "success", controllers));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
@@ -261,30 +238,13 @@ module.exports = {
          *   get:
          *     summary: Get devices list (for dropdown)
          *     tags: [Dropdown]
-         *     parameters:
-         *       - in: query
-         *         name: controllerId
-         *         schema:
-         *           type: string
-         *         description: Filter by controller ID
-         *     responses:
-         *       200:
-         *         description: Devices list
          */
-        ddApp.get("/api/dropdown/devices", function(req, res) {
+        ddApp.get("/api/dropdown/devices", async function(req, res) {
             try {
                 const { controllerId } = req.query;
-                let devices = [...mockDevices];
-
-                if (controllerId) {
-                    devices = devices.filter(d => d.controllerId === controllerId);
-                }
-
-                const result = devices.map(d => ({
-                    label: d.name,
-                    value: d.id
-                }));
-                res.json(createResponse(200, "success", result));
+                // TODO: Get from actual devices in database
+                const devices = [];
+                res.json(createResponse(200, "success", devices));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get dropdown/devices: " + (err.message || err));
@@ -297,14 +257,12 @@ module.exports = {
          *   get:
          *     summary: Get device templates list (for dropdown)
          *     tags: [Dropdown]
-         *     responses:
-         *       200:
-         *         description: Device templates list
          */
-        ddApp.get("/api/dropdown/device-templates", function(req, res) {
+        ddApp.get("/api/dropdown/device-templates", async function(req, res) {
             try {
-                const templates = mockDeviceTemplates.map(t => ({
-                    label: `${t.name} (${t.modelNumber})`,
+                const rows = await prjstorage.getDeviceTemplates({ status: 'enabled' });
+                const templates = rows.map(t => ({
+                    label: `${t.name} (${t.code || ''})`,
                     value: t.id
                 }));
                 res.json(createResponse(200, "success", templates));
