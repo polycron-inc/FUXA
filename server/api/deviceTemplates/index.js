@@ -1,18 +1,15 @@
 /**
  * 'api/deviceTemplates': Device Templates API for managing device templates
+ * Uses SQLite database for persistent storage
  */
 
 var express = require("express");
 const { v4: uuidv4 } = require('uuid');
+const prjstorage = require('../../runtime/project/prjstorage');
 
 var runtime;
 var secureFnc;
 var checkGroupsFnc;
-
-// In-memory storage (should be replaced with database in production)
-let deviceTemplates = [];
-let templateAttributes = {};
-let templateCommands = {};
 
 // Helper function to generate response
 function createResponse(code, message, data = null) {
@@ -32,6 +29,67 @@ function paginate(list, page = 1, pageSize = 10) {
         total: list.length,
         page: parseInt(page),
         pageSize: parseInt(pageSize)
+    };
+}
+
+// Helper function to convert DB row to template object
+function dbRowToTemplate(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        modelNumber: row.code, // alias
+        brand: row.brand,
+        communicationType: row.communication_type,
+        status: row.status,
+        description: row.description,
+        creator: row.creator,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null
+    };
+}
+
+// Helper function to convert DB row to attribute object
+function dbRowToAttribute(row) {
+    return {
+        id: row.id,
+        templateId: row.template_id,
+        name: row.name,
+        code: row.code,
+        originalKey: row.code, // alias
+        genericKey: row.code, // alias
+        dataType: row.data_type,
+        unit: row.unit,
+        description: row.description,
+        sortOrder: row.sort_order,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null
+    };
+}
+
+// Helper function to convert DB row to command object
+function dbRowToCommand(row) {
+    let parameters = null;
+    if (row.parameters) {
+        try {
+            parameters = JSON.parse(row.parameters);
+        } catch (e) {
+            parameters = row.parameters;
+        }
+    }
+    return {
+        id: row.id,
+        templateId: row.template_id,
+        name: row.name,
+        code: row.code,
+        commandType: row.command_type,
+        parameters: parameters,
+        commandPayload: parameters, // alias
+        description: row.description,
+        sortOrder: row.sort_order,
+        locked: row.locked === 1 || row.locked === true,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null
     };
 }
 
@@ -59,74 +117,31 @@ module.exports = {
          *   get:
          *     summary: Get device templates list
          *     tags: [Device Templates]
-         *     parameters:
-         *       - in: query
-         *         name: page
-         *         schema:
-         *           type: integer
-         *       - in: query
-         *         name: pageSize
-         *         schema:
-         *           type: integer
-         *       - in: query
-         *         name: keyword
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: status
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: brand
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: communicationType
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: hasAttributes
-         *         schema:
-         *           type: boolean
-         *     responses:
-         *       200:
-         *         description: Device templates list
          */
-        dtApp.get("/api/device-templates", function(req, res) {
+        dtApp.get("/api/device-templates", async function(req, res) {
             try {
                 const { page = 1, pageSize = 10, keyword, status, brand, communicationType, hasAttributes } = req.query;
 
-                let filteredTemplates = [...deviceTemplates];
+                const filters = { keyword, status, brand, communicationType };
+                const rows = await prjstorage.getDeviceTemplates(filters);
 
-                // Apply filters
-                if (keyword) {
-                    const kw = keyword.toLowerCase();
-                    filteredTemplates = filteredTemplates.filter(t =>
-                        t.name.toLowerCase().includes(kw) ||
-                        (t.modelNumber && t.modelNumber.toLowerCase().includes(kw))
-                    );
+                let templates = rows.map(dbRowToTemplate);
+
+                // Get attribute and command counts for each template
+                for (let template of templates) {
+                    const attrs = await prjstorage.getTemplateAttributes(template.id);
+                    const cmds = await prjstorage.getTemplateCommands(template.id);
+                    template.attributeCount = attrs.length;
+                    template.commandCount = cmds.length;
+                    template.bindDeviceCount = 0; // TODO: implement device binding
                 }
-                if (status && status !== 'all') {
-                    filteredTemplates = filteredTemplates.filter(t => t.status === status);
-                }
-                if (brand) {
-                    filteredTemplates = filteredTemplates.filter(t => t.brand === brand);
-                }
-                if (communicationType) {
-                    filteredTemplates = filteredTemplates.filter(t => t.communicationType === communicationType);
-                }
+
+                // Filter by hasAttributes if needed
                 if (hasAttributes === 'true') {
-                    filteredTemplates = filteredTemplates.filter(t => t.attributeCount === 0);
+                    templates = templates.filter(t => t.attributeCount === 0);
                 }
 
-                // Add counts
-                filteredTemplates = filteredTemplates.map(t => ({
-                    ...t,
-                    attributeCount: (templateAttributes[t.id] || []).length,
-                    commandCount: (templateCommands[t.id] || []).length
-                }));
-
-                const result = paginate(filteredTemplates, page, pageSize);
+                const result = paginate(templates, page, pageSize);
                 res.json(createResponse(200, "success", result));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
@@ -140,32 +155,25 @@ module.exports = {
          *   get:
          *     summary: Get single device template details
          *     tags: [Device Templates]
-         *     parameters:
-         *       - in: path
-         *         name: templateId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     responses:
-         *       200:
-         *         description: Device template details
-         *       404:
-         *         description: Template not found
          */
-        dtApp.get("/api/device-templates/:templateId", function(req, res) {
+        dtApp.get("/api/device-templates/:templateId", async function(req, res) {
             try {
-                const template = deviceTemplates.find(t => t.id === req.params.templateId);
-                if (!template) {
+                const row = await prjstorage.getDeviceTemplate(req.params.templateId);
+                if (!row) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                const result = {
-                    ...template,
-                    attributes: templateAttributes[template.id] || [],
-                    commands: templateCommands[template.id] || []
-                };
+                const template = dbRowToTemplate(row);
+                const attrRows = await prjstorage.getTemplateAttributes(template.id);
+                const cmdRows = await prjstorage.getTemplateCommands(template.id);
 
-                res.json(createResponse(200, "success", result));
+                template.attributes = attrRows.map(dbRowToAttribute);
+                template.commands = cmdRows.map(dbRowToCommand);
+                template.attributeCount = template.attributes.length;
+                template.commandCount = template.commands.length;
+                template.bindDeviceCount = 0;
+
+                res.json(createResponse(200, "success", template));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api get device-template: " + (err.message || err));
@@ -178,46 +186,29 @@ module.exports = {
          *   post:
          *     summary: Create new device template
          *     tags: [Device Templates]
-         *     requestBody:
-         *       required: true
-         *       content:
-         *         application/json:
-         *           schema:
-         *             type: object
-         *     responses:
-         *       200:
-         *         description: Template created
          */
-        dtApp.post("/api/device-templates", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates", secureFnc, async function(req, res) {
             try {
                 const { name, modelNumber, brand, description, communicationType, connectionType } = req.body;
 
-                if (!name || !modelNumber || !communicationType || !connectionType) {
+                if (!name || !modelNumber || !communicationType) {
                     return res.status(400).json(createResponse(400, "Missing required fields"));
                 }
 
                 const id = uuidv4();
-                const now = new Date().toISOString();
+                const now = Date.now();
 
-                const newTemplate = {
+                await prjstorage.setDeviceTemplate({
                     id,
                     name,
-                    modelNumber,
+                    code: modelNumber,
                     brand: brand || '',
-                    description: description || '',
                     communicationType,
-                    connectionType,
                     status: 'enabled',
-                    bindDeviceCount: 0,
-                    attributeCount: 0,
-                    commandCount: 0,
-                    createdAt: now,
-                    updatedAt: now
-                };
-
-                deviceTemplates.push(newTemplate);
-                templateAttributes[id] = [];
-                templateCommands[id] = [];
+                    description: description || '',
+                    creator: req.userId || null,
+                    created_at: now
+                });
 
                 res.json(createResponse(200, "Template created successfully", { id }));
             } catch (err) {
@@ -232,41 +223,27 @@ module.exports = {
          *   put:
          *     summary: Update device template
          *     tags: [Device Templates]
-         *     parameters:
-         *       - in: path
-         *         name: templateId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     requestBody:
-         *       required: true
-         *       content:
-         *         application/json:
-         *           schema:
-         *             type: object
-         *     responses:
-         *       200:
-         *         description: Template updated
          */
-        dtApp.put("/api/device-templates/:templateId", secureFnc, function(req, res) {
+        dtApp.put("/api/device-templates/:templateId", secureFnc, async function(req, res) {
             try {
-                const templateIndex = deviceTemplates.findIndex(t => t.id === req.params.templateId);
-                if (templateIndex === -1) {
+                const existing = await prjstorage.getDeviceTemplate(req.params.templateId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
                 const { name, modelNumber, brand, description, communicationType, connectionType } = req.body;
 
-                deviceTemplates[templateIndex] = {
-                    ...deviceTemplates[templateIndex],
-                    name: name || deviceTemplates[templateIndex].name,
-                    modelNumber: modelNumber || deviceTemplates[templateIndex].modelNumber,
-                    brand: brand !== undefined ? brand : deviceTemplates[templateIndex].brand,
-                    description: description !== undefined ? description : deviceTemplates[templateIndex].description,
-                    communicationType: communicationType || deviceTemplates[templateIndex].communicationType,
-                    connectionType: connectionType || deviceTemplates[templateIndex].connectionType,
-                    updatedAt: new Date().toISOString()
-                };
+                await prjstorage.setDeviceTemplate({
+                    id: req.params.templateId,
+                    name: name || existing.name,
+                    code: modelNumber || existing.code,
+                    brand: brand !== undefined ? brand : existing.brand,
+                    communicationType: communicationType || existing.communication_type,
+                    status: existing.status,
+                    description: description !== undefined ? description : existing.description,
+                    creator: existing.creator,
+                    created_at: existing.created_at
+                });
 
                 res.json(createResponse(200, "Template updated successfully"));
             } catch (err) {
@@ -281,31 +258,20 @@ module.exports = {
          *   delete:
          *     summary: Delete device template
          *     tags: [Device Templates]
-         *     parameters:
-         *       - in: path
-         *         name: templateId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     responses:
-         *       200:
-         *         description: Template deleted
          */
-        dtApp.delete("/api/device-templates/:templateId", secureFnc, function(req, res) {
+        dtApp.delete("/api/device-templates/:templateId", secureFnc, async function(req, res) {
             try {
-                const templateIndex = deviceTemplates.findIndex(t => t.id === req.params.templateId);
-                if (templateIndex === -1) {
+                const existing = await prjstorage.getDeviceTemplate(req.params.templateId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                const template = deviceTemplates[templateIndex];
-                if (template.bindDeviceCount > 0) {
-                    return res.status(400).json(createResponse(400, "This template has bound devices and cannot be deleted"));
-                }
+                // TODO: Check if template has bound devices
+                // if (bindDeviceCount > 0) {
+                //     return res.status(400).json(createResponse(400, "This template has bound devices and cannot be deleted"));
+                // }
 
-                deviceTemplates.splice(templateIndex, 1);
-                delete templateAttributes[req.params.templateId];
-                delete templateCommands[req.params.templateId];
+                await prjstorage.deleteDeviceTemplate(req.params.templateId);
 
                 res.json(createResponse(200, "Template deleted successfully"));
             } catch (err) {
@@ -323,34 +289,29 @@ module.exports = {
          *     summary: Get template attributes list
          *     tags: [Device Templates]
          */
-        dtApp.get("/api/device-templates/:templateId/attributes", function(req, res) {
+        dtApp.get("/api/device-templates/:templateId/attributes", async function(req, res) {
             try {
                 const { templateId } = req.params;
                 const { page = 1, pageSize = 10, keyword, dataType, accessMode, usageCategory } = req.query;
 
-                if (!deviceTemplates.find(t => t.id === templateId)) {
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                let attributes = templateAttributes[templateId] || [];
+                const rows = await prjstorage.getTemplateAttributes(templateId);
+                let attributes = rows.map(dbRowToAttribute);
 
                 // Apply filters
                 if (keyword) {
                     const kw = keyword.toLowerCase();
                     attributes = attributes.filter(a =>
                         a.name.toLowerCase().includes(kw) ||
-                        (a.originalKey && a.originalKey.toLowerCase().includes(kw)) ||
-                        (a.genericKey && a.genericKey.toLowerCase().includes(kw))
+                        (a.code && a.code.toLowerCase().includes(kw))
                     );
                 }
                 if (dataType) {
                     attributes = attributes.filter(a => a.dataType === dataType);
-                }
-                if (accessMode) {
-                    attributes = attributes.filter(a => a.accessMode === accessMode);
-                }
-                if (usageCategory) {
-                    attributes = attributes.filter(a => a.usageCategory === usageCategory);
                 }
 
                 const result = paginate(attributes, page, pageSize);
@@ -368,46 +329,35 @@ module.exports = {
          *     summary: Create template attribute
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/:templateId/attributes", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/:templateId/attributes", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
 
-                if (!deviceTemplates.find(t => t.id === templateId)) {
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
                 const { name, originalKey, genericKey, accessMode, usageCategory, dataType, unit, defaultValue, minValue, maxValue, precision, enumOptions, arrayItemType } = req.body;
 
-                if (!name || !originalKey || !genericKey || !accessMode || !usageCategory || !dataType) {
+                if (!name || !dataType) {
                     return res.status(400).json(createResponse(400, "Missing required fields"));
                 }
 
                 const id = uuidv4();
-                const now = new Date().toISOString();
+                const now = Date.now();
 
-                const newAttribute = {
+                await prjstorage.setTemplateAttribute({
                     id,
+                    template_id: templateId,
                     name,
-                    originalKey,
-                    genericKey,
-                    accessMode,
-                    usageCategory,
-                    dataType,
+                    code: originalKey || genericKey || '',
+                    data_type: dataType,
                     unit: unit || '',
-                    defaultValue: defaultValue !== undefined ? defaultValue : null,
-                    minValue: minValue !== undefined ? minValue : null,
-                    maxValue: maxValue !== undefined ? maxValue : null,
-                    precision: precision !== undefined ? precision : null,
-                    enumOptions: enumOptions || [],
-                    arrayItemType: arrayItemType || null,
-                    createdAt: now,
-                    updatedAt: now
-                };
-
-                if (!templateAttributes[templateId]) {
-                    templateAttributes[templateId] = [];
-                }
-                templateAttributes[templateId].push(newAttribute);
+                    description: '',
+                    sort_order: 0,
+                    created_at: now
+                });
 
                 res.json(createResponse(200, "Attribute created successfully", { id }));
             } catch (err) {
@@ -423,38 +373,29 @@ module.exports = {
          *     summary: Update template attribute
          *     tags: [Device Templates]
          */
-        dtApp.put("/api/device-templates/:templateId/attributes/:attributeId", secureFnc, function(req, res) {
+        dtApp.put("/api/device-templates/:templateId/attributes/:attributeId", secureFnc, async function(req, res) {
             try {
                 const { templateId, attributeId } = req.params;
 
-                if (!templateAttributes[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
-
-                const attrIndex = templateAttributes[templateId].findIndex(a => a.id === attributeId);
-                if (attrIndex === -1) {
+                const attrs = await prjstorage.getTemplateAttributes(templateId);
+                const existing = attrs.find(a => a.id === attributeId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Attribute not found"));
                 }
 
-                const { name, originalKey, genericKey, accessMode, usageCategory, dataType, unit, defaultValue, minValue, maxValue, precision, enumOptions, arrayItemType } = req.body;
+                const { name, originalKey, genericKey, dataType, unit } = req.body;
 
-                templateAttributes[templateId][attrIndex] = {
-                    ...templateAttributes[templateId][attrIndex],
-                    name: name || templateAttributes[templateId][attrIndex].name,
-                    originalKey: originalKey || templateAttributes[templateId][attrIndex].originalKey,
-                    genericKey: genericKey || templateAttributes[templateId][attrIndex].genericKey,
-                    accessMode: accessMode || templateAttributes[templateId][attrIndex].accessMode,
-                    usageCategory: usageCategory || templateAttributes[templateId][attrIndex].usageCategory,
-                    dataType: dataType || templateAttributes[templateId][attrIndex].dataType,
-                    unit: unit !== undefined ? unit : templateAttributes[templateId][attrIndex].unit,
-                    defaultValue: defaultValue !== undefined ? defaultValue : templateAttributes[templateId][attrIndex].defaultValue,
-                    minValue: minValue !== undefined ? minValue : templateAttributes[templateId][attrIndex].minValue,
-                    maxValue: maxValue !== undefined ? maxValue : templateAttributes[templateId][attrIndex].maxValue,
-                    precision: precision !== undefined ? precision : templateAttributes[templateId][attrIndex].precision,
-                    enumOptions: enumOptions || templateAttributes[templateId][attrIndex].enumOptions,
-                    arrayItemType: arrayItemType !== undefined ? arrayItemType : templateAttributes[templateId][attrIndex].arrayItemType,
-                    updatedAt: new Date().toISOString()
-                };
+                await prjstorage.setTemplateAttribute({
+                    id: attributeId,
+                    template_id: templateId,
+                    name: name || existing.name,
+                    code: originalKey || genericKey || existing.code,
+                    data_type: dataType || existing.data_type,
+                    unit: unit !== undefined ? unit : existing.unit,
+                    description: existing.description,
+                    sort_order: existing.sort_order,
+                    created_at: existing.created_at
+                });
 
                 res.json(createResponse(200, "Attribute updated successfully"));
             } catch (err) {
@@ -470,20 +411,17 @@ module.exports = {
          *     summary: Delete template attribute
          *     tags: [Device Templates]
          */
-        dtApp.delete("/api/device-templates/:templateId/attributes/:attributeId", secureFnc, function(req, res) {
+        dtApp.delete("/api/device-templates/:templateId/attributes/:attributeId", secureFnc, async function(req, res) {
             try {
                 const { templateId, attributeId } = req.params;
 
-                if (!templateAttributes[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
-
-                const attrIndex = templateAttributes[templateId].findIndex(a => a.id === attributeId);
-                if (attrIndex === -1) {
+                const attrs = await prjstorage.getTemplateAttributes(templateId);
+                const existing = attrs.find(a => a.id === attributeId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Attribute not found"));
                 }
 
-                templateAttributes[templateId].splice(attrIndex, 1);
+                await prjstorage.deleteTemplateAttribute(attributeId);
 
                 res.json(createResponse(200, "Attribute deleted successfully"));
             } catch (err) {
@@ -499,20 +437,18 @@ module.exports = {
          *     summary: Batch delete template attributes
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/:templateId/attributes/batch-delete", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/:templateId/attributes/batch-delete", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
                 const { ids } = req.body;
-
-                if (!templateAttributes[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
 
                 if (!ids || !Array.isArray(ids)) {
                     return res.status(400).json(createResponse(400, "Invalid ids"));
                 }
 
-                templateAttributes[templateId] = templateAttributes[templateId].filter(a => !ids.includes(a.id));
+                for (const id of ids) {
+                    await prjstorage.deleteTemplateAttribute(id);
+                }
 
                 res.json(createResponse(200, "Attributes deleted successfully"));
             } catch (err) {
@@ -530,27 +466,26 @@ module.exports = {
          *     summary: Get template commands list
          *     tags: [Device Templates]
          */
-        dtApp.get("/api/device-templates/:templateId/commands", function(req, res) {
+        dtApp.get("/api/device-templates/:templateId/commands", async function(req, res) {
             try {
                 const { templateId } = req.params;
-                const { page = 1, pageSize = 10, keyword, targetType, commandType } = req.query;
+                const { page = 1, pageSize = 10, keyword, commandType } = req.query;
 
-                if (!deviceTemplates.find(t => t.id === templateId)) {
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                let commands = templateCommands[templateId] || [];
+                const rows = await prjstorage.getTemplateCommands(templateId);
+                let commands = rows.map(dbRowToCommand);
 
                 // Apply filters
                 if (keyword) {
                     const kw = keyword.toLowerCase();
                     commands = commands.filter(c =>
                         c.name.toLowerCase().includes(kw) ||
-                        (c.targetAttributeName && c.targetAttributeName.toLowerCase().includes(kw))
+                        (c.code && c.code.toLowerCase().includes(kw))
                     );
-                }
-                if (targetType) {
-                    commands = commands.filter(c => c.targetType === targetType);
                 }
                 if (commandType) {
                     commands = commands.filter(c => c.commandType === commandType);
@@ -571,47 +506,36 @@ module.exports = {
          *     summary: Create template command
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/:templateId/commands", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/:templateId/commands", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
 
-                if (!deviceTemplates.find(t => t.id === templateId)) {
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                const { name, description, targetType, targetAttributeId, commandType, commandPayload } = req.body;
+                const { name, description, targetType, targetAttributeId, commandType, commandPayload, locked } = req.body;
 
-                if (!name || !targetType || !commandType) {
+                if (!name || !commandType) {
                     return res.status(400).json(createResponse(400, "Missing required fields"));
                 }
 
-                // Get target attribute name if applicable
-                let targetAttributeName = '';
-                if (targetType === 'attribute' && targetAttributeId && templateAttributes[templateId]) {
-                    const attr = templateAttributes[templateId].find(a => a.id === targetAttributeId);
-                    targetAttributeName = attr ? attr.name : '';
-                }
-
                 const id = uuidv4();
-                const now = new Date().toISOString();
+                const now = Date.now();
 
-                const newCommand = {
+                await prjstorage.setTemplateCommand({
                     id,
+                    template_id: templateId,
                     name,
+                    code: '',
+                    command_type: commandType,
+                    parameters: commandPayload || {},
                     description: description || '',
-                    targetType,
-                    targetAttributeId: targetAttributeId || null,
-                    targetAttributeName,
-                    commandType,
-                    commandPayload: commandPayload || {},
-                    createdAt: now,
-                    updatedAt: now
-                };
-
-                if (!templateCommands[templateId]) {
-                    templateCommands[templateId] = [];
-                }
-                templateCommands[templateId].push(newCommand);
+                    sort_order: 0,
+                    locked: locked || false,
+                    created_at: now
+                });
 
                 res.json(createResponse(200, "Command created successfully", { id }));
             } catch (err) {
@@ -627,39 +551,42 @@ module.exports = {
          *     summary: Update template command
          *     tags: [Device Templates]
          */
-        dtApp.put("/api/device-templates/:templateId/commands/:commandId", secureFnc, function(req, res) {
+        dtApp.put("/api/device-templates/:templateId/commands/:commandId", secureFnc, async function(req, res) {
             try {
                 const { templateId, commandId } = req.params;
 
-                if (!templateCommands[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
-
-                const cmdIndex = templateCommands[templateId].findIndex(c => c.id === commandId);
-                if (cmdIndex === -1) {
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                const existing = cmds.find(c => c.id === commandId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Command not found"));
                 }
 
-                const { name, description, targetType, targetAttributeId, commandType, commandPayload } = req.body;
-
-                // Get target attribute name if applicable
-                let targetAttributeName = templateCommands[templateId][cmdIndex].targetAttributeName;
-                if (targetType === 'attribute' && targetAttributeId && templateAttributes[templateId]) {
-                    const attr = templateAttributes[templateId].find(a => a.id === targetAttributeId);
-                    targetAttributeName = attr ? attr.name : '';
+                // Check if command is locked
+                if (existing.locked === 1 || existing.locked === true) {
+                    return res.status(403).json(createResponse(403, "Command is locked and cannot be modified"));
                 }
 
-                templateCommands[templateId][cmdIndex] = {
-                    ...templateCommands[templateId][cmdIndex],
-                    name: name || templateCommands[templateId][cmdIndex].name,
-                    description: description !== undefined ? description : templateCommands[templateId][cmdIndex].description,
-                    targetType: targetType || templateCommands[templateId][cmdIndex].targetType,
-                    targetAttributeId: targetAttributeId !== undefined ? targetAttributeId : templateCommands[templateId][cmdIndex].targetAttributeId,
-                    targetAttributeName,
-                    commandType: commandType || templateCommands[templateId][cmdIndex].commandType,
-                    commandPayload: commandPayload || templateCommands[templateId][cmdIndex].commandPayload,
-                    updatedAt: new Date().toISOString()
-                };
+                const { name, description, commandType, commandPayload, locked } = req.body;
+
+                let params = existing.parameters;
+                if (existing.parameters) {
+                    try {
+                        params = JSON.parse(existing.parameters);
+                    } catch (e) {}
+                }
+
+                await prjstorage.setTemplateCommand({
+                    id: commandId,
+                    template_id: templateId,
+                    name: name || existing.name,
+                    code: existing.code,
+                    command_type: commandType || existing.command_type,
+                    parameters: commandPayload || params,
+                    description: description !== undefined ? description : existing.description,
+                    sort_order: existing.sort_order,
+                    locked: locked !== undefined ? locked : existing.locked,
+                    created_at: existing.created_at
+                });
 
                 res.json(createResponse(200, "Command updated successfully"));
             } catch (err) {
@@ -675,20 +602,22 @@ module.exports = {
          *     summary: Delete template command
          *     tags: [Device Templates]
          */
-        dtApp.delete("/api/device-templates/:templateId/commands/:commandId", secureFnc, function(req, res) {
+        dtApp.delete("/api/device-templates/:templateId/commands/:commandId", secureFnc, async function(req, res) {
             try {
                 const { templateId, commandId } = req.params;
 
-                if (!templateCommands[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
-
-                const cmdIndex = templateCommands[templateId].findIndex(c => c.id === commandId);
-                if (cmdIndex === -1) {
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                const existing = cmds.find(c => c.id === commandId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Command not found"));
                 }
 
-                templateCommands[templateId].splice(cmdIndex, 1);
+                // Check if command is locked
+                if (existing.locked === 1 || existing.locked === true) {
+                    return res.status(403).json(createResponse(403, "Command is locked and cannot be deleted"));
+                }
+
+                await prjstorage.deleteTemplateCommand(commandId);
 
                 res.json(createResponse(200, "Command deleted successfully"));
             } catch (err) {
@@ -704,25 +633,469 @@ module.exports = {
          *     summary: Batch delete template commands
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/:templateId/commands/batch-delete", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/:templateId/commands/batch-delete", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
                 const { ids } = req.body;
-
-                if (!templateCommands[templateId]) {
-                    return res.status(404).json(createResponse(404, "Template not found"));
-                }
 
                 if (!ids || !Array.isArray(ids)) {
                     return res.status(400).json(createResponse(400, "Invalid ids"));
                 }
 
-                templateCommands[templateId] = templateCommands[templateId].filter(c => !ids.includes(c.id));
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                const lockedIds = [];
 
-                res.json(createResponse(200, "Commands deleted successfully"));
+                for (const id of ids) {
+                    const cmd = cmds.find(c => c.id === id);
+                    if (cmd && (cmd.locked === 1 || cmd.locked === true)) {
+                        lockedIds.push(id);
+                    } else {
+                        await prjstorage.deleteTemplateCommand(id);
+                    }
+                }
+
+                if (lockedIds.length > 0) {
+                    res.json(createResponse(200, `Commands deleted, but ${lockedIds.length} locked command(s) were skipped`));
+                } else {
+                    res.json(createResponse(200, "Commands deleted successfully"));
+                }
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api batch-delete template-commands: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/{commandId}/lock:
+         *   patch:
+         *     summary: Lock/Unlock template command
+         *     tags: [Device Templates]
+         */
+        dtApp.patch("/api/device-templates/:templateId/commands/:commandId/lock", secureFnc, async function(req, res) {
+            try {
+                const { templateId, commandId } = req.params;
+                const { locked } = req.body;
+
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                const existing = cmds.find(c => c.id === commandId);
+                if (!existing) {
+                    return res.status(404).json(createResponse(404, "Command not found"));
+                }
+
+                if (locked === undefined) {
+                    return res.status(400).json(createResponse(400, "locked field is required"));
+                }
+
+                let params = existing.parameters;
+                if (existing.parameters) {
+                    try {
+                        params = JSON.parse(existing.parameters);
+                    } catch (e) {}
+                }
+
+                await prjstorage.setTemplateCommand({
+                    id: commandId,
+                    template_id: templateId,
+                    name: existing.name,
+                    code: existing.code,
+                    command_type: existing.command_type,
+                    parameters: params,
+                    description: existing.description,
+                    sort_order: existing.sort_order,
+                    locked: locked,
+                    created_at: existing.created_at
+                });
+
+                res.json(createResponse(200, locked ? "Command locked successfully" : "Command unlocked successfully"));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api lock template-commands: " + (err.message || err));
+            }
+        });
+
+        // ==================== Template Commands Import/Export ====================
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/export-all:
+         *   get:
+         *     summary: Export all commands from a template
+         *     tags: [Device Templates]
+         */
+        dtApp.get("/api/device-templates/:templateId/commands/export-all", async function(req, res) {
+            try {
+                const { templateId } = req.params;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                const cmdRows = await prjstorage.getTemplateCommands(templateId);
+                const exportData = cmdRows.map(dbRowToCommand);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename=${template.name}-commands-export.json`);
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export-all template-commands: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/{commandId}/export:
+         *   get:
+         *     summary: Export single template command
+         *     tags: [Device Templates]
+         */
+        dtApp.get("/api/device-templates/:templateId/commands/:commandId/export", async function(req, res) {
+            try {
+                const { templateId, commandId } = req.params;
+
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                const cmd = cmds.find(c => c.id === commandId);
+                if (!cmd) {
+                    return res.status(404).json(createResponse(404, "Command not found"));
+                }
+
+                const exportData = dbRowToCommand(cmd);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename=${exportData.name}-export.json`);
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export template-command: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/export-batch:
+         *   post:
+         *     summary: Export selected template commands
+         *     tags: [Device Templates]
+         */
+        dtApp.post("/api/device-templates/:templateId/commands/export-batch", async function(req, res) {
+            try {
+                const { templateId } = req.params;
+                const { ids } = req.body;
+
+                if (!ids || !Array.isArray(ids)) {
+                    return res.status(400).json(createResponse(400, "Invalid ids"));
+                }
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                const cmdRows = await prjstorage.getTemplateCommands(templateId);
+                const exportData = cmdRows
+                    .filter(c => ids.includes(c.id))
+                    .map(dbRowToCommand);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename=${template.name}-commands-batch-export.json`);
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export-batch template-commands: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/import:
+         *   post:
+         *     summary: Import single command to template
+         *     tags: [Device Templates]
+         */
+        dtApp.post("/api/device-templates/:templateId/commands/import", secureFnc, async function(req, res) {
+            try {
+                const { templateId } = req.params;
+                const cmd = req.body;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                if (!cmd || !cmd.name || !cmd.commandType) {
+                    return res.status(400).json(createResponse(400, "Invalid command data"));
+                }
+
+                const id = uuidv4();
+                const now = Date.now();
+
+                await prjstorage.setTemplateCommand({
+                    id,
+                    template_id: templateId,
+                    name: cmd.name,
+                    code: cmd.code || '',
+                    command_type: cmd.commandType,
+                    parameters: cmd.parameters || cmd.commandPayload || {},
+                    description: cmd.description || '',
+                    sort_order: cmd.sortOrder || 0,
+                    locked: cmd.locked || false,
+                    created_at: now
+                });
+
+                res.json(createResponse(200, "Command imported successfully", { id }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import template-command: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/commands/import-batch:
+         *   post:
+         *     summary: Import multiple commands to template (batch import)
+         *     tags: [Device Templates]
+         */
+        dtApp.post("/api/device-templates/:templateId/commands/import-batch", secureFnc, async function(req, res) {
+            try {
+                const { templateId } = req.params;
+                const commands = req.body;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                if (!Array.isArray(commands)) {
+                    return res.status(400).json(createResponse(400, "Invalid import data - expected array"));
+                }
+
+                const now = Date.now();
+                const results = [];
+                let successCount = 0;
+                let failedCount = 0;
+
+                // Get existing commands for sort order
+                const existingCmds = await prjstorage.getTemplateCommands(templateId);
+                let maxOrder = existingCmds.length > 0
+                    ? Math.max(...existingCmds.map(c => c.sort_order || 0)) + 1
+                    : 0;
+
+                for (const cmd of commands) {
+                    try {
+                        if (!cmd.name || !cmd.commandType) {
+                            results.push({
+                                commandName: cmd.name || 'Unknown',
+                                status: 'failed',
+                                message: 'Missing required fields (name, commandType)'
+                            });
+                            failedCount++;
+                            continue;
+                        }
+
+                        const id = uuidv4();
+
+                        await prjstorage.setTemplateCommand({
+                            id,
+                            template_id: templateId,
+                            name: cmd.name,
+                            code: cmd.code || '',
+                            command_type: cmd.commandType,
+                            parameters: cmd.parameters || cmd.commandPayload || {},
+                            description: cmd.description || '',
+                            sort_order: cmd.sortOrder || maxOrder++,
+                            locked: cmd.locked || false,
+                            created_at: now
+                        });
+
+                        results.push({
+                            commandName: cmd.name,
+                            status: 'success',
+                            message: 'Imported successfully',
+                            id
+                        });
+                        successCount++;
+                    } catch (err) {
+                        results.push({
+                            commandName: cmd.name || 'Unknown',
+                            status: 'failed',
+                            message: err.message || 'Import failed'
+                        });
+                        failedCount++;
+                    }
+                }
+
+                res.json(createResponse(200, "Import completed", {
+                    totalCount: commands.length,
+                    successCount,
+                    failedCount,
+                    results
+                }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import-batch template-commands: " + (err.message || err));
+            }
+        });
+
+        // ==================== Template Attributes Import/Export ====================
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/attributes/export-all:
+         *   get:
+         *     summary: Export all attributes from a template
+         *     tags: [Device Templates]
+         */
+        dtApp.get("/api/device-templates/:templateId/attributes/export-all", async function(req, res) {
+            try {
+                const { templateId } = req.params;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                const attrRows = await prjstorage.getTemplateAttributes(templateId);
+                const exportData = attrRows.map(dbRowToAttribute);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename=${template.name}-attributes-export.json`);
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export-all template-attributes: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/attributes/import:
+         *   post:
+         *     summary: Import single attribute to template
+         *     tags: [Device Templates]
+         */
+        dtApp.post("/api/device-templates/:templateId/attributes/import", secureFnc, async function(req, res) {
+            try {
+                const { templateId } = req.params;
+                const attr = req.body;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                if (!attr || !attr.name || !attr.dataType) {
+                    return res.status(400).json(createResponse(400, "Invalid attribute data"));
+                }
+
+                const id = uuidv4();
+                const now = Date.now();
+
+                await prjstorage.setTemplateAttribute({
+                    id,
+                    template_id: templateId,
+                    name: attr.name,
+                    code: attr.code || attr.originalKey || '',
+                    data_type: attr.dataType,
+                    unit: attr.unit || '',
+                    description: attr.description || '',
+                    sort_order: attr.sortOrder || 0,
+                    created_at: now
+                });
+
+                res.json(createResponse(200, "Attribute imported successfully", { id }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import template-attribute: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/device-templates/{templateId}/attributes/import-batch:
+         *   post:
+         *     summary: Import multiple attributes to template (batch import)
+         *     tags: [Device Templates]
+         */
+        dtApp.post("/api/device-templates/:templateId/attributes/import-batch", secureFnc, async function(req, res) {
+            try {
+                const { templateId } = req.params;
+                const attributes = req.body;
+
+                const template = await prjstorage.getDeviceTemplate(templateId);
+                if (!template) {
+                    return res.status(404).json(createResponse(404, "Template not found"));
+                }
+
+                if (!Array.isArray(attributes)) {
+                    return res.status(400).json(createResponse(400, "Invalid import data - expected array"));
+                }
+
+                const now = Date.now();
+                const results = [];
+                let successCount = 0;
+                let failedCount = 0;
+
+                // Get existing attributes for sort order
+                const existingAttrs = await prjstorage.getTemplateAttributes(templateId);
+                let maxOrder = existingAttrs.length > 0
+                    ? Math.max(...existingAttrs.map(a => a.sort_order || 0)) + 1
+                    : 0;
+
+                for (const attr of attributes) {
+                    try {
+                        if (!attr.name || !attr.dataType) {
+                            results.push({
+                                attributeName: attr.name || 'Unknown',
+                                status: 'failed',
+                                message: 'Missing required fields (name, dataType)'
+                            });
+                            failedCount++;
+                            continue;
+                        }
+
+                        const id = uuidv4();
+
+                        await prjstorage.setTemplateAttribute({
+                            id,
+                            template_id: templateId,
+                            name: attr.name,
+                            code: attr.code || attr.originalKey || '',
+                            data_type: attr.dataType,
+                            unit: attr.unit || '',
+                            description: attr.description || '',
+                            sort_order: attr.sortOrder || maxOrder++,
+                            created_at: now
+                        });
+
+                        results.push({
+                            attributeName: attr.name,
+                            status: 'success',
+                            message: 'Imported successfully',
+                            id
+                        });
+                        successCount++;
+                    } catch (err) {
+                        results.push({
+                            attributeName: attr.name || 'Unknown',
+                            status: 'failed',
+                            message: err.message || 'Import failed'
+                        });
+                        failedCount++;
+                    }
+                }
+
+                res.json(createResponse(200, "Import completed", {
+                    totalCount: attributes.length,
+                    successCount,
+                    failedCount,
+                    results
+                }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import-batch template-attributes: " + (err.message || err));
             }
         });
 
@@ -735,10 +1108,10 @@ module.exports = {
          *     summary: Copy template
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/:templateId/copy", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/:templateId/copy", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
-                const original = deviceTemplates.find(t => t.id === templateId);
+                const original = await prjstorage.getDeviceTemplate(templateId);
 
                 if (!original) {
                     return res.status(404).json(createResponse(404, "Template not found"));
@@ -746,35 +1119,52 @@ module.exports = {
 
                 const { name, modelNumber } = req.body;
                 const id = uuidv4();
-                const now = new Date().toISOString();
+                const now = Date.now();
 
-                const newTemplate = {
-                    ...original,
+                await prjstorage.setDeviceTemplate({
                     id,
                     name: name || `${original.name} (1)`,
-                    modelNumber: modelNumber || `${original.modelNumber}1`,
-                    bindDeviceCount: 0,
-                    createdAt: now,
-                    updatedAt: now
-                };
-
-                deviceTemplates.push(newTemplate);
+                    code: modelNumber || `${original.code}1`,
+                    brand: original.brand,
+                    communicationType: original.communication_type,
+                    status: original.status,
+                    description: original.description,
+                    creator: req.userId || null,
+                    created_at: now
+                });
 
                 // Copy attributes
-                templateAttributes[id] = (templateAttributes[templateId] || []).map(attr => ({
-                    ...attr,
-                    id: uuidv4(),
-                    createdAt: now,
-                    updatedAt: now
-                }));
+                const attrs = await prjstorage.getTemplateAttributes(templateId);
+                for (const attr of attrs) {
+                    await prjstorage.setTemplateAttribute({
+                        id: uuidv4(),
+                        template_id: id,
+                        name: attr.name,
+                        code: attr.code,
+                        data_type: attr.data_type,
+                        unit: attr.unit,
+                        description: attr.description,
+                        sort_order: attr.sort_order,
+                        created_at: now
+                    });
+                }
 
                 // Copy commands
-                templateCommands[id] = (templateCommands[templateId] || []).map(cmd => ({
-                    ...cmd,
-                    id: uuidv4(),
-                    createdAt: now,
-                    updatedAt: now
-                }));
+                const cmds = await prjstorage.getTemplateCommands(templateId);
+                for (const cmd of cmds) {
+                    await prjstorage.setTemplateCommand({
+                        id: uuidv4(),
+                        template_id: id,
+                        name: cmd.name,
+                        code: cmd.code,
+                        command_type: cmd.command_type,
+                        parameters: cmd.parameters,
+                        description: cmd.description,
+                        sort_order: cmd.sort_order,
+                        locked: cmd.locked || false,
+                        created_at: now
+                    });
+                }
 
                 res.json(createResponse(200, "Template copied successfully", { id }));
             } catch (err) {
@@ -790,13 +1180,13 @@ module.exports = {
          *     summary: Enable/Disable template
          *     tags: [Device Templates]
          */
-        dtApp.patch("/api/device-templates/:templateId/status", secureFnc, function(req, res) {
+        dtApp.patch("/api/device-templates/:templateId/status", secureFnc, async function(req, res) {
             try {
                 const { templateId } = req.params;
                 const { status } = req.body;
 
-                const templateIndex = deviceTemplates.findIndex(t => t.id === templateId);
-                if (templateIndex === -1) {
+                const existing = await prjstorage.getDeviceTemplate(templateId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
@@ -804,8 +1194,17 @@ module.exports = {
                     return res.status(400).json(createResponse(400, "Invalid status"));
                 }
 
-                deviceTemplates[templateIndex].status = status;
-                deviceTemplates[templateIndex].updatedAt = new Date().toISOString();
+                await prjstorage.setDeviceTemplate({
+                    id: templateId,
+                    name: existing.name,
+                    code: existing.code,
+                    brand: existing.brand,
+                    communicationType: existing.communication_type,
+                    status: status,
+                    description: existing.description,
+                    creator: existing.creator,
+                    created_at: existing.created_at
+                });
 
                 res.json(createResponse(200, `Template ${status === 'enabled' ? 'enabled' : 'disabled'} successfully`));
             } catch (err) {
@@ -823,13 +1222,20 @@ module.exports = {
          *     summary: Export all templates
          *     tags: [Device Templates]
          */
-        dtApp.get("/api/device-templates/export-all", function(req, res) {
+        dtApp.get("/api/device-templates/export-all", async function(req, res) {
             try {
-                const exportData = deviceTemplates.map(template => ({
-                    ...template,
-                    attributes: templateAttributes[template.id] || [],
-                    commands: templateCommands[template.id] || []
-                }));
+                const rows = await prjstorage.getDeviceTemplates({});
+                const exportData = [];
+
+                for (const row of rows) {
+                    const template = dbRowToTemplate(row);
+                    const attrRows = await prjstorage.getTemplateAttributes(template.id);
+                    const cmdRows = await prjstorage.getTemplateCommands(template.id);
+
+                    template.attributes = attrRows.map(dbRowToAttribute);
+                    template.commands = cmdRows.map(dbRowToCommand);
+                    exportData.push(template);
+                }
 
                 res.setHeader('Content-Type', 'application/json');
                 res.setHeader('Content-Disposition', 'attachment; filename=device-templates-export.json');
@@ -847,182 +1253,26 @@ module.exports = {
          *     summary: Export single template
          *     tags: [Device Templates]
          */
-        dtApp.get("/api/device-templates/:templateId/export", function(req, res) {
+        dtApp.get("/api/device-templates/:templateId/export", async function(req, res) {
             try {
-                const template = deviceTemplates.find(t => t.id === req.params.templateId);
-                if (!template) {
+                const row = await prjstorage.getDeviceTemplate(req.params.templateId);
+                if (!row) {
                     return res.status(404).json(createResponse(404, "Template not found"));
                 }
 
-                const exportData = {
-                    ...template,
-                    attributes: templateAttributes[template.id] || [],
-                    commands: templateCommands[template.id] || []
-                };
+                const template = dbRowToTemplate(row);
+                const attrRows = await prjstorage.getTemplateAttributes(template.id);
+                const cmdRows = await prjstorage.getTemplateCommands(template.id);
+
+                template.attributes = attrRows.map(dbRowToAttribute);
+                template.commands = cmdRows.map(dbRowToCommand);
 
                 res.setHeader('Content-Type', 'application/json');
                 res.setHeader('Content-Disposition', `attachment; filename=${template.name}-export.json`);
-                res.json(exportData);
+                res.json(template);
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api export device-template: " + (err.message || err));
-            }
-        });
-
-        /**
-         * @swagger
-         * /api/device-templates/import-single:
-         *   post:
-         *     summary: Import single template (check conflicts)
-         *     tags: [Device Templates]
-         */
-        dtApp.post("/api/device-templates/import-single", secureFnc, function(req, res) {
-            try {
-                const importedData = req.body;
-
-                if (!importedData || !importedData.name || !importedData.modelNumber) {
-                    return res.status(400).json(createResponse(400, "Invalid import data"));
-                }
-
-                // Check for conflicts
-                const nameConflict = deviceTemplates.find(t => t.name === importedData.name);
-                const modelConflict = deviceTemplates.find(t => t.modelNumber === importedData.modelNumber);
-
-                let hasConflict = false;
-                let conflictType = null;
-                let existingTemplate = null;
-
-                if (nameConflict && modelConflict) {
-                    hasConflict = true;
-                    conflictType = 'both';
-                    existingTemplate = nameConflict;
-                } else if (nameConflict) {
-                    hasConflict = true;
-                    conflictType = 'name';
-                    existingTemplate = nameConflict;
-                } else if (modelConflict) {
-                    hasConflict = true;
-                    conflictType = 'modelNumber';
-                    existingTemplate = modelConflict;
-                }
-
-                res.json(createResponse(200, "success", {
-                    hasConflict,
-                    conflictType,
-                    existingTemplate: existingTemplate ? {
-                        id: existingTemplate.id,
-                        name: existingTemplate.name,
-                        modelNumber: existingTemplate.modelNumber
-                    } : null,
-                    importedData: {
-                        name: importedData.name,
-                        modelNumber: importedData.modelNumber,
-                        attributeCount: (importedData.attributes || []).length,
-                        commandCount: (importedData.commands || []).length
-                    }
-                }));
-            } catch (err) {
-                res.status(400).json(createResponse(400, err.message || err));
-                runtime.logger.error("api import-single device-templates: " + (err.message || err));
-            }
-        });
-
-        /**
-         * @swagger
-         * /api/device-templates/import-single/confirm:
-         *   post:
-         *     summary: Confirm import single template
-         *     tags: [Device Templates]
-         */
-        dtApp.post("/api/device-templates/import-single/confirm", secureFnc, function(req, res) {
-            try {
-                const { importMode, newName, newModelNumber, description, importData } = req.body;
-
-                if (!importData) {
-                    return res.status(400).json(createResponse(400, "Missing import data"));
-                }
-
-                const now = new Date().toISOString();
-
-                if (importMode === 'overwrite') {
-                    // Find and overwrite existing template
-                    const existingIndex = deviceTemplates.findIndex(t =>
-                        t.name === importData.name || t.modelNumber === importData.modelNumber
-                    );
-
-                    if (existingIndex === -1) {
-                        return res.status(404).json(createResponse(404, "Existing template not found"));
-                    }
-
-                    const existingId = deviceTemplates[existingIndex].id;
-
-                    deviceTemplates[existingIndex] = {
-                        ...importData,
-                        id: existingId,
-                        description: description || importData.description,
-                        bindDeviceCount: deviceTemplates[existingIndex].bindDeviceCount,
-                        updatedAt: now
-                    };
-                    delete deviceTemplates[existingIndex].attributes;
-                    delete deviceTemplates[existingIndex].commands;
-
-                    templateAttributes[existingId] = (importData.attributes || []).map(attr => ({
-                        ...attr,
-                        id: uuidv4(),
-                        createdAt: now,
-                        updatedAt: now
-                    }));
-
-                    templateCommands[existingId] = (importData.commands || []).map(cmd => ({
-                        ...cmd,
-                        id: uuidv4(),
-                        createdAt: now,
-                        updatedAt: now
-                    }));
-
-                    res.json(createResponse(200, "Template overwritten successfully", { id: existingId }));
-                } else {
-                    // Create new template
-                    if (!newName || !newModelNumber) {
-                        return res.status(400).json(createResponse(400, "New name and model number required for create mode"));
-                    }
-
-                    const id = uuidv4();
-
-                    const newTemplate = {
-                        ...importData,
-                        id,
-                        name: newName,
-                        modelNumber: newModelNumber,
-                        description: description || importData.description,
-                        bindDeviceCount: 0,
-                        createdAt: now,
-                        updatedAt: now
-                    };
-                    delete newTemplate.attributes;
-                    delete newTemplate.commands;
-
-                    deviceTemplates.push(newTemplate);
-
-                    templateAttributes[id] = (importData.attributes || []).map(attr => ({
-                        ...attr,
-                        id: uuidv4(),
-                        createdAt: now,
-                        updatedAt: now
-                    }));
-
-                    templateCommands[id] = (importData.commands || []).map(cmd => ({
-                        ...cmd,
-                        id: uuidv4(),
-                        createdAt: now,
-                        updatedAt: now
-                    }));
-
-                    res.json(createResponse(200, "Template created successfully", { id }));
-                }
-            } catch (err) {
-                res.status(400).json(createResponse(400, err.message || err));
-                runtime.logger.error("api import-single/confirm device-templates: " + (err.message || err));
             }
         });
 
@@ -1033,7 +1283,7 @@ module.exports = {
          *     summary: Import template package
          *     tags: [Device Templates]
          */
-        dtApp.post("/api/device-templates/import-package", secureFnc, function(req, res) {
+        dtApp.post("/api/device-templates/import-package", secureFnc, async function(req, res) {
             try {
                 const templates = req.body;
 
@@ -1041,7 +1291,7 @@ module.exports = {
                     return res.status(400).json(createResponse(400, "Invalid import data - expected array"));
                 }
 
-                const now = new Date().toISOString();
+                const now = Date.now();
                 const results = [];
                 let successCount = 0;
                 let failedCount = 0;
@@ -1049,7 +1299,9 @@ module.exports = {
                 for (const template of templates) {
                     try {
                         // Check for existing template with same name
-                        const existing = deviceTemplates.find(t => t.name === template.name);
+                        const existingRows = await prjstorage.getDeviceTemplates({ keyword: template.name });
+                        const existing = existingRows.find(t => t.name === template.name);
+
                         if (existing) {
                             results.push({
                                 templateName: template.name,
@@ -1062,31 +1314,48 @@ module.exports = {
 
                         const id = uuidv4();
 
-                        const newTemplate = {
-                            ...template,
+                        await prjstorage.setDeviceTemplate({
                             id,
-                            bindDeviceCount: 0,
-                            createdAt: now,
-                            updatedAt: now
-                        };
-                        delete newTemplate.attributes;
-                        delete newTemplate.commands;
+                            name: template.name,
+                            code: template.modelNumber || template.code || '',
+                            brand: template.brand || '',
+                            communicationType: template.communicationType || '',
+                            status: template.status || 'enabled',
+                            description: template.description || '',
+                            creator: req.userId || null,
+                            created_at: now
+                        });
 
-                        deviceTemplates.push(newTemplate);
+                        // Import attributes
+                        for (const attr of (template.attributes || [])) {
+                            await prjstorage.setTemplateAttribute({
+                                id: uuidv4(),
+                                template_id: id,
+                                name: attr.name,
+                                code: attr.code || attr.originalKey || '',
+                                data_type: attr.dataType || attr.data_type || '',
+                                unit: attr.unit || '',
+                                description: attr.description || '',
+                                sort_order: attr.sortOrder || 0,
+                                created_at: now
+                            });
+                        }
 
-                        templateAttributes[id] = (template.attributes || []).map(attr => ({
-                            ...attr,
-                            id: uuidv4(),
-                            createdAt: now,
-                            updatedAt: now
-                        }));
-
-                        templateCommands[id] = (template.commands || []).map(cmd => ({
-                            ...cmd,
-                            id: uuidv4(),
-                            createdAt: now,
-                            updatedAt: now
-                        }));
+                        // Import commands
+                        for (const cmd of (template.commands || [])) {
+                            await prjstorage.setTemplateCommand({
+                                id: uuidv4(),
+                                template_id: id,
+                                name: cmd.name,
+                                code: cmd.code || '',
+                                command_type: cmd.commandType || cmd.command_type || '',
+                                parameters: cmd.parameters || cmd.commandPayload || {},
+                                description: cmd.description || '',
+                                sort_order: cmd.sortOrder || 0,
+                                locked: cmd.locked || false,
+                                created_at: now
+                            });
+                        }
 
                         results.push({
                             templateName: template.name,

@@ -1,16 +1,15 @@
 /**
  * 'api/commandLibrary': Command Library API for managing global commands
+ * Uses SQLite database for persistent storage
  */
 
 var express = require("express");
 const { v4: uuidv4 } = require('uuid');
+const prjstorage = require('../../runtime/project/prjstorage');
 
 var runtime;
 var secureFnc;
 var checkGroupsFnc;
-
-// In-memory storage (should be replaced with database in production)
-let commandLibrary = [];
 
 // Helper function to generate response
 function createResponse(code, message, data = null) {
@@ -30,6 +29,34 @@ function paginate(list, page = 1, pageSize = 10) {
         total: list.length,
         page: parseInt(page),
         pageSize: parseInt(pageSize)
+    };
+}
+
+// Helper function to convert DB row to command object
+function dbRowToCommand(row) {
+    let parameters = null;
+    if (row.parameters) {
+        try {
+            parameters = JSON.parse(row.parameters);
+        } catch (e) {
+            parameters = row.parameters;
+        }
+    }
+    return {
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        category: row.category,
+        commandType: row.command_type,
+        targetType: row.category, // alias for compatibility
+        parameters: parameters,
+        payload: parameters, // alias for compatibility
+        description: row.description,
+        status: row.status,
+        creator: row.creator,
+        usageCount: 0, // TODO: implement usage tracking
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null
     };
 }
 
@@ -57,54 +84,22 @@ module.exports = {
          *   get:
          *     summary: Get command library list
          *     tags: [Command Library]
-         *     parameters:
-         *       - in: query
-         *         name: page
-         *         schema:
-         *           type: integer
-         *       - in: query
-         *         name: pageSize
-         *         schema:
-         *           type: integer
-         *       - in: query
-         *         name: keyword
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: commandType
-         *         schema:
-         *           type: string
-         *       - in: query
-         *         name: targetType
-         *         schema:
-         *           type: string
-         *     responses:
-         *       200:
-         *         description: Command library list
          */
-        clApp.get("/api/command-library", function(req, res) {
+        clApp.get("/api/command-library", async function(req, res) {
             try {
-                const { page = 1, pageSize = 10, keyword, commandType, targetType } = req.query;
+                const { page = 1, pageSize = 10, keyword, commandType, targetType, category } = req.query;
 
-                let filteredCommands = [...commandLibrary];
+                const filters = { keyword, category: targetType || category };
+                const rows = await prjstorage.getCommandLibrary(filters);
 
-                // Apply filters
-                if (keyword) {
-                    const kw = keyword.toLowerCase();
-                    filteredCommands = filteredCommands.filter(c =>
-                        c.name.toLowerCase().includes(kw) ||
-                        (c.code && c.code.toLowerCase().includes(kw)) ||
-                        (c.description && c.description.toLowerCase().includes(kw))
-                    );
-                }
+                let commands = rows.map(dbRowToCommand);
+
+                // Apply additional filters
                 if (commandType) {
-                    filteredCommands = filteredCommands.filter(c => c.commandType === commandType);
-                }
-                if (targetType) {
-                    filteredCommands = filteredCommands.filter(c => c.targetType === targetType);
+                    commands = commands.filter(c => c.commandType === commandType);
                 }
 
-                const result = paginate(filteredCommands, page, pageSize);
+                const result = paginate(commands, page, pageSize);
                 res.json(createResponse(200, "success", result));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
@@ -118,25 +113,15 @@ module.exports = {
          *   get:
          *     summary: Get command details
          *     tags: [Command Library]
-         *     parameters:
-         *       - in: path
-         *         name: commandId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     responses:
-         *       200:
-         *         description: Command details
-         *       404:
-         *         description: Command not found
          */
-        clApp.get("/api/command-library/:commandId", function(req, res) {
+        clApp.get("/api/command-library/:commandId", async function(req, res) {
             try {
-                const command = commandLibrary.find(c => c.id === req.params.commandId);
-                if (!command) {
+                const row = await prjstorage.getCommandLibraryItem(req.params.commandId);
+                if (!row) {
                     return res.status(404).json(createResponse(404, "Command not found"));
                 }
 
+                const command = dbRowToCommand(row);
                 res.json(createResponse(200, "success", command));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
@@ -150,17 +135,8 @@ module.exports = {
          *   post:
          *     summary: Create command
          *     tags: [Command Library]
-         *     requestBody:
-         *       required: true
-         *       content:
-         *         application/json:
-         *           schema:
-         *             type: object
-         *     responses:
-         *       200:
-         *         description: Command created
          */
-        clApp.post("/api/command-library", secureFnc, function(req, res) {
+        clApp.post("/api/command-library", secureFnc, async function(req, res) {
             try {
                 const { name, code, description, targetType, commandType, payload } = req.body;
 
@@ -169,22 +145,20 @@ module.exports = {
                 }
 
                 const id = uuidv4();
-                const now = new Date().toISOString();
+                const now = Date.now();
 
-                const newCommand = {
+                await prjstorage.setCommandLibraryItem({
                     id,
                     name,
                     code: code || '',
+                    category: targetType,
+                    command_type: commandType,
+                    parameters: payload || {},
                     description: description || '',
-                    targetType,
-                    commandType,
-                    payload: payload || {},
-                    usageCount: 0,
-                    createdAt: now,
-                    updatedAt: now
-                };
-
-                commandLibrary.push(newCommand);
+                    status: 'active',
+                    creator: req.userId || null,
+                    created_at: now
+                });
 
                 res.json(createResponse(200, "Command created successfully", { id }));
             } catch (err) {
@@ -199,41 +173,35 @@ module.exports = {
          *   put:
          *     summary: Update command
          *     tags: [Command Library]
-         *     parameters:
-         *       - in: path
-         *         name: commandId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     requestBody:
-         *       required: true
-         *       content:
-         *         application/json:
-         *           schema:
-         *             type: object
-         *     responses:
-         *       200:
-         *         description: Command updated
          */
-        clApp.put("/api/command-library/:commandId", secureFnc, function(req, res) {
+        clApp.put("/api/command-library/:commandId", secureFnc, async function(req, res) {
             try {
-                const commandIndex = commandLibrary.findIndex(c => c.id === req.params.commandId);
-                if (commandIndex === -1) {
+                const existing = await prjstorage.getCommandLibraryItem(req.params.commandId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Command not found"));
                 }
 
                 const { name, code, description, targetType, commandType, payload } = req.body;
 
-                commandLibrary[commandIndex] = {
-                    ...commandLibrary[commandIndex],
-                    name: name || commandLibrary[commandIndex].name,
-                    code: code !== undefined ? code : commandLibrary[commandIndex].code,
-                    description: description !== undefined ? description : commandLibrary[commandIndex].description,
-                    targetType: targetType || commandLibrary[commandIndex].targetType,
-                    commandType: commandType || commandLibrary[commandIndex].commandType,
-                    payload: payload || commandLibrary[commandIndex].payload,
-                    updatedAt: new Date().toISOString()
-                };
+                let params = existing.parameters;
+                if (existing.parameters) {
+                    try {
+                        params = JSON.parse(existing.parameters);
+                    } catch (e) {}
+                }
+
+                await prjstorage.setCommandLibraryItem({
+                    id: req.params.commandId,
+                    name: name || existing.name,
+                    code: code !== undefined ? code : existing.code,
+                    category: targetType || existing.category,
+                    command_type: commandType || existing.command_type,
+                    parameters: payload || params,
+                    description: description !== undefined ? description : existing.description,
+                    status: existing.status,
+                    creator: existing.creator,
+                    created_at: existing.created_at
+                });
 
                 res.json(createResponse(200, "Command updated successfully"));
             } catch (err) {
@@ -248,29 +216,227 @@ module.exports = {
          *   delete:
          *     summary: Delete command
          *     tags: [Command Library]
-         *     parameters:
-         *       - in: path
-         *         name: commandId
-         *         required: true
-         *         schema:
-         *           type: string
-         *     responses:
-         *       200:
-         *         description: Command deleted
          */
-        clApp.delete("/api/command-library/:commandId", secureFnc, function(req, res) {
+        clApp.delete("/api/command-library/:commandId", secureFnc, async function(req, res) {
             try {
-                const commandIndex = commandLibrary.findIndex(c => c.id === req.params.commandId);
-                if (commandIndex === -1) {
+                const existing = await prjstorage.getCommandLibraryItem(req.params.commandId);
+                if (!existing) {
                     return res.status(404).json(createResponse(404, "Command not found"));
                 }
 
-                commandLibrary.splice(commandIndex, 1);
+                await prjstorage.deleteCommandLibraryItem(req.params.commandId);
 
                 res.json(createResponse(200, "Command deleted successfully"));
             } catch (err) {
                 res.status(400).json(createResponse(400, err.message || err));
                 runtime.logger.error("api delete command-library: " + (err.message || err));
+            }
+        });
+
+        // ==================== Import/Export ====================
+
+        /**
+         * @swagger
+         * /api/command-library/export-all:
+         *   get:
+         *     summary: Export all commands from library
+         *     tags: [Command Library]
+         */
+        clApp.get("/api/command-library/export-all", async function(req, res) {
+            try {
+                const rows = await prjstorage.getCommandLibrary({});
+                const exportData = rows.map(dbRowToCommand);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', 'attachment; filename=command-library-export.json');
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export-all command-library: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/command-library/{commandId}/export:
+         *   get:
+         *     summary: Export single command from library
+         *     tags: [Command Library]
+         */
+        clApp.get("/api/command-library/:commandId/export", async function(req, res) {
+            try {
+                const row = await prjstorage.getCommandLibraryItem(req.params.commandId);
+                if (!row) {
+                    return res.status(404).json(createResponse(404, "Command not found"));
+                }
+
+                const command = dbRowToCommand(row);
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename=${command.name}-export.json`);
+                res.json(command);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export command-library: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/command-library/export-batch:
+         *   post:
+         *     summary: Export selected commands from library
+         *     tags: [Command Library]
+         */
+        clApp.post("/api/command-library/export-batch", async function(req, res) {
+            try {
+                const { ids } = req.body;
+
+                if (!ids || !Array.isArray(ids)) {
+                    return res.status(400).json(createResponse(400, "Invalid ids"));
+                }
+
+                const exportData = [];
+                for (const id of ids) {
+                    const row = await prjstorage.getCommandLibraryItem(id);
+                    if (row) {
+                        exportData.push(dbRowToCommand(row));
+                    }
+                }
+
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', 'attachment; filename=command-library-batch-export.json');
+                res.json(exportData);
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api export-batch command-library: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/command-library/import:
+         *   post:
+         *     summary: Import single command to library
+         *     tags: [Command Library]
+         */
+        clApp.post("/api/command-library/import", secureFnc, async function(req, res) {
+            try {
+                const cmd = req.body;
+
+                if (!cmd || !cmd.name || !cmd.commandType) {
+                    return res.status(400).json(createResponse(400, "Invalid command data"));
+                }
+
+                const id = uuidv4();
+                const now = Date.now();
+
+                await prjstorage.setCommandLibraryItem({
+                    id,
+                    name: cmd.name,
+                    code: cmd.code || '',
+                    category: cmd.targetType || cmd.category || '',
+                    command_type: cmd.commandType,
+                    parameters: cmd.parameters || cmd.payload || {},
+                    description: cmd.description || '',
+                    status: cmd.status || 'active',
+                    creator: req.userId || null,
+                    created_at: now
+                });
+
+                res.json(createResponse(200, "Command imported successfully", { id }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import command-library: " + (err.message || err));
+            }
+        });
+
+        /**
+         * @swagger
+         * /api/command-library/import-batch:
+         *   post:
+         *     summary: Import multiple commands to library (batch import)
+         *     tags: [Command Library]
+         */
+        clApp.post("/api/command-library/import-batch", secureFnc, async function(req, res) {
+            try {
+                const commands = req.body;
+
+                if (!Array.isArray(commands)) {
+                    return res.status(400).json(createResponse(400, "Invalid import data - expected array"));
+                }
+
+                const now = Date.now();
+                const results = [];
+                let successCount = 0;
+                let failedCount = 0;
+
+                for (const cmd of commands) {
+                    try {
+                        if (!cmd.name || !cmd.commandType) {
+                            results.push({
+                                commandName: cmd.name || 'Unknown',
+                                status: 'failed',
+                                message: 'Missing required fields (name, commandType)'
+                            });
+                            failedCount++;
+                            continue;
+                        }
+
+                        // Check for duplicate name
+                        const existingRows = await prjstorage.getCommandLibrary({ keyword: cmd.name });
+                        const existing = existingRows.find(c => c.name === cmd.name);
+                        if (existing) {
+                            results.push({
+                                commandName: cmd.name,
+                                status: 'failed',
+                                message: 'Command with same name already exists'
+                            });
+                            failedCount++;
+                            continue;
+                        }
+
+                        const id = uuidv4();
+
+                        await prjstorage.setCommandLibraryItem({
+                            id,
+                            name: cmd.name,
+                            code: cmd.code || '',
+                            category: cmd.targetType || cmd.category || '',
+                            command_type: cmd.commandType,
+                            parameters: cmd.parameters || cmd.payload || {},
+                            description: cmd.description || '',
+                            status: cmd.status || 'active',
+                            creator: req.userId || null,
+                            created_at: now
+                        });
+
+                        results.push({
+                            commandName: cmd.name,
+                            status: 'success',
+                            message: 'Imported successfully',
+                            id
+                        });
+                        successCount++;
+                    } catch (err) {
+                        results.push({
+                            commandName: cmd.name || 'Unknown',
+                            status: 'failed',
+                            message: err.message || 'Import failed'
+                        });
+                        failedCount++;
+                    }
+                }
+
+                res.json(createResponse(200, "Import completed", {
+                    totalCount: commands.length,
+                    successCount,
+                    failedCount,
+                    results
+                }));
+            } catch (err) {
+                res.status(400).json(createResponse(400, err.message || err));
+                runtime.logger.error("api import-batch command-library: " + (err.message || err));
             }
         });
 
