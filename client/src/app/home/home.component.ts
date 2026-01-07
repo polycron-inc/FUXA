@@ -407,14 +407,29 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         console.log('Applying view restrictions:', allowedViewsResult);
         console.log('Current homeView:', this.homeView?.id, this.homeView?.name);
 
+        // 如果 HMI 還沒載入，先呼叫 loadHmi
+        if (!this.homeView && this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+            console.log('No homeView set, calling loadHmi to initialize...');
+            this.loadHmi();
+            return;
+        }
+
         // 如果是超級管理員，不需要過濾
         if (allowedViewsResult.isSuperAdmin) {
             console.log('Super admin detected, skipping view restrictions');
+            // 但如果還沒有 homeView，需要載入
+            if (!this.homeView && this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+                this.loadHmi();
+            }
             return;
         }
 
         // 如果沒有被限制的視圖，不需要過濾
         if (!allowedViewsResult.restrictedViews || allowedViewsResult.restrictedViews.length === 0) {
+            // 但如果還沒有 homeView，需要載入
+            if (!this.homeView && this.hmi && this.hmi.views && this.hmi.views.length > 0) {
+                this.loadHmi();
+            }
             return;
         }
 
@@ -453,8 +468,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             this.hmi = hmi;
         }
         if (this.hmi && this.hmi.views && this.hmi.views.length > 0) {
-            // 過濾視圖：根據播放限制排除用戶無權限的視圖
+            // 檢查播放限制是否已計算完成，如果尚未完成則不播放
             const allowedViewsResult = this.playRestrictionsService.allowedViews$.getValue();
+            if (!allowedViewsResult.isCalculated) {
+                console.log('Waiting for play restrictions to be calculated before loading view...');
+                return;
+            }
+
+            // 過濾視圖：根據播放限制排除用戶無權限的視圖
             let filteredViews = this.hmi.views;
 
             // 排除 restrictedViews 中的視圖（用戶無權限的）
