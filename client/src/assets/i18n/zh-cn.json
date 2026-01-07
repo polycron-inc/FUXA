@@ -1330,5 +1330,6 @@
     "msg.import-devices-error": "導入設備失敗！",
     "msg.report-build-forced": "發送構建報告成功",
     "msg.report-build-error": "發送構建報告失敗！",
-    "msg.device-tags-request-result": "加載 {{value}} 的 {{current}}"
+    "msg.device-tags-request-result": "加載 {{value}} 的 {{current}}",
+    "msg.loading": "載入中..."
 }
