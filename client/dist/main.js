@@ -59492,7 +59492,7 @@ const environment = {
   apiPort: 1881,
   serverEnabled: true,
   type: null,
-  dmsApiEndpoint: 'http://101.35.85.65:8082',
+  dmsApiEndpoint: 'http://fms-backend.genman.work',
   dmsToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4NGFkZmU3ODBmZjc1YjIyMjgxYWU0MmEzODJhNjViNiIsImlhdCI6MTc2MzAxMjczMCwiZXhwIjoxNzk0NTQ4NzMwfQ.u3bM3ZrH-uPGCtB6vrFfbd1gkzc8Cdoa0cTMdChFVjE'
 };
 
