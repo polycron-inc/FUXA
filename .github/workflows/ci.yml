@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ['develop']
+  pull_request:
+    branches: ['develop']
+
+env:
+  CI: true
+
+jobs:
+  fuxa-ci:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: 設定 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+      - name: 安裝伺服器依賴
+        run: npm ci --no-audit --no-fund
+        working-directory: server
+      - name: 伺服器建置
+        run: npm run build
+        working-directory: server
+      - name: 伺服器測試
+        run: npm test
+        working-directory: server
+      - name: 安裝前端依賴
+        run: npm ci --no-audit --no-fund
+        working-directory: client
+      - name: 前端檢查
+        run: npm run lint
+        working-directory: client
+      - name: 前端建置
+        run: npm run build
+        working-directory: client
