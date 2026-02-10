@@ -26,17 +26,39 @@ jobs:
 
       - name: 重啟 FUXA 服務
         run: |
-          if [ -d /www/fms ] && [ -f /www/fms/compose.yml ]; then
-            cd /www/fms
-          elif [ -d /opt/fms ] && [ -f /opt/fms/compose.yml ]; then
-            cd /opt/fms
-          elif [ -f "$GITHUB_WORKSPACE/../compose.yml" ]; then
-            cd "$GITHUB_WORKSPACE/.."
-          else
-            echo "❌ 找不到 compose.yml，請確認部署目錄"
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          COMPOSE_DIR=""
+
+          for candidate in \
+            "/www/fms" \
+            "/opt/fms" \
+            "/home/linuxuser/workspace/fms" \
+            "$GITHUB_WORKSPACE/.." \
+            "$GITHUB_WORKSPACE"; do
+            if [ -f "$candidate/compose.yml" ] || [ -f "$candidate/compose.yaml" ]; then
+              COMPOSE_DIR="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$COMPOSE_DIR" ]; then
+            echo "❌ 找不到 compose.yml/compose.yaml，請確認部署目錄"
+            echo "目前目錄內容："
+            ls -la "$GITHUB_WORKSPACE" || true
             exit 1
           fi
-          docker compose up -d --force-recreate fuxa
+
+          echo "✅ 使用部署目錄: $COMPOSE_DIR"
+          cd "$COMPOSE_DIR"
+
+          if docker compose version >/dev/null 2>&1; then
+            docker compose up -d --force-recreate fuxa
+          elif command -v docker-compose >/dev/null 2>&1; then
+            docker-compose up -d --force-recreate fuxa
+          else
+            echo "❌ 找不到 docker compose 或 docker-compose"
+            exit 1
+          fi
 
       - name: 健康檢查
         run: |
