@@ -49,6 +49,16 @@ function init(_server, _runtime) {
             console.log('API Max Request Size:', maxApiRequestSize);
             apiApp.use(bodyParser.json({limit:maxApiRequestSize, strict: false}));
             apiApp.use(bodyParser.urlencoded({limit:maxApiRequestSize, extended:true, parameterLimit: 50000}));
+            // 全域 CORS 設定：允許前端跨網域呼叫 API
+            apiApp.use(function(req, res, next) {
+                res.header("Access-Control-Allow-Origin", "*");
+                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-access-token, x-auth-user");
+                res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+                if (req.method === 'OPTIONS') {
+                    return res.sendStatus(204);
+                }
+                next();
+            });
             authJwt.init(runtime.settings.secureEnabled, runtime.settings.secretCode, runtime.settings.tokenExpiresIn);
             prjApi.init(runtime, authJwt.verifyToken, verifyGroups);
             apiApp.use(prjApi.app());
