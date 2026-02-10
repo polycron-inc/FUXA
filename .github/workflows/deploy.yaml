@@ -5,9 +5,13 @@ on:
     branches: ['main', 'develop']
   workflow_dispatch:
 
+concurrency:
+  group: fuxa-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, fms]
     steps:
       - uses: actions/checkout@v4
 

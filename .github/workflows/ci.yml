@@ -6,12 +6,16 @@ on:
   pull_request:
     branches: ['develop']
 
+concurrency:
+  group: fuxa-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CI: true
 
 jobs:
   fuxa-ci:
-    runs-on: self-hosted
+    runs-on: [self-hosted, fms]
     steps:
       - uses: actions/checkout@v4
       - name: 設定 Node.js
