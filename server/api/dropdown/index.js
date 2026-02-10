@@ -103,11 +103,9 @@ module.exports = {
     app: function () {
         var ddApp = express();
         ddApp.use(function(req, res, next) {
-            if (!runtime.project) {
-                res.status(404).end();
-            } else {
-                next();
-            }
+            // dropdown API 允許在 project 尚未載入時使用靜態 fallback 資料
+            // 避免回傳 404 造成前端下拉初始化失敗
+            next();
         });
 
         // ==================== Dropdown APIs ====================
