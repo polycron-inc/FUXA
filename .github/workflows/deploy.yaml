@@ -1,21 +1,53 @@
-name: Docker Image CI
+name: Deploy FUXA
 
 on:
   push:
-    branches: ['develop']
-  pull_request:
-    branches: ['develop']
+    branches: ['main', 'develop']
+  workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - name: Build the Docker image
+
+      - name: 設定 Docker 環境
         run: |
-          DOCKER_BUILDKIT=1 docker build -t fms/fuxa:latest .
-      - name: Push the Docker image
+          if [ -S "$HOME/.colima/default/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.colima/default/docker.sock" >> $GITHUB_ENV
+          elif [ -S "$HOME/.colima/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.colima/docker.sock" >> $GITHUB_ENV
+          fi
+          docker info
+
+      - name: 建置 FUXA 映像
         run: |
-          cd /home/linuxuser/workspace/fms
-          docker compose down fuxa
-          docker compose up -d fuxa
+          DOCKER_BUILDKIT=1 docker build -t fms/fuxa:latest "$GITHUB_WORKSPACE"
+
+      - name: 重啟 FUXA 服務
+        run: |
+          if [ -d /www/fms ] && [ -f /www/fms/compose.yml ]; then
+            cd /www/fms
+          elif [ -d /opt/fms ] && [ -f /opt/fms/compose.yml ]; then
+            cd /opt/fms
+          elif [ -f "$GITHUB_WORKSPACE/../compose.yml" ]; then
+            cd "$GITHUB_WORKSPACE/.."
+          else
+            echo "❌ 找不到 compose.yml，請確認部署目錄"
+            exit 1
+          fi
+          docker compose up -d --force-recreate fuxa
+
+      - name: 健康檢查
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:1881/api/project >/dev/null; then
+              echo "✅ FUXA 啟動成功"
+              exit 0
+            fi
+            echo "等待 FUXA 啟動... ($i/30)"
+            sleep 2
+          done
+          echo "❌ FUXA 啟動失敗"
+          docker logs fuxa --tail 200 || true
+          exit 1
