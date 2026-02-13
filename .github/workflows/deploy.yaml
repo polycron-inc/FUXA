@@ -36,7 +36,6 @@ jobs:
           for candidate in \
             "/www/fms" \
             "/opt/fms" \
-            "/home/linuxuser/workspace/fms" \
             "$GITHUB_WORKSPACE/.." \
             "$GITHUB_WORKSPACE"; do
             if [ -f "$candidate/compose.yml" ] || [ -f "$candidate/compose.yaml" ]; then
