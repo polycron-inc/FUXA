@@ -1,6 +1,7 @@
 services:
   fuxa:
-    image: frangoteam/fuxa:latest
+    image: fms/fuxa:latest
+    container_name: fuxa
     restart: unless-stopped
     volumes:
       - './appdata:/usr/src/app/FUXA/server/_appdata'

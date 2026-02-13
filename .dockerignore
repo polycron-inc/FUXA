@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Node modules (will be installed during build)
+node_modules
+client/node_modules
+server/node_modules
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+*.log
+server/_logs/*
+server/_db/*
+server/_appdata/*
+
+# Test
+coverage
+.nyc_output
