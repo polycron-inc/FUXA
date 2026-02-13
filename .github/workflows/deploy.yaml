@@ -13,6 +13,12 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
+      - name: 清理工作目錄（修復 root 權限殘留）
+        run: |
+          if [ -d "$GITHUB_WORKSPACE" ]; then
+            sudo rm -rf "$GITHUB_WORKSPACE"/*  "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
+          fi
+
       - uses: actions/checkout@v4
 
       - name: 設定 Docker 環境

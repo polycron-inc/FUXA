@@ -17,18 +17,35 @@ jobs:
   fuxa-ci:
     runs-on: self-hosted
     steps:
+      - name: 清理工作目錄（修復 root 權限殘留）
+        run: |
+          if [ -d "$GITHUB_WORKSPACE" ]; then
+            sudo rm -rf "$GITHUB_WORKSPACE"/*  "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
+          fi
+
       - uses: actions/checkout@v4
+
       - name: 伺服器建置與測試（Docker Node 18）
         run: |
           docker run --rm \
+            --user "$(id -u):$(id -g)" \
             -v "$GITHUB_WORKSPACE:/work" \
             -w /work/server \
             node:18-bullseye \
             bash -lc "npm ci --no-audit --no-fund && npm run build && npm test"
+
       - name: 前端檢查與建置（Docker Node 18）
         run: |
           docker run --rm \
+            --user "$(id -u):$(id -g)" \
             -v "$GITHUB_WORKSPACE:/work" \
             -w /work/client \
             node:18-bullseye \
             bash -lc "npm ci --no-audit --no-fund && npm run lint && npm run build"
+
+      - name: 清理 Docker 產生的檔案
+        if: always()
+        run: |
+          sudo rm -rf "$GITHUB_WORKSPACE"/server/node_modules \
+                       "$GITHUB_WORKSPACE"/client/node_modules \
+                       2>/dev/null || true
