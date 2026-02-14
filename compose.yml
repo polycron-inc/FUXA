@@ -10,3 +10,9 @@ services:
       - './images:/usr/src/app/FUXA/server/_images'
     ports:
       - '1881:1881'
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://127.0.0.1:1881/api/settings', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
