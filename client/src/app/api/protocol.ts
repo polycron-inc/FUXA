@@ -1,6 +1,5 @@
 import { provider } from '.';
-import { environment } from '../../environments/environment';
-const requester = 'admin'
+const requester = 'admin';
 // 通訊協定清單查詢參數
 export interface ProtocolListParams {
   type?: string;
@@ -123,26 +122,24 @@ export interface ApiResponse {
  * @param params 查詢參數
  * @returns Promise<ProtocolListResponse>
  */
-export const getProtocolList = async (params?: ProtocolListParams) => {
-  return provider.get('/schideron/openApi/protocol/list', {
+export const getProtocolList = async (params?: ProtocolListParams) =>
+  provider.get('/schideron/openApi/protocol/list', {
     params: {
       ...params,
       requester: requester
     }
   });
-};
 
 /**
  * 添加通訊協定
  * @param data 協定資料
  * @returns Promise<ApiResponse>
  */
-export const addProtocol = async (data: AddProtocolRequest) => {
-  return provider.post('/schideron/openApi/protocol/add', {
+export const addProtocol = async (data: AddProtocolRequest) =>
+  provider.post('/schideron/openApi/protocol/add', {
     ...data,
     requester: requester
   });
-};
 
 /**
  * 更新通訊協定
@@ -150,23 +147,21 @@ export const addProtocol = async (data: AddProtocolRequest) => {
  * @param data 協定資料
  * @returns Promise<ApiResponse>
  */
-export const updateProtocol = async (id: string, data: UpdateProtocolRequest) => {
-  return provider.put(`/schideron/openApi/protocol/edit/${id}`, {
+export const updateProtocol = async (id: string, data: UpdateProtocolRequest) =>
+  provider.put(`/schideron/openApi/protocol/edit/${id}`, {
     ...data,
     requester: requester
   });
-};
 
 /**
  * 取得子設備清單
  * @param params 查詢參數
  * @returns Promise<DeviceListResponse>
  */
-export const getDeviceList = async (params?: DeviceListParams) => {
-  return provider.get('/schideron/openApi/protocol/device/list', {
+export const getDeviceList = async (params?: DeviceListParams) =>
+  provider.get('/schideron/openApi/protocol/device/list', {
     params: {
       protocolId: params?.protocolId || '8751cd88-7d70-11f0-a291-5254008c2c02',
       requester: requester
     }
   });
-};

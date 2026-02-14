@@ -227,14 +227,14 @@ export class DeviceComponent implements OnInit, OnDestroy {
         // 過濾重複名稱的設備，只保留每個名稱的第一個設備
         const uniqueMqttDevices: Device[] = [];
         const seenNames = new Set<string>();
-        
+
         for (const device of mqttDevices) {
             if (!seenNames.has(device.name)) {
                 seenNames.add(device.name);
                 uniqueMqttDevices.push(device);
             }
         }
-        
+
         this.mqttDevices = uniqueMqttDevices;
     }
 
@@ -316,7 +316,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             type: tag.type,
             subs: tag.options?.subs ? true : false
         }));
-        
+
         this.addMqttDeviceWithTemplate({
             name: device.name + '_copy',
             address: device.property?.address || 'mqtt://test.mosquitto.org:1883',

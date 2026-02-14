@@ -12,8 +12,8 @@ const roundedLegendPlugin = {
     id: 'roundedLegend',
     beforeDraw(chart) {
       const { ctx, legend } = chart;
-      if (!legend || !legend.legendItems) return;
-  
+      if (!legend || !legend.legendItems) { return; }
+
       legend.legendItems.forEach((item, i) => {
         item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
       });
@@ -85,7 +85,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                 const y = chart.chartArea.bottom + 10;
 
                 const ticks = xAxis.ticks;
-                if (!ticks) return;
+                if (!ticks) { return; }
 
                 ticks.forEach((tick, index) => {
                     const label = tick.label;
@@ -132,7 +132,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     }
 
     init(title: string, property: GraphBarProperty, sources?: GraphSource[]) {
-        console.log('init(')
+        console.log('init(');
         this.title = title;
         this.property = property;
         if (sources) {
@@ -194,7 +194,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     this.onRefresh();
                 }, 500);
             }
-            console.log('this.setDemo();')
+            console.log('this.setDemo();');
             this.setDemo();
         }
     }
@@ -288,7 +288,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
             }
             this.barChartData.push(dataset);
         }
-        console.info('setdemo this.barChartData', this.barChartData, this.sourceMap)
+        console.info('setdemo this.barChartData', this.barChartData, this.sourceMap);
     }
 
     private fullDataSetAttribute(dataset: ChartDataset) {
@@ -416,16 +416,16 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     labels: {
                         font: {
                             size: 12,
-                            family: "Noto Sans TC",
-                            style: "normal",
-                            weight: 'normal',
-                        },
-                        color: '#475569',
-                        usePointStyle: true,
-                        pointStyle: 'rectRounded',
-                    }
-                },
-                datalabels: {
+                        family: 'Noto Sans TC',
+                        style: 'normal',
+                        weight: 'normal',
+                    },
+                    color: '#475569',
+                    usePointStyle: true,
+                    pointStyle: 'rectRounded',
+                }
+            },
+            datalabels: {
                     display: true,
                     anchor: 'end',
                     align: 'end',

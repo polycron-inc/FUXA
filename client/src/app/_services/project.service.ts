@@ -1217,7 +1217,7 @@ export class ProjectService {
     }
 
     verifyView(view: View): boolean {
-        console.log(view)
+        console.log(view);
         const importErrArray = [];
         let result = true;
         if (Utils.isNullOrUndefined(view.svgcontent)) {
@@ -1237,7 +1237,7 @@ export class ProjectService {
             result = false;
         }
         if (!result) {
-            console.log('importErrArray',importErrArray)
+            console.log('importErrArray',importErrArray);
             this.notifyError('msg.view-format-error');
         }
         return result;

@@ -2,7 +2,7 @@ import { Component, ViewChild, OnDestroy, Input, OnInit, AfterViewInit } from '@
 
 import { GraphBaseComponent, GraphOptions } from '../graph-base/graph-base.component';
 import { BaseChartDirective } from 'ng2-charts';
-import { GraphPieProperty, GraphSource, GraphPieChartType } from '../../../../_models/graph';
+import { GraphPieProperty, GraphSource } from '../../../../_models/graph';
 import { ChartData, ChartType } from 'chart.js';
 import DataLabelsPlugin from 'chartjs-plugin-datalabels';
 
@@ -60,13 +60,13 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
     constructor() {
         super();
     }
-    
+
     ngOnInit() {
         const roundedLegendPlugin = {
             id: 'roundedLegend',
             beforeDraw(chart) {
               const { ctx, legend } = chart;
-              if (!legend || !legend.legendItems) return;
+              if (!legend || !legend.legendItems) { return; }
 
               legend.legendItems.forEach((item, i) => {
                 item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
@@ -166,7 +166,7 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
             id: 'roundedLegend',
             beforeDraw(chart) {
               const { ctx, legend } = chart;
-              if (!legend || !legend.legendItems) return;
+              if (!legend || !legend.legendItems) { return; }
 
               legend.legendItems.forEach((item, i) => {
                 item.pointStyle = 'circle'; // 你也可以用 rectRounded、dash、star 等
@@ -181,8 +181,8 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
                     text: 'Title',
                     font: {
                         size: 12,
-                        family: "Noto Sans TC",
-                        style: "normal",
+                        family: 'Noto Sans TC',
+                        style: 'normal',
                         weight: 'bold',
                     },
                     color: '#475569'
@@ -198,8 +198,8 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
                     labels: {
                         font: {
                             size: 12,
-                            family: "Noto Sans TC",
-                            style: "normal",
+                            family: 'Noto Sans TC',
+                            style: 'normal',
                             weight: 'normal',
                         },
                         color: '#475569',

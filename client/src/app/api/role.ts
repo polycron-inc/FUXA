@@ -52,43 +52,39 @@ export interface ApiResponse {
  * @param payload 搜尋條件
  * @returns Promise<RoleListResponse>
  */
-export const getRoles = async (payload?: SearchCriteria) => {
-  return provider.get('/schideron/openApi/role/list', {
+export const getRoles = async (payload?: SearchCriteria) =>
+  provider.get('/schideron/openApi/role/list', {
     params: { ...payload, requester }
   });
-};
 
 /**
  * 新增角色
  * @param data 角色資料
  * @returns Promise<ApiResponse>
  */
-export const addRole = async (data: AddRolePayload) => {
-  return provider.post('/schideron/openApi/role/add', {
+export const addRole = async (data: AddRolePayload) =>
+  provider.post('/schideron/openApi/role/add', {
     requester,
     ...data
   });
-};
 
 /**
  * 更新角色
  * @param data 角色資料
  * @returns Promise<ApiResponse>
  */
-export const updateRole = async (data: UpdateRolePayload) => {
-  return provider.put('/schideron/openApi/role/edit', {
+export const updateRole = async (data: UpdateRolePayload) =>
+  provider.put('/schideron/openApi/role/edit', {
     requester,
     ...data
   });
-};
 
 /**
  * 刪除角色
  * @param id 角色 ID
  * @returns Promise<ApiResponse>
  */
-export const deleteRole = async (id: string) => {
-  return provider.delete(`/schideron/openApi/role/delete/${id}`, {
+export const deleteRole = async (id: string) =>
+  provider.delete(`/schideron/openApi/role/delete/${id}`, {
     data: { requester }
   });
-};

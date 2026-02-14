@@ -267,7 +267,7 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     }
 
     getImageFileName(base64: string): string {
-        if (!base64) return '';
+        if (!base64) { return ''; }
         return base64.substring(0, 50) + '...'; // 顯示前50個字符
     }
 

@@ -80,76 +80,68 @@ const mockUserData: FetchUserInfo = {
 /**
  * 取得用戶列表
  */
-export const getUserList = async (payload?: SearchCriteria) => {
-  return provider.get('/schideron/openApi/user/list', {
+export const getUserList = async (payload?: SearchCriteria) =>
+  provider.get('/schideron/openApi/user/list', {
     params: { ...payload, requester }
   });
-};
 
 /**
  * 取得用戶選項
  */
-export const getUserSelectOptions = (payload: QuerySelectOptionRequest) => {
-  return provider
+export const getUserSelectOptions = (payload: QuerySelectOptionRequest) =>
+  provider
     .get('/api/users/getUserSelectOptions', { params: payload })
     .then((res) => res.data);
-};
 
 /**
  * 更新密碼
  */
-export const updatePassword = async (payload: UpdatePasswordRequest) => {
-  return provider.post(`/schideron/openApi/user/resetPassword/${payload.id}`, {
+export const updatePassword = async (payload: UpdatePasswordRequest) =>
+  provider.post(`/schideron/openApi/user/resetPassword/${payload.id}`, {
     defaultPassword: payload.newPassword,
     requester
   });
-};
 
 /**
  * 更新用戶狀態
  */
-export const updateUserStatus = async (payload: UpdateStatusRequest) => {
-  return provider.post('/api/users/updateStatus', payload);
-};
+export const updateUserStatus = async (payload: UpdateStatusRequest) =>
+  provider.post('/api/users/updateStatus', payload);
 
 /**
  * 重設密碼
  */
-export const resetPassword = async (payload: UpdateStatusRequest) => {
-  return provider.post('/api/users/resetPassword', payload);
-};
+export const resetPassword = async (payload: UpdateStatusRequest) =>
+  provider.post('/api/users/resetPassword', payload);
 
 /**
  * 更新用戶資料
  */
-export const updateUser = async (payload: UserInfo) => {
-  return provider.put(`/schideron/openApi/user/edit/${payload.id}`, {
+export const updateUser = async (payload: UserInfo) =>
+  provider.put(`/schideron/openApi/user/edit/${payload.id}`, {
     requester,
     username: payload.username,
     roleId: payload.roleId,
     phone: payload.phone,
     email: payload.email
   });
-};
 
 /**
  * 刪除用戶
  */
-export const deleteUser = async (payload: UserInfo) => {
-  return provider.delete(`/schideron/openApi/user/delete/${payload.id}`, {
+export const deleteUser = async (payload: UserInfo) =>
+  provider.delete(`/schideron/openApi/user/delete/${payload.id}`, {
     data: { requester }
   });
-};
 
 /**
  * 新增用戶
  */
-export const addUser = async (payload: UserInfo & { password: string }) => {
-  return provider.post('/schideron/openApi/user/add', {
+export const addUser = async (payload: UserInfo & { password: string }) =>
+  provider.post('/schideron/openApi/user/add', {
     requester,
     ...payload
   });
-};
 
 /**
  * 取得用戶詳細資料

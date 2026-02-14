@@ -1,4 +1,4 @@
-﻿/* eslint-disable @angular-eslint/component-class-suffix */
+/* eslint-disable @angular-eslint/component-class-suffix */
 import { Component, Inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ElementRef } from '@angular/core';
 import { ChangeDetectorRef } from '@angular/core';
 import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA} from '@angular/material/legacy-dialog';
@@ -346,7 +346,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                             this.setMode('select', false);
                             isDrawing = false;
                         }
-                        
+
                         drawingTool = '';
                     }, 150);
                 }
@@ -1603,11 +1603,11 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * @param view selected view to load resource
      */
     onSelectView(view: View, force = true) {
-        console.log('pass onSelectView')
+        console.log('pass onSelectView');
         if (!force && this.currentView?.id === view?.id) {
             return;
         }
-        console.log('pass onSelectView 2')
+        console.log('pass onSelectView 2');
         if (this.currentView) {
             this.currentView.svgcontent = this.getContent();
             this.saveView(this.currentView);
@@ -1619,13 +1619,13 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
             this.setFillColor(this.colorFill);
         }
-        console.log('pass onSelectView 3')
+        console.log('pass onSelectView 3');
         if (this.currentView) {
             this.saveView(this.currentView);
         }
-        console.log('pass onSelectView 4')
+        console.log('pass onSelectView 4');
         this.currentView = view;
-        console.log('pass onSelectView 5')
+        console.log('pass onSelectView 5');
         if (this.currentView.type === ViewType.cards) {
             this.editorMode = EditorModeType.CARDS;
         } else if (this.currentView.type === ViewType.maps) {
@@ -1633,9 +1633,9 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
             this.editorMode = EditorModeType.SVG;
         }
-        console.log('pass onSelectView 6')
+        console.log('pass onSelectView 6');
         localStorage.setItem('@frango.webeditor.currentview', this.currentView.name);
-        console.log('pass onSelectView 7')
+        console.log('pass onSelectView 7');
         this.loadView(this.currentView);
     }
 
