@@ -1009,14 +1009,14 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             let self = this;
             if (fileToUpload.type === 'svg') {
                 let reader = new FileReader();
-                reader.onloadend = function (e: any) {
+                reader.onloadend = function(e: any) {
                     localStorage.setItem(fileToUpload.name, reader.result.toString());
                     self.ctrlInitParams = fileToUpload.name;
                     self.setMode('own_ctrl-image');
                 };
                 reader.readAsText(event.target.files[0]);
             } else {
-                this.getBase64Image(event.target.files[0], function (imgdata) {
+                this.getBase64Image(event.target.files[0], function(imgdata) {
                     if (self.winRef.nativeWindow.svgEditor.setUrlImageToAdd) {
                         self.winRef.nativeWindow.svgEditor.setUrlImageToAdd(imgdata);
                     }
@@ -1063,7 +1063,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private getBase64Image(file, callback) {
         var fr = new FileReader();
-        fr.onload = function () {
+        fr.onload = function() {
             callback(fr.result);
         };
         fr.readAsDataURL(file);
@@ -1677,7 +1677,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             // this.projectService.setProject(prj, true);
         };
 
-        reader.onerror = function () {
+        reader.onerror = function() {
             let msg = 'Unable to read ' + input.files[0];
             // this.translateService.get('msg.project-load-error', {value: input.files[0]}).subscribe((txt: string) => { msg = txt });
             alert(msg);

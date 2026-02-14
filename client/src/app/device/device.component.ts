@@ -211,7 +211,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             setTimeout(() => { this.projectService.onRefreshProject(); }, 2000);
         };
 
-        reader.onerror = function () {
+        reader.onerror = function() {
             let msg = 'Unable to read ' + input.files[0];
             // this.translateService.get('msg.project-load-error', {value: input.files[0]}).subscribe((txt: string) => { msg = txt });
             alert(msg);
