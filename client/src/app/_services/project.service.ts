@@ -999,7 +999,7 @@ export class ProjectService {
     /**
      * remove the report from project
      */
-     removeReport(report: Report) {
+    removeReport(report: Report) {
         return new Observable((observer) => {
             if (this.projectData.reports) {
                 for (let i = 0; i < this.projectData.reports.length; i++) {
@@ -1237,7 +1237,7 @@ export class ProjectService {
             result = false;
         }
         if (!result) {
-            console.log('importErrArray',importErrArray);
+            console.log('importErrArray', importErrArray);
             this.notifyError('msg.view-format-error');
         }
         return result;

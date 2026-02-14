@@ -12,7 +12,7 @@ import DataLabelsPlugin from 'chartjs-plugin-datalabels';
     styleUrls: ['./graph-pie.component.css']
 })
 export class GraphPieComponent extends GraphBaseComponent implements OnInit, AfterViewInit, OnDestroy {
-    @ViewChild(BaseChartDirective, {static: false}) public chart?: BaseChartDirective;
+    @ViewChild(BaseChartDirective, { static: false }) public chart?: BaseChartDirective;
     @Input() height = 380;
     @Input() width = 380;
 
@@ -30,23 +30,23 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
     pieChartData: ChartData<'pie', number[], string | string[]> = {
         labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4', 'Test 5', 'Test 6', 'Test 7', 'Test 8', 'Test 9', 'Test 10', 'Test 11', 'Test 12'],
         datasets: [
-          {
-            data: this.pieData,
-            backgroundColor: [
-                'rgba(54, 158, 180, 1)',
-                'rgba(95, 190, 211, 1)',
-                'rgba(172, 241, 255, 1)',
-                'rgba(242, 102, 127, 1)',
-                'rgba(242, 102, 127, 1)',
-                'rgba(246, 221, 225, 1)',
-                'rgba(254, 148, 39, 1)',
-                'rgba(253, 180, 86, 1)',
-                'rgba(255, 235, 210, 1)',
-                'rgba(254, 123, 95, 1)',
-                'rgba(253, 171, 150, 1)',
-                'rgba(254, 231, 225, 1)',
-            ],
-          },
+            {
+                data: this.pieData,
+                backgroundColor: [
+                    'rgba(54, 158, 180, 1)',
+                    'rgba(95, 190, 211, 1)',
+                    'rgba(172, 241, 255, 1)',
+                    'rgba(242, 102, 127, 1)',
+                    'rgba(242, 102, 127, 1)',
+                    'rgba(246, 221, 225, 1)',
+                    'rgba(254, 148, 39, 1)',
+                    'rgba(253, 180, 86, 1)',
+                    'rgba(255, 235, 210, 1)',
+                    'rgba(254, 123, 95, 1)',
+                    'rgba(253, 171, 150, 1)',
+                    'rgba(254, 231, 225, 1)',
+                ],
+            },
         ],
     };
 
@@ -65,12 +65,12 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
         const roundedLegendPlugin = {
             id: 'roundedLegend',
             beforeDraw(chart) {
-              const { ctx, legend } = chart;
-              if (!legend || !legend.legendItems) { return; }
+                const { ctx, legend } = chart;
+                if (!legend || !legend.legendItems) { return; }
 
-              legend.legendItems.forEach((item, i) => {
-                item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
-              });
+                legend.legendItems.forEach((item, i) => {
+                    item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
+                });
             }
         };
         if (!this.pieChartOptions) {
@@ -165,14 +165,14 @@ export class GraphPieComponent extends GraphBaseComponent implements OnInit, Aft
         const roundedLegendPlugin = {
             id: 'roundedLegend',
             beforeDraw(chart) {
-              const { ctx, legend } = chart;
-              if (!legend || !legend.legendItems) { return; }
+                const { ctx, legend } = chart;
+                if (!legend || !legend.legendItems) { return; }
 
-              legend.legendItems.forEach((item, i) => {
-                item.pointStyle = 'circle'; // 你也可以用 rectRounded、dash、star 等
-              });
+                legend.legendItems.forEach((item, i) => {
+                    item.pointStyle = 'circle'; // 你也可以用 rectRounded、dash、star 等
+                });
             }
-          };
+        };
         let options = <GraphOptions>{
             type: 'pie',
             plugins: {

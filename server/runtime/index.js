@@ -16,6 +16,7 @@ var plugins = require('./plugins');
 var utils = require('./utils');
 const daqstorage = require('./storage/daqstorage');
 var jobs = require('./jobs');
+var dataforwarder = require('./dataforwarder');
 
 var api;
 var settings
@@ -25,6 +26,7 @@ var alarmsMgr;
 var notificatorMgr;
 var scriptsMgr;
 var jobsMgr;
+var dataForwarderMgr;
 var tagsSubscription = new Map();
 var socketPool = new Map();
 var socketMutex = new Map();
@@ -72,6 +74,8 @@ function init(_io, _api, _settings, _log, eventsMain) {
     notificatorMgr = notificator.create(runtime);
     scriptsMgr = scripts.create(runtime);
     jobsMgr = jobs.create(runtime);
+    // 初始化數據轉發器（將設備值變化轉發到 FMS Rust 後端觸發告警）
+    dataForwarderMgr = dataforwarder.create(runtime);
     devices.init(runtime);
 
     events.on('project-device:change', updateDevice);
@@ -368,6 +372,13 @@ function start() {
                 logger.error('runtime.failed-to-start-jobs: ' + err);
                 reject();
             });
+            // 啟動數據轉發器（FUXA → FMS Rust 後端告警檢查）
+            try {
+                dataForwarderMgr.start();
+                logger.info('runtime: dataforwarder started', true);
+            } catch (err) {
+                logger.error('runtime.failed-to-start-dataforwarder: ' + err);
+            }
         }).catch(function (err) {
             logger.error('runtime.failed-to-start: ' + err);
             reject();
@@ -396,6 +407,12 @@ function stop() {
         jobsMgr.stop().then(function () {
         }).catch(function (err) {
             logger.error('runtime.failed-to-stop-jobsMgr: ' + err);
+        });
+        // 停止數據轉發器
+        try {
+            dataForwarderMgr.stop();
+        } catch (err) {
+            logger.error('runtime.failed-to-stop-dataForwarderMgr: ' + err);
         });
         resolve(true);
     });
@@ -669,6 +686,7 @@ var runtime = module.exports = {
     get notificatorMgr() { return notificatorMgr },
     get scriptsMgr() { return scriptsMgr },
     get jobsMgr() { return jobsMgr },
+    get dataForwarderMgr() { return dataForwarderMgr },
     events: events,
     scriptSendCommand: scriptSendCommand,
     checkPermissionEnabled: checkPermissionEnabled,

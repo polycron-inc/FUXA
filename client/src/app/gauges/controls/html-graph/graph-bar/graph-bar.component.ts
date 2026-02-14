@@ -11,12 +11,12 @@ import DataLabelsPlugin from 'chartjs-plugin-datalabels';
 const roundedLegendPlugin = {
     id: 'roundedLegend',
     beforeDraw(chart) {
-      const { ctx, legend } = chart;
-      if (!legend || !legend.legendItems) { return; }
+        const { ctx, legend } = chart;
+        if (!legend || !legend.legendItems) { return; }
 
-      legend.legendItems.forEach((item, i) => {
-        item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
-      });
+        legend.legendItems.forEach((item, i) => {
+            item.pointStyle = 'rectRounded'; // 你也可以用 rectRounded、dash、star 等
+        });
     }
 };
 @Component({
@@ -25,7 +25,7 @@ const roundedLegendPlugin = {
     styleUrls: ['./graph-bar.component.scss']
 })
 export class GraphBarComponent extends GraphBaseComponent implements OnInit, AfterViewInit, OnDestroy {
-    @ViewChild(BaseChartDirective, {static: false}) public chart?: BaseChartDirective;
+    @ViewChild(BaseChartDirective, { static: false }) public chart?: BaseChartDirective;
     @Input() height = 240;
     @Input() width = 380;
     @Output() onReload: EventEmitter<DaqQuery> = new EventEmitter();
@@ -144,8 +144,10 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
         this.sourceMap = {};
         this.barChartData = [];
         for (let i = 0; i < sources.length; i++) {
-            let dataset = <ChartDataset>{ label: sources[i].label, data: [], backgroundColor: [sources[i].fill], borderColor: [sources[i].color],
-                hoverBackgroundColor: [sources[i].fill], hoverBorderColor: [sources[i].color] };
+            let dataset = <ChartDataset>{
+                label: sources[i].label, data: [], backgroundColor: [sources[i].fill], borderColor: [sources[i].color],
+                hoverBackgroundColor: [sources[i].fill], hoverBorderColor: [sources[i].color]
+            };
             this.sourceMap[sources[i].id] = dataset;
             this.barChartData.push(dataset);
         }
@@ -179,7 +181,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     this.barChartLabels = [''];
                 } else if (this.property.xtype === this.xTypeDate) {
                     this.currentQuery = this.getQuery();
-                    this.dateGroupTemplate = this.getFunctionValues(this.property.function, [<TimeValue>{dt: this.currentQuery.from, value: 0}, <TimeValue>{dt: this.currentQuery.to, value: 0}]);
+                    this.dateGroupTemplate = this.getFunctionValues(this.property.function, [<TimeValue>{ dt: this.currentQuery.from, value: 0 }, <TimeValue>{ dt: this.currentQuery.to, value: 0 }]);
                     this.barChartLabels = this.getDateLabels(this.dateGroupTemplate);
                 } else {
                     this.barChartLabels = this.barChartData.map(ds => ds.label);
@@ -200,7 +202,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
     }
 
     onRefresh(user?: boolean) {
-        if (this.isEditor || !this.property) {return false;}
+        if (this.isEditor || !this.property) { return false; }
         this.currentQuery = this.getQuery();
         this.onReload.emit(this.currentQuery);
         if (user) {
@@ -376,11 +378,11 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                         },
                         // suggestedMin: 0
                         color: '#334155',
-                     },
-                     grid: {
+                    },
+                    grid: {
                         color: 'rgba(0, 0, 0, 0.2)',
                         display: true
-                     }
+                    }
                 },
                 x: {
                     display: true,
@@ -394,7 +396,7 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     grid: {
                         color: 'rgba(0, 0, 0, 0.2)',
                         display: true
-                     }
+                    }
                 }
             },
             plugins: {
@@ -416,16 +418,16 @@ export class GraphBarComponent extends GraphBaseComponent implements OnInit, Aft
                     labels: {
                         font: {
                             size: 12,
-                        family: 'Noto Sans TC',
-                        style: 'normal',
-                        weight: 'normal',
-                    },
-                    color: '#475569',
-                    usePointStyle: true,
-                    pointStyle: 'rectRounded',
-                }
-            },
-            datalabels: {
+                            family: 'Noto Sans TC',
+                            style: 'normal',
+                            weight: 'normal',
+                        },
+                        color: '#475569',
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                    }
+                },
+                datalabels: {
                     display: true,
                     anchor: 'end',
                     align: 'end',

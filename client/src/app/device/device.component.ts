@@ -1,15 +1,15 @@
 /* eslint-disable @angular-eslint/component-class-suffix */
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {Subscription} from 'rxjs';
-import {Router} from '@angular/router';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
-import {DeviceListComponent} from './device-list/device-list.component';
-import {DeviceMapComponent} from './device-map/device-map.component';
-import {Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX, DeviceNetProperty, Tag} from './../_models/device';
-import {ProjectService} from '../_services/project.service';
-import {HmiService} from '../_services/hmi.service';
-import {DEVICE_READONLY} from '../_models/hmi';
-import {Utils} from '../_helpers/utils';
+import { DeviceListComponent } from './device-list/device-list.component';
+import { DeviceMapComponent } from './device-map/device-map.component';
+import { Device, DEVICE_PREFIX, DevicesUtils, DeviceType, DeviceViewModeType, TAG_PREFIX, DeviceNetProperty, Tag } from './../_models/device';
+import { ProjectService } from '../_services/project.service';
+import { HmiService } from '../_services/hmi.service';
+import { DEVICE_READONLY } from '../_models/hmi';
+import { Utils } from '../_helpers/utils';
 import { getProtocolList, ProtocolItem } from '../api/protocol';
 
 @Component({
@@ -19,10 +19,10 @@ import { getProtocolList, ProtocolItem } from '../api/protocol';
 })
 export class DeviceComponent implements OnInit, OnDestroy {
 
-    @ViewChild('devicelist', {static: false}) deviceList: DeviceListComponent;
-    @ViewChild('devicemap', {static: false}) deviceMap: DeviceMapComponent;
-    @ViewChild('fileImportInput', {static: false}) fileImportInput: any;
-    @ViewChild('tplFileImportInput',{static: false}) tplFileImportInput: any;
+    @ViewChild('devicelist', { static: false }) deviceList: DeviceListComponent;
+    @ViewChild('devicemap', { static: false }) deviceMap: DeviceMapComponent;
+    @ViewChild('fileImportInput', { static: false }) fileImportInput: any;
+    @ViewChild('tplFileImportInput', { static: false }) tplFileImportInput: any;
 
     private subscriptionLoad: Subscription;
     private subscriptionDeviceChange: Subscription;
@@ -174,7 +174,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
      * @param event file resource
      * @param isTemplate use template for import, if true, generate new device id and tag id
      */
-    onDevTplChangeListener(event, isTemplate: boolean){
+    onDevTplChangeListener(event, isTemplate: boolean) {
         let input = event.target;
         let reader = new FileReader();
         reader.onload = (data) => {
@@ -188,7 +188,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             }
             //generate new id and filte fuxa
             let importDev = [];
-            if(isTemplate) {
+            if (isTemplate) {
                 devices.forEach((device: Device) => {
                     if (device.type != DeviceType.FuxaServer) {
                         device.id = Utils.getGUID(DEVICE_PREFIX);
@@ -211,7 +211,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
             setTimeout(() => { this.projectService.onRefreshProject(); }, 2000);
         };
 
-        reader.onerror = function() {
+        reader.onerror = function () {
             let msg = 'Unable to read ' + input.files[0];
             // this.translateService.get('msg.project-load-error', {value: input.files[0]}).subscribe((txt: string) => { msg = txt });
             alert(msg);

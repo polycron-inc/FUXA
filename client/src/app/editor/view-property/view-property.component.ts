@@ -39,8 +39,8 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     selectedViewers: string[] = [];
     currentUser: User;
 
-    @ViewChild('flexevent', {static: false}) flexEvent: FlexEventComponent;
-    @ViewChild('tabEvents', {static: true}) tabEvents: MatTab;
+    @ViewChild('flexevent', { static: false }) flexEvent: FlexEventComponent;
+    @ViewChild('tabEvents', { static: true }) tabEvents: MatTab;
 
     propSizeType = [{ text: 'dlg.docproperty-size-320-240', value: { width: 320, height: 240 } }, { text: 'dlg.docproperty-size-460-360', value: { width: 460, height: 360 } },
     { text: 'dlg.docproperty-size-640-480', value: { width: 640, height: 480 } }, { text: 'dlg.docproperty-size-800-600', value: { width: 800, height: 600 } },
@@ -48,12 +48,12 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
     { text: 'dlg.docproperty-size-1600-1200', value: { width: 1600, height: 1200 } }, { text: 'dlg.docproperty-size-1920-1080', value: { width: 1920, height: 1080 } }];
 
     constructor(private fb: UntypedFormBuilder,
-                private translateService: TranslateService,
-                private projectService: ProjectService,
-                private userService: UserService,
-                private authService: AuthService,
-                public dialogRef: MatDialogRef<ViewPropertyComponent>,
-                @Inject(MAT_DIALOG_DATA) public data: ViewPropertyType & { newView: boolean}) {
+        private translateService: TranslateService,
+        private projectService: ProjectService,
+        private userService: UserService,
+        private authService: AuthService,
+        public dialogRef: MatDialogRef<ViewPropertyComponent>,
+        @Inject(MAT_DIALOG_DATA) public data: ViewPropertyType & { newView: boolean }) {
 
         this.scripts = this.projectService.getScripts();
         for (let i = 0; i < this.propSizeType.length; i++) {
@@ -98,8 +98,8 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.formGroup = this.fb.group({
-            name: [{value: this.data.name, disabled: this.data.name}, Validators.required],
-            type: [{value: this.data.type, disabled: this.data.name}],
+            name: [{ value: this.data.name, disabled: this.data.name }, Validators.required],
+            type: [{ value: this.data.type, disabled: this.data.name }],
             width: [this.data.profile.width],
             height: [this.data.profile.height],
             margin: [this.data.profile.margin],
@@ -179,7 +179,7 @@ export class ViewPropertyComponent implements OnInit, OnDestroy {
         this.data.profile.align = this.formGroup.controls.align.value;
         this.data.profile.gridType = this.formGroup.controls.gridType.value;
         if (!this.data.property) {
-			this.data.property = new ViewProperty();
+            this.data.property = new ViewProperty();
         }
         this.data.property.events = this.flexEvent.getEvents();
         // Save tags

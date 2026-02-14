@@ -1,7 +1,7 @@
 /* eslint-disable @angular-eslint/component-class-suffix */
 import { Component, Inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ElementRef } from '@angular/core';
 import { ChangeDetectorRef } from '@angular/core';
-import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA} from '@angular/material/legacy-dialog';
+import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA } from '@angular/material/legacy-dialog';
 import { MatDrawer } from '@angular/material/sidenav';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -63,13 +63,13 @@ declare var mysvgeditor: any;
 })
 
 export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
-    @ViewChild('gaugepanel', {static: false}) gaugePanelComponent: GaugeBaseComponent;
-    @ViewChild('viewFileImportInput', {static: false}) viewFileImportInput: any;
-    @ViewChild('cardsview', {static: false}) cardsview: CardsViewComponent;
-    @ViewChild('sidePanel', {static: false}) sidePanel: MatDrawer;
-    @ViewChild('svgSelectorPanel', {static: false}) svgSelectorPanel: MatDrawer;
-    @ViewChild('svgpreview', {static: false}) svgPreview: ElementRef;
-    @ViewChild('mapsView', {static: false}) mapsView: MapsViewComponent;
+    @ViewChild('gaugepanel', { static: false }) gaugePanelComponent: GaugeBaseComponent;
+    @ViewChild('viewFileImportInput', { static: false }) viewFileImportInput: any;
+    @ViewChild('cardsview', { static: false }) cardsview: CardsViewComponent;
+    @ViewChild('sidePanel', { static: false }) sidePanel: MatDrawer;
+    @ViewChild('svgSelectorPanel', { static: false }) svgSelectorPanel: MatDrawer;
+    @ViewChild('svgpreview', { static: false }) svgPreview: ElementRef;
+    @ViewChild('mapsView', { static: false }) mapsView: MapsViewComponent;
 
     svgElementSelected: ISvgElement = null;
     svgElements: ISvgElement[] = [];
@@ -342,7 +342,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     console.log('Drawing completed with tool:', drawingTool);
                     // Small delay to ensure the shape is fully created before switching
                     setTimeout(() => {
-                        if(drawingTool !== 'text') {
+                        if (drawingTool !== 'text') {
                             this.setMode('select', false);
                             isDrawing = false;
                         }
@@ -368,9 +368,9 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         if (loadSvgElement) {
             const currentItems = (this.currentView || this.currentTemplate)?.items || {};
             this.svgElements = Array.from(document.querySelectorAll('g, text, line, rect, image, path, circle, ellipse'))
-                                    .filter((svg: any) => svg.attributes?.type?.value?.startsWith('svg-ext') ||
-                                                          (svg.id?.startsWith('svg_') && !svg.parentNode?.attributes?.type?.value?.startsWith('svg-ext')))
-                                    .map(ele => <ISvgElement>{id: ele.id, name: currentItems[ele.id]?.name});
+                .filter((svg: any) => svg.attributes?.type?.value?.startsWith('svg-ext') ||
+                    (svg.id?.startsWith('svg_') && !svg.parentNode?.attributes?.type?.value?.startsWith('svg-ext')))
+                .map(ele => <ISvgElement>{ id: ele.id, name: currentItems[ele.id]?.name });
         }
         this.svgElementSelected = this.svgElements.find(se => se.id === this.selectedElement?.id);
     }
@@ -490,7 +490,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         Object.keys(temp).forEach(grpk => {
             grps.push({ name: grpk, shapes: temp[grpk] });
         }),
-        this.shapesGrps = grps;
+            this.shapesGrps = grps;
     }
 
     /**
@@ -718,7 +718,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         let views = this.hmi.views.filter((v) => v.type !== cardType && exist.indexOf(v.name) < 0).map((v) => v.name);
         let dialogRef = this.dialog.open(CardConfigComponent, {
             position: { top: '60px' },
-            data: <CardConfigType> {
+            data: <CardConfigType>{
                 item: JSON.parse(JSON.stringify(item)),
                 views: views
             }
@@ -789,7 +789,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.selectedElement = null;
         try {
             // to remove some strange effects
-            if (document.activeElement !== document.body) {(document.activeElement as HTMLElement).blur();}
+            if (document.activeElement !== document.body) { (document.activeElement as HTMLElement).blur(); }
         } catch (e) { }
         if (elems) {
             if (elems.length <= 1) {
@@ -889,8 +889,8 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                                 // Handle widget type images with special GUID replacement
                                 const svgGuid = Utils.getShortGUID('', '_');
                                 gaugeSettingsDest.property = Utils.replaceStringInObject(gaugeSettingsDest.property,
-                                                                                         copyGaugeSettings.property.svgGuid,
-                                                                                         svgGuid);
+                                    copyGaugeSettings.property.svgGuid,
+                                    svgGuid);
                             }
 
                             gaugeSettingsDest.hide = copyGaugeSettings.hide;
@@ -941,8 +941,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.winRef.nativeWindow.svgEditor.setColor('none', 0, 'fill');
             }
         } else {
-            if (color.charAt(0) === '#')
-                {color = color.slice(1);}
+            if (color.charAt(0) === '#') { color = color.slice(1); }
             let alfa = 100;
             if (this.winRef.nativeWindow.svgEditor) {
                 this.winRef.nativeWindow.svgEditor.setColor(color, alfa, 'fill');
@@ -957,8 +956,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     setStrokeColor(event) {
         let color = event;
-        if (color.charAt(0) === '#')
-            {color = color.slice(1);}
+        if (color.charAt(0) === '#') { color = color.slice(1); }
         let alfa = 100;
         this.winRef.nativeWindow.svgEditor.setColor(color, alfa, 'stroke');
         // this.fillcolor;
@@ -1011,14 +1009,14 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             let self = this;
             if (fileToUpload.type === 'svg') {
                 let reader = new FileReader();
-                reader.onloadend = function(e: any) {
+                reader.onloadend = function (e: any) {
                     localStorage.setItem(fileToUpload.name, reader.result.toString());
                     self.ctrlInitParams = fileToUpload.name;
                     self.setMode('own_ctrl-image');
                 };
                 reader.readAsText(event.target.files[0]);
             } else {
-                this.getBase64Image(event.target.files[0], function(imgdata) {
+                this.getBase64Image(event.target.files[0], function (imgdata) {
                     if (self.winRef.nativeWindow.svgEditor.setUrlImageToAdd) {
                         self.winRef.nativeWindow.svgEditor.setUrlImageToAdd(imgdata);
                     }
@@ -1065,7 +1063,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private getBase64Image(file, callback) {
         var fr = new FileReader();
-        fr.onload = function() {
+        fr.onload = function () {
             callback(fr.result);
         };
         fr.readAsDataURL(file);
@@ -1496,7 +1494,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     onAddDoc() {
         let dialogRef = this.dialog.open(ViewPropertyComponent, {
             position: { top: '60px' },
-            data: <ViewPropertyType & { newView: boolean}> {
+            data: <ViewPropertyType & { newView: boolean }>{
                 name: '',
                 profile: new DocProfile(),
                 type: ViewType.svg,
@@ -1533,8 +1531,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         break;
                     }
                 }
-                if (!found)
-                    {break;}
+                if (!found) { break; }
             }
             let v = new View(Utils.getShortGUID('v_'), type);
             if (name) {
@@ -1572,8 +1569,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         break;
                     }
                 }
-                if (!found)
-                    {break;}
+                if (!found) { break; }
             }
             let torename = { content: JSON.stringify(view), id: '' };
             // change all gauge ids
@@ -1681,7 +1677,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             // this.projectService.setProject(prj, true);
         };
 
-        reader.onerror = function() {
+        reader.onerror = function () {
             let msg = 'Unable to read ' + input.files[0];
             // this.translateService.get('msg.project-load-error', {value: input.files[0]}).subscribe((txt: string) => { msg = txt });
             alert(msg);
@@ -1698,7 +1694,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
     onAddTemplate() {
         let dialogRef = this.dialog.open(ViewPropertyComponent, {
             position: { top: '60px' },
-            data: <ViewPropertyType & { newView: boolean}> {
+            data: <ViewPropertyType & { newView: boolean }>{
                 name: '',
                 profile: new DocProfile(),
                 type: ViewType.svg,
@@ -1736,8 +1732,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                         break;
                     }
                 }
-                if (!found)
-                    {break;}
+                if (!found) { break; }
             }
             let torename = { content: JSON.stringify(template), id: '' };
             // change all gauge ids
@@ -2036,7 +2031,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             dialogRef = this.dialog.open(GaugePropertyComponent, {
                 position: { top: '60px' },
                 disableClose: true,
-                data: <GaugePropertyData> {
+                data: <GaugePropertyData>{
                     settings: tempsettings,
                     devices: Object.values(this.projectService.getDevices()),
                     title: title,
