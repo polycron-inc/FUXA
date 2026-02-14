@@ -79,7 +79,7 @@ jobs:
       - name: 健康檢查
         run: |
           for i in {1..30}; do
-            if curl -sf http://127.0.0.1:1881/api/project >/dev/null; then
+            if curl -sf http://127.0.0.1:1881/api/settings >/dev/null; then
               echo "✅ FUXA 啟動成功"
               exit 0
             fi
