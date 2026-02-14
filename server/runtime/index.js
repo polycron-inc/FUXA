@@ -413,7 +413,7 @@ function stop() {
             dataForwarderMgr.stop();
         } catch (err) {
             logger.error('runtime.failed-to-stop-dataForwarderMgr: ' + err);
-        });
+        }
         resolve(true);
     });
 }
