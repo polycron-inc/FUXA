@@ -60,6 +60,13 @@ jobs:
           echo "✅ 使用部署目錄: $COMPOSE_DIR"
           cd "$COMPOSE_DIR"
 
+          # 移除舊容器（可能由不同 compose 專案建立）
+          if docker inspect fuxa >/dev/null 2>&1; then
+            echo "⚠️ 發現舊的 fuxa 容器，正在移除..."
+            docker stop fuxa 2>/dev/null || true
+            docker rm fuxa 2>/dev/null || true
+          fi
+
           if docker compose version >/dev/null 2>&1; then
             docker compose up -d --force-recreate fuxa
           elif command -v docker-compose >/dev/null 2>&1; then
