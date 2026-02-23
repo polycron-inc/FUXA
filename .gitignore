@@ -56,8 +56,10 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# 環境變數（僅保留 .env.sample 範本）
 .env
+.env.*
+!.env.sample
 
 # next.js build output
 .next
