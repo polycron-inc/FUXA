@@ -1,0 +1,69 @@
+# Tag-triggered GHCR image publish.
+# Pushes :v* + :latest to ghcr.io/<owner>/<repo>. Consumed by the FMS monorepo
+# docker-compose.yml.
+name: Publish GHCR image
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 設定 Docker 環境 (macOS Colima)
+        run: |
+          if [ -S "$HOME/.colima/default/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.colima/default/docker.sock" >> $GITHUB_ENV
+          elif [ -S "$HOME/.colima/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.colima/docker.sock" >> $GITHUB_ENV
+          fi
+
+      - name: 計算映像名稱與版本
+        id: meta
+        run: |
+          IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          VERSION="${GITHUB_REF#refs/tags/}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="manual-$(date +%Y%m%d%H%M%S)"
+          fi
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: 登入 GitHub Container Registry
+        run: |
+          mkdir -p ~/.docker
+          [ -f ~/.docker/config.json ] && mv ~/.docker/config.json ~/.docker/config.json.bak || true
+          AUTH=$(echo -n "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" | base64)
+          cat > ~/.docker/config.json << EOF
+          {
+            "auths": {
+              "${{ env.REGISTRY }}": {
+                "auth": "${AUTH}"
+              }
+            }
+          }
+          EOF
+
+      - name: 建置映像
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ steps.meta.outputs.IMAGE_NAME }}:${{ steps.meta.outputs.VERSION }} \
+            -t ${{ env.REGISTRY }}/${{ steps.meta.outputs.IMAGE_NAME }}:latest \
+            .
+
+      - name: 推送映像
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ steps.meta.outputs.IMAGE_NAME }}:${{ steps.meta.outputs.VERSION }}
+          docker push ${{ env.REGISTRY }}/${{ steps.meta.outputs.IMAGE_NAME }}:latest
