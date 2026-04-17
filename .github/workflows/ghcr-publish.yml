@@ -20,6 +20,12 @@ jobs:
       packages: write
 
     steps:
+      - name: 清理工作目錄（修復 self-hosted runner root 權限殘留）
+        run: |
+          if [ -d "$GITHUB_WORKSPACE" ]; then
+            sudo rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
+          fi
+
       - uses: actions/checkout@v4
 
       - name: 設定 Docker 環境 (macOS Colima)
